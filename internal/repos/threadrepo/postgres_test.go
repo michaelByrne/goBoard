@@ -34,6 +34,66 @@ func TestNewThreadRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, "Hello, BCO", body)
+
+		_, err = connPool.Exec(context.Background(), "DELETE FROM thread_post WHERE id = $1", id)
+		require.NoError(t, err)
 	})
 
+	t.Run("fails to add post if the thread doesn't exist", func(t *testing.T) {
+		_, err := repo.SavePost(domain.Post{
+			ThreadID: 2,
+			MemberID: 1,
+			MemberIP: "67.189.58.94",
+			Text:     "Hello, BCO",
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("successfully gets a post by id", func(t *testing.T) {
+		post, err := repo.GetPostByID(1)
+		require.NoError(t, err)
+
+		expectedPost := domain.Post{
+			ID:        1,
+			Timestamp: nil,
+			MemberID:  1,
+			MemberIP:  "127.0.0.1/32",
+			ThreadID:  1,
+			Text:      "Attn. Roxy",
+		}
+
+		post.Timestamp = nil
+
+		assert.Equal(t, &expectedPost, post)
+	})
+
+	t.Run("successfully gets posts by thread id", func(t *testing.T) {
+		posts, err := repo.GetPostsByThreadID(1)
+		require.NoError(t, err)
+		require.Len(t, posts, 2)
+
+		expectedPosts := []domain.Post{
+			{
+				ID:        1,
+				Timestamp: nil,
+				MemberID:  1,
+				MemberIP:  "127.0.0.1/32",
+				ThreadID:  1,
+				Text:      "Attn. Roxy",
+			},
+			{
+				ID:        2,
+				Timestamp: nil,
+				MemberID:  1,
+				MemberIP:  "127.0.0.2/32",
+				ThreadID:  1,
+				Text:      "WCFRP",
+			},
+		}
+
+		posts[0].Timestamp = nil
+		posts[1].Timestamp = nil
+
+		assert.Equal(t, expectedPosts, posts)
+	})
 }

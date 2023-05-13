@@ -14,13 +14,18 @@ func NewThreadService(postRepo ports.ThreadRepo) ThreadService {
 }
 
 func (s ThreadService) Save(post domain.Post) error {
-	return s.threadRepo.SavePost(post)
+	_, err := s.threadRepo.SavePost(post)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s ThreadService) GetByID(id string) (domain.Post, error) {
+func (s ThreadService) GetByID(id int) (*domain.Post, error) {
 	return s.threadRepo.GetPostByID(id)
 }
 
-func (s ThreadService) GetPostsByThreadID(threadID string) ([]domain.Post, error) {
+func (s ThreadService) GetPostsByThreadID(threadID int) ([]domain.Post, error) {
 	return s.threadRepo.GetPostsByThreadID(threadID)
 }

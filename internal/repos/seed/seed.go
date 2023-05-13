@@ -14,13 +14,12 @@ const (
 )
 
 func SeedData(t *testing.T, pool *pgxpool.Pool) error {
-	_, err := pool.Exec(context.Background(), insertMember, "admin", "admin", "127.0.0.1", "admin@test.com", "12345", "topsecret")
-	require.NoError(t, err)
-
+	var err error
+	_, err = pool.Exec(context.Background(), insertMember, "admin", "admin", "127.0.0.1", "admin@test.com", "12345", "topsecret")
 	_, err = pool.Exec(context.Background(), insertThread, 1, 1, 1, "Hello, BCO")
-	require.NoError(t, err)
+	_, err = pool.Exec(context.Background(), insertThreadPost, 1, 1, "127.0.0.1", "Attn. Roxy")
+	_, err = pool.Exec(context.Background(), insertThreadPost, 1, 1, "127.0.0.2", "WCFRP")
 
-	_, err = pool.Exec(context.Background(), insertThreadPost, 1, 1, "127.0.0.1", "Hello, BCO")
 	require.NoError(t, err)
 
 	return nil

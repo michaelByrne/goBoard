@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type Post struct {
-	ID        string
+	ID        int
 	Timestamp *time.Time
 	MemberID  int
 	MemberIP  string
