@@ -2,10 +2,14 @@ package threadrepo
 
 import (
 	"context"
+	_ "embed"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"goBoard/internal/core/domain"
 )
+
+//go:embed queries/list_threads.sql
+var listThreadsQuery string
 
 type ThreadRepo struct {
 	connPool *pgxpool.Pool
@@ -69,4 +73,38 @@ func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
 	}
 
 	return &thread, nil
+}
+
+func (r ThreadRepo) ListThreads(limit int) ([]domain.Thread, error) {
+	var threads []domain.Thread
+	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var thread domain.Thread
+		err := rows.Scan(
+			&thread.ID,
+			&thread.DateLastPosted,
+			&thread.MemberID,
+			&thread.MemberName,
+			&thread.LastPosterID,
+			&thread.LastPosterName,
+			&thread.Subject,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPostText,
+			&thread.Sticky,
+			&thread.Locked,
+			&thread.Legendary,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		threads = append(threads, thread)
+	}
+
+	return threads, nil
 }

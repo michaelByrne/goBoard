@@ -41,7 +41,7 @@ func TestNewThreadRepo(t *testing.T) {
 
 	t.Run("fails to add post if the thread doesn't exist", func(t *testing.T) {
 		_, err := repo.SavePost(domain.Post{
-			ThreadID: 2,
+			ThreadID: 666,
 			MemberID: 1,
 			MemberIP: "67.189.58.94",
 			Text:     "Hello, BCO",
@@ -112,5 +112,44 @@ func TestNewThreadRepo(t *testing.T) {
 		thread.Timestamp = nil
 
 		assert.Equal(t, &expectedThread, thread)
+	})
+
+	t.Run("successfully lists all threads", func(t *testing.T) {
+		threads, err := repo.ListThreads(10)
+		require.NoError(t, err)
+
+		expectedThreads := []domain.Thread{
+			{
+				ID:             2,
+				Timestamp:      nil,
+				MemberID:       2,
+				MemberName:     "gofreescout",
+				Views:          0,
+				LastPosterName: "gofreescout",
+				LastPosterID:   2,
+				LastPostText:   "I listened to a podcast earlier that had five minutes of ads at the beginning",
+				NumPosts:       3,
+				Subject:        "It stinks! A new moratorium thread",
+			},
+			{
+				ID:             1,
+				Timestamp:      nil,
+				MemberID:       1,
+				MemberName:     "admin",
+				Subject:        "Hello, BCO",
+				LastPostText:   "Attn. Roxy",
+				LastPosterID:   1,
+				LastPosterName: "admin",
+				Views:          0,
+				NumPosts:       2,
+			},
+		}
+
+		threads[0].Timestamp = nil
+		threads[0].DateLastPosted = ""
+		threads[1].Timestamp = nil
+		threads[1].DateLastPosted = ""
+
+		assert.Equal(t, expectedThreads, threads)
 	})
 }

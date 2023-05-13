@@ -9,4 +9,5 @@ type ThreadRepo interface {
 	GetPostByID(id int) (*domain.Post, error)
 	GetPostsByThreadID(threadID int) ([]domain.Post, error)
 	GetThreadByID(id int) (*domain.Thread, error)
+	ListThreads(limit int) ([]domain.Thread, error)
 }

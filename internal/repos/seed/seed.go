@@ -19,6 +19,11 @@ func SeedData(t *testing.T, pool *pgxpool.Pool) error {
 	_, err = pool.Exec(context.Background(), insertThread, 1, 1, 1, "Hello, BCO")
 	_, err = pool.Exec(context.Background(), insertThreadPost, 1, 1, "127.0.0.1", "Attn. Roxy")
 	_, err = pool.Exec(context.Background(), insertThreadPost, 1, 1, "127.0.0.2", "WCFRP")
+	_, err = pool.Exec(context.Background(), insertMember, "gofreescout", "test", "127.0.0.2", "gofreescout@gmail.com", "48225", "topsecret")
+	_, err = pool.Exec(context.Background(), insertThread, 2, 3, 1, "It stinks! A new moratorium thread")
+	_, err = pool.Exec(context.Background(), insertThreadPost, 2, 2, "127.0.0.1", "I listened to a podcast earlier that had five minutes of ads at the beginning")
+	_, err = pool.Exec(context.Background(), insertThreadPost, 2, 1, "127.0.0.1", "moratorium on anything to do with AI")
+	_, err = pool.Exec(context.Background(), insertThreadPost, 2, 2, "127.0.0.1", "small d democratic")
 
 	require.NoError(t, err)
 
