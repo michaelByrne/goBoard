@@ -96,4 +96,21 @@ func TestNewThreadRepo(t *testing.T) {
 
 		assert.Equal(t, expectedPosts, posts)
 	})
+
+	t.Run("successfully gets a thread by id", func(t *testing.T) {
+		thread, err := repo.GetThreadByID(1)
+		require.NoError(t, err)
+
+		expectedThread := domain.Thread{
+			ID:        1,
+			Timestamp: nil,
+			MemberID:  1,
+			Subject:   "Hello, BCO",
+			Views:     0,
+		}
+
+		thread.Timestamp = nil
+
+		assert.Equal(t, &expectedThread, thread)
+	})
 }

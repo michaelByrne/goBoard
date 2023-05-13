@@ -29,3 +29,19 @@ func (s ThreadService) GetByID(id int) (*domain.Post, error) {
 func (s ThreadService) GetPostsByThreadID(threadID int) ([]domain.Post, error) {
 	return s.threadRepo.GetPostsByThreadID(threadID)
 }
+
+func (s ThreadService) GetThreadByID(id int) (*domain.Thread, error) {
+	posts, err := s.threadRepo.GetPostsByThreadID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	thread, err := s.threadRepo.GetThreadByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	thread.Posts = posts
+
+	return thread, nil
+}

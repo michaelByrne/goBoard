@@ -60,3 +60,13 @@ func (r ThreadRepo) GetPostsByThreadID(threadID int) ([]domain.Post, error) {
 
 	return posts, nil
 }
+
+func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
+	var thread domain.Thread
+	err := r.connPool.QueryRow(context.Background(), "SELECT id, subject, date_posted, member_id, views FROM thread WHERE id = $1", id).Scan(&thread.ID, &thread.Subject, &thread.Timestamp, &thread.MemberID, &thread.Views)
+	if err != nil {
+		return nil, err
+	}
+
+	return &thread, nil
+}
