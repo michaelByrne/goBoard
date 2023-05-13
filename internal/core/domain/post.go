@@ -5,7 +5,8 @@ import "time"
 type Post struct {
 	ID        string
 	Timestamp *time.Time
-	AuthorID  string
-	ThreadID  string
+	MemberID  int
+	MemberIP  string
+	ThreadID  int
 	Text      string
 }
