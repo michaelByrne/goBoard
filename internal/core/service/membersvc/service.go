@@ -1,21 +1,24 @@
 package membersvc
 
 import (
+	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 )
 
 type MemberService struct {
 	memberRepo ports.MemberRepo
+	logger     *zap.SugaredLogger
 }
 
-func NewMemberService(memberRepo ports.MemberRepo) MemberService {
-	return MemberService{memberRepo}
+func NewMemberService(memberRepo ports.MemberRepo, logger *zap.SugaredLogger) MemberService {
+	return MemberService{memberRepo, logger}
 }
 
 func (s MemberService) Save(member domain.Member) (int, error) {
 	id, err := s.memberRepo.SaveMember(member)
 	if err != nil {
+		s.logger.Errorf("error saving member: %v", err)
 		return 0, err
 	}
 
