@@ -11,3 +11,8 @@ type ThreadRepo interface {
 	GetThreadByID(id int) (*domain.Thread, error)
 	ListThreads(limit int) ([]domain.Thread, error)
 }
+
+type MemberRepo interface {
+	SaveMember(member domain.Member) (int, error)
+	GetMemberByID(id int) (*domain.Member, error)
+}

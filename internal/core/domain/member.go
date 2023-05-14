@@ -12,4 +12,5 @@ type Member struct {
 	Email       string
 	PostalCode  string
 	Banned      bool
+	IP          string
 }
