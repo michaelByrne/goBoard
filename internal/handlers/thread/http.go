@@ -15,7 +15,7 @@ func NewHandler(threadService ports.ThreadService) *Handler {
 }
 
 func (h *Handler) Register(e *echo.Echo) {
-	e.GET("/threads/:limit", h.ListThreads)
+	e.GET("/threads/all/:limit", h.ListThreads)
 	e.GET("/threads/:id", h.GetThreadByID)
 	e.POST("/threads/posts", h.SavePost)
 	e.POST("/threads", h.NewThread)
@@ -25,11 +25,13 @@ func (h *Handler) ListThreads(ctx echo.Context) error {
 	limit, err := strconv.Atoi(ctx.Param("limit"))
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
 	threads, err := h.threadService.ListThreads(limit)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
 	threadsOut := &Threads{}
@@ -42,11 +44,13 @@ func (h *Handler) GetThreadByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
 	thread, err := h.threadService.GetThreadByID(id)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
 	threadOut := &Thread{}
@@ -60,14 +64,16 @@ func (h *Handler) SavePost(ctx echo.Context) error {
 	err := ctx.Bind(post)
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
-	err = h.threadService.Save(post.ToDomain())
+	id, err := h.threadService.Save(post.ToDomain())
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
-	return ctx.JSON(200, nil)
+	return ctx.JSON(200, ID{id})
 }
 
 func (h *Handler) NewThread(c echo.Context) error {
@@ -75,14 +81,16 @@ func (h *Handler) NewThread(c echo.Context) error {
 	err := c.Bind(thread)
 	if err != nil {
 		c.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
-	err = h.threadService.NewThread(thread.ToDomain())
+	id, err := h.threadService.NewThread(thread.ToDomain())
 	if err != nil {
 		c.JSON(500, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
-	return c.JSON(200, nil)
+	return c.JSON(200, ID{ID: id})
 }
 
 type ErrorResponse struct {

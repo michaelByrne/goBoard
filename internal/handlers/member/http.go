@@ -24,25 +24,29 @@ func (h *Handler) SaveMember(ctx echo.Context) error {
 	err := ctx.Bind(member)
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
-	err = h.memberService.Save(member.ToDomain())
+	id, err := h.memberService.Save(member.ToDomain())
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
-	return ctx.JSON(200, member)
+	return ctx.JSON(200, ID{id})
 }
 
 func (h *Handler) GetMemberByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
 	member, err := h.memberService.GetMemberByID(id)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
+		return err
 	}
 
 	memberOut := &Member{}

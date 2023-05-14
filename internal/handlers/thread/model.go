@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+type ID struct {
+	ID int `json:"id"`
+}
+
 type Thread struct {
 	ID             int        `json:"id"`
 	Subject        string     `json:"subject"`

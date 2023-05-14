@@ -13,13 +13,13 @@ func NewMemberService(memberRepo ports.MemberRepo) MemberService {
 	return MemberService{memberRepo}
 }
 
-func (s MemberService) Save(member domain.Member) error {
-	_, err := s.memberRepo.SaveMember(member)
+func (s MemberService) Save(member domain.Member) (int, error) {
+	id, err := s.memberRepo.SaveMember(member)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return id, nil
 }
 
 func (s MemberService) GetMemberByID(id int) (*domain.Member, error) {

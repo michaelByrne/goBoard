@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+type ID struct {
+	ID int `json:"id"`
+}
+
 type Member struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -39,26 +43,14 @@ func (m *Member) FromDomain(member domain.Member) {
 }
 
 func (m *Member) ToDomain() domain.Member {
-	firstPosted, err := time.Parse(time.RFC3339, m.FirstPosted)
-	if err != nil {
-		firstPosted = time.Now()
-	}
-
-	lastPosted, err := time.Parse(time.RFC3339, m.LastPosted)
-	if err != nil {
-		lastPosted = time.Now()
-	}
-
 	return domain.Member{
-		ID:          m.ID,
-		Name:        m.Name,
-		Email:       m.Email,
-		Pass:        m.Pass,
-		Secret:      m.Secret,
-		PostalCode:  m.PostalCode,
-		Banned:      m.Banned,
-		FirstPosted: &firstPosted,
-		LastPosted:  &lastPosted,
-		IP:          m.IP,
+		ID:         m.ID,
+		Name:       m.Name,
+		Email:      m.Email,
+		Pass:       m.Pass,
+		Secret:     m.Secret,
+		PostalCode: m.PostalCode,
+		Banned:     m.Banned,
+		IP:         m.IP,
 	}
 }
