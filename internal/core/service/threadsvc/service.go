@@ -22,7 +22,7 @@ func (s ThreadService) Save(post domain.Post) error {
 	return nil
 }
 
-func (s ThreadService) GetByID(id int) (*domain.Post, error) {
+func (s ThreadService) GetPostByID(id int) (*domain.Post, error) {
 	return s.threadRepo.GetPostByID(id)
 }
 
@@ -44,4 +44,17 @@ func (s ThreadService) GetThreadByID(id int) (*domain.Thread, error) {
 	thread.Posts = posts
 
 	return thread, nil
+}
+
+func (s ThreadService) ListThreads(limit int) ([]domain.Thread, error) {
+	return s.threadRepo.ListThreads(limit)
+}
+
+func (s ThreadService) NewThread(thread domain.Thread) error {
+	_, err := s.threadRepo.SaveThread(thread)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

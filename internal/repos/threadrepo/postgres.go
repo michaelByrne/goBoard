@@ -4,8 +4,10 @@ import (
 	"context"
 	_ "embed"
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"goBoard/internal/core/domain"
+	"net"
 )
 
 //go:embed queries/list_threads.sql
@@ -20,8 +22,13 @@ func NewThreadRepo(pool *pgxpool.Pool) ThreadRepo {
 }
 
 func (r ThreadRepo) SavePost(post domain.Post) (int, error) {
+	ip, _, err := net.ParseCIDR(post.MemberIP)
+	if err != nil {
+		return 0, err
+	}
+
 	var id int
-	err := r.connPool.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", post.ThreadID, post.MemberID, post.MemberIP, post.Text).Scan(&id)
+	err = r.connPool.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", post.ThreadID, post.MemberID, ip, post.Text).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -107,4 +114,42 @@ func (r ThreadRepo) ListThreads(limit int) ([]domain.Thread, error) {
 	}
 
 	return threads, nil
+}
+
+func (r ThreadRepo) SaveThread(thread domain.Thread) (int, error) {
+	tx, err := r.connPool.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(context.TODO())
+		} else {
+			tx.Commit(context.TODO())
+		}
+	}()
+
+	var threadID int
+	err = tx.QueryRow(context.Background(), "INSERT INTO thread (subject, member_id, last_member_id) VALUES ($1, $2, $3) RETURNING id", thread.Subject, thread.MemberID, thread.LastPosterID).Scan(&threadID)
+	if err != nil {
+		return 0, err
+	}
+
+	var postID int
+	err = tx.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", threadID, thread.MemberID, thread.MemberIP, thread.FirstPostText).Scan(&postID)
+	if err != nil {
+		return 0, err
+	}
+
+	return threadID, nil
+}
+
+func (r ThreadRepo) DeleteThread(id int) error {
+	_, err := r.connPool.Exec(context.Background(), "DELETE FROM thread WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

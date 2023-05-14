@@ -7,6 +7,8 @@ type Thread struct {
 	Subject        string
 	MemberID       int
 	MemberName     string
+	FirstPostText  string
+	MemberIP       string
 	Views          int
 	LastPosterName string
 	LastPosterID   int

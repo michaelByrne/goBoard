@@ -2,18 +2,16 @@ package ports
 
 import "goBoard/internal/core/domain"
 
-//go:generate moq -pkg mocks -out ../service/mocks/thread_repo_moq.go . ThreadRepo
-
-type ThreadRepo interface {
-	SavePost(post domain.Post) (int, error)
+type ThreadService interface {
+	Save(post domain.Post) error
 	GetPostByID(id int) (*domain.Post, error)
 	GetPostsByThreadID(threadID int) ([]domain.Post, error)
 	GetThreadByID(id int) (*domain.Thread, error)
 	ListThreads(limit int) ([]domain.Thread, error)
-	SaveThread(thread domain.Thread) (int, error)
+	NewThread(thread domain.Thread) error
 }
 
-type MemberRepo interface {
-	SaveMember(member domain.Member) (int, error)
+type MemberService interface {
+	Save(member domain.Member) error
 	GetMemberByID(id int) (*domain.Member, error)
 }

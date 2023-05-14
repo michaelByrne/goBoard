@@ -9,15 +9,15 @@ import (
 	"sync"
 )
 
-// Ensure, that ThreadRepoMock does implement ThreadRepo.
+// Ensure, that ThreadRepoMock does implement ports.ThreadRepo.
 // If this is not the case, regenerate this file with moq.
 var _ ports.ThreadRepo = &ThreadRepoMock{}
 
-// ThreadRepoMock is a mock implementation of ThreadRepo.
+// ThreadRepoMock is a mock implementation of ports.ThreadRepo.
 //
 //	func TestSomethingThatUsesThreadRepo(t *testing.T) {
 //
-//		// make and configure a mocked ThreadRepo
+//		// make and configure a mocked ports.ThreadRepo
 //		mockedThreadRepo := &ThreadRepoMock{
 //			GetPostByIDFunc: func(id int) (*domain.Post, error) {
 //				panic("mock out the GetPostByID method")
@@ -28,12 +28,18 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
 //				panic("mock out the GetThreadByID method")
 //			},
+//			ListThreadsFunc: func(limit int) ([]domain.Thread, error) {
+//				panic("mock out the ListThreads method")
+//			},
 //			SavePostFunc: func(post domain.Post) (int, error) {
 //				panic("mock out the SavePost method")
 //			},
+//			SaveThreadFunc: func(thread domain.Thread) (int, error) {
+//				panic("mock out the SaveThread method")
+//			},
 //		}
 //
-//		// use mockedThreadRepo in code that requires ThreadRepo
+//		// use mockedThreadRepo in code that requires ports.ThreadRepo
 //		// and then make assertions.
 //
 //	}
@@ -47,8 +53,14 @@ type ThreadRepoMock struct {
 	// GetThreadByIDFunc mocks the GetThreadByID method.
 	GetThreadByIDFunc func(id int) (*domain.Thread, error)
 
+	// ListThreadsFunc mocks the ListThreads method.
+	ListThreadsFunc func(limit int) ([]domain.Thread, error)
+
 	// SavePostFunc mocks the SavePost method.
 	SavePostFunc func(post domain.Post) (int, error)
+
+	// SaveThreadFunc mocks the SaveThread method.
+	SaveThreadFunc func(thread domain.Thread) (int, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -67,16 +79,28 @@ type ThreadRepoMock struct {
 			// ID is the id argument value.
 			ID int
 		}
+		// ListThreads holds details about calls to the ListThreads method.
+		ListThreads []struct {
+			// Limit is the limit argument value.
+			Limit int
+		}
 		// SavePost holds details about calls to the SavePost method.
 		SavePost []struct {
 			// Post is the post argument value.
 			Post domain.Post
 		}
+		// SaveThread holds details about calls to the SaveThread method.
+		SaveThread []struct {
+			// Thread is the thread argument value.
+			Thread domain.Thread
+		}
 	}
 	lockGetPostByID        sync.RWMutex
 	lockGetPostsByThreadID sync.RWMutex
 	lockGetThreadByID      sync.RWMutex
+	lockListThreads        sync.RWMutex
 	lockSavePost           sync.RWMutex
+	lockSaveThread         sync.RWMutex
 }
 
 // GetPostByID calls GetPostByIDFunc.
@@ -175,6 +199,38 @@ func (mock *ThreadRepoMock) GetThreadByIDCalls() []struct {
 	return calls
 }
 
+// ListThreads calls ListThreadsFunc.
+func (mock *ThreadRepoMock) ListThreads(limit int) ([]domain.Thread, error) {
+	if mock.ListThreadsFunc == nil {
+		panic("ThreadRepoMock.ListThreadsFunc: method is nil but ThreadRepo.ListThreads was just called")
+	}
+	callInfo := struct {
+		Limit int
+	}{
+		Limit: limit,
+	}
+	mock.lockListThreads.Lock()
+	mock.calls.ListThreads = append(mock.calls.ListThreads, callInfo)
+	mock.lockListThreads.Unlock()
+	return mock.ListThreadsFunc(limit)
+}
+
+// ListThreadsCalls gets all the calls that were made to ListThreads.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListThreadsCalls())
+func (mock *ThreadRepoMock) ListThreadsCalls() []struct {
+	Limit int
+} {
+	var calls []struct {
+		Limit int
+	}
+	mock.lockListThreads.RLock()
+	calls = mock.calls.ListThreads
+	mock.lockListThreads.RUnlock()
+	return calls
+}
+
 // SavePost calls SavePostFunc.
 func (mock *ThreadRepoMock) SavePost(post domain.Post) (int, error) {
 	if mock.SavePostFunc == nil {
@@ -204,5 +260,37 @@ func (mock *ThreadRepoMock) SavePostCalls() []struct {
 	mock.lockSavePost.RLock()
 	calls = mock.calls.SavePost
 	mock.lockSavePost.RUnlock()
+	return calls
+}
+
+// SaveThread calls SaveThreadFunc.
+func (mock *ThreadRepoMock) SaveThread(thread domain.Thread) (int, error) {
+	if mock.SaveThreadFunc == nil {
+		panic("ThreadRepoMock.SaveThreadFunc: method is nil but ThreadRepo.SaveThread was just called")
+	}
+	callInfo := struct {
+		Thread domain.Thread
+	}{
+		Thread: thread,
+	}
+	mock.lockSaveThread.Lock()
+	mock.calls.SaveThread = append(mock.calls.SaveThread, callInfo)
+	mock.lockSaveThread.Unlock()
+	return mock.SaveThreadFunc(thread)
+}
+
+// SaveThreadCalls gets all the calls that were made to SaveThread.
+// Check the length with:
+//
+//	len(mockedThreadRepo.SaveThreadCalls())
+func (mock *ThreadRepoMock) SaveThreadCalls() []struct {
+	Thread domain.Thread
+} {
+	var calls []struct {
+		Thread domain.Thread
+	}
+	mock.lockSaveThread.RLock()
+	calls = mock.calls.SaveThread
+	mock.lockSaveThread.RUnlock()
 	return calls
 }

@@ -152,4 +152,26 @@ func TestNewThreadRepo(t *testing.T) {
 
 		assert.Equal(t, expectedThreads, threads)
 	})
+
+	t.Run("successfully saves a thread", func(t *testing.T) {
+		id, err := repo.SaveThread(domain.Thread{
+			MemberID:      1,
+			Subject:       "Hello, BCO",
+			LastPosterID:  1,
+			FirstPostText: "It's me Roxy",
+			MemberIP:      "127.0.0.1",
+		})
+		require.NoError(t, err)
+
+		var subject string
+		err = connPool.QueryRow(context.Background(), "SELECT subject FROM thread WHERE id = $1", id).Scan(&subject)
+		require.NoError(t, err)
+
+		var body string
+		err = connPool.QueryRow(context.Background(), "SELECT body FROM thread_post WHERE thread_id = $1", id).Scan(&body)
+		require.NoError(t, err)
+
+		assert.Equal(t, "Hello, BCO", subject)
+		assert.Equal(t, "It's me Roxy", body)
+	})
 }
