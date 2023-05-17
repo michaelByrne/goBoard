@@ -54,8 +54,8 @@ func (s ThreadService) GetThreadByID(id int) (*domain.Thread, error) {
 	return thread, nil
 }
 
-func (s ThreadService) ListThreads(limit int) ([]domain.Thread, error) {
-	return s.threadRepo.ListThreads(limit)
+func (s ThreadService) ListThreads(limit, offset int) ([]domain.Thread, error) {
+	return s.threadRepo.ListThreads(limit, offset)
 }
 
 func (s ThreadService) NewThread(thread domain.Thread) (int, error) {

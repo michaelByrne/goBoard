@@ -1,0 +1,24 @@
+{{ define "main" }}
+    <head>
+        <link rel="stylesheet" href="/static/css/core.css">
+        <title>elitism. secrecy. tradition.</title>
+    </head>
+    <div id="content">
+        <div class="pad">
+            <div class="clear">
+                <div class="data">
+                {{ range . }}
+                    <div class="even">
+                        <ul class="list read">
+                            <li class="subject">
+                                <a href="/thread/{{ .ID }}">{{ .Subject }}</a>
+                            </li>
+                        </ul>
+                    </div>
+                {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{{ end }}

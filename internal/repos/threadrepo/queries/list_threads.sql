@@ -27,6 +27,8 @@ LEFT JOIN
 ON
     tp.id=t.first_post_id
 WHERE t.sticky IS false
+AND t.member_id = coalesce($3, t.member_id)
 ORDER BY
     t.date_last_posted DESC
 LIMIT $1
+OFFSET $2

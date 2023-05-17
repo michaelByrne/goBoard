@@ -13,6 +13,9 @@ import (
 //go:embed queries/list_threads.sql
 var listThreadsQuery string
 
+//go:embed queries/list_posts.sql
+var listPostsQuery string
+
 type ThreadRepo struct {
 	connPool *pgxpool.Pool
 }
@@ -82,9 +85,43 @@ func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
 	return &thread, nil
 }
 
-func (r ThreadRepo) ListThreads(limit int) ([]domain.Thread, error) {
+func (r ThreadRepo) ListThreads(limit, offset int) ([]domain.Thread, error) {
 	var threads []domain.Thread
-	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit)
+	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var thread domain.Thread
+		err := rows.Scan(
+			&thread.ID,
+			&thread.DateLastPosted,
+			&thread.MemberID,
+			&thread.MemberName,
+			&thread.LastPosterID,
+			&thread.LastPosterName,
+			&thread.Subject,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPostText,
+			&thread.Sticky,
+			&thread.Locked,
+			&thread.Legendary,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		threads = append(threads, thread)
+	}
+
+	return threads, nil
+}
+
+func (r ThreadRepo) ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error) {
+	var threads []domain.Thread
+	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,4 +189,27 @@ func (r ThreadRepo) DeleteThread(id int) error {
 	}
 
 	return nil
+}
+
+func (r ThreadRepo) ListPosts(limit, offset int) ([]domain.Post, error) {
+	var posts []domain.Post
+	var cidr pgtype.CIDR
+	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, offset, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var post domain.Post
+		err := rows.Scan(&post.ID, &post.Timestamp, &post.MemberID, &post.MemberName, &post.Text, &cidr, &post.ThreadSubject, &post.ThreadID, &post.IsAdmin)
+		if err != nil {
+			return nil, err
+		}
+
+		post.MemberIP = cidr.IPNet.String()
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
 }

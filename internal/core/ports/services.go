@@ -7,7 +7,7 @@ type ThreadService interface {
 	GetPostByID(id int) (*domain.Post, error)
 	GetPostsByThreadID(threadID int) ([]domain.Post, error)
 	GetThreadByID(id int) (*domain.Thread, error)
-	ListThreads(limit int) ([]domain.Thread, error)
+	ListThreads(limit, offset int) ([]domain.Thread, error)
 	NewThread(thread domain.Thread) (int, error)
 }
 

@@ -15,20 +15,26 @@ func NewHandler(threadService ports.ThreadService) *Handler {
 }
 
 func (h *Handler) Register(e *echo.Echo) {
-	e.GET("/threads/all/:limit", h.ListThreads)
+	e.GET("/threads/all", h.ListThreads)
 	e.GET("/threads/:id", h.GetThreadByID)
 	e.POST("/threads/posts", h.SavePost)
 	e.POST("/threads", h.NewThread)
 }
 
 func (h *Handler) ListThreads(ctx echo.Context) error {
-	limit, err := strconv.Atoi(ctx.Param("limit"))
+	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
 		return err
 	}
 
-	threads, err := h.threadService.ListThreads(limit)
+	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
+	if err != nil {
+		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+		return err
+	}
+
+	threads, err := h.threadService.ListThreads(limit, offset)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
 		return err
