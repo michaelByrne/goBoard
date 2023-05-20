@@ -25,7 +25,7 @@ func TestNewThreadRepo(t *testing.T) {
 			ThreadID: 1,
 			MemberID: 1,
 			MemberIP: "127.0.0.1/27",
-			Text:     "Hello, BCO",
+			Text:     "Eyes barfing emoji",
 		})
 		require.NoError(t, err)
 
@@ -33,7 +33,7 @@ func TestNewThreadRepo(t *testing.T) {
 		err = connPool.QueryRow(context.Background(), "SELECT body FROM thread_post WHERE id = $1", id).Scan(&body)
 		require.NoError(t, err)
 
-		assert.Equal(t, "Hello, BCO", body)
+		assert.Equal(t, "Eyes barfing emoji", body)
 
 		_, err = connPool.Exec(context.Background(), "DELETE FROM thread_post WHERE id = $1", id)
 		require.NoError(t, err)
@@ -146,9 +146,9 @@ func TestNewThreadRepo(t *testing.T) {
 		}
 
 		threads[0].Timestamp = nil
-		threads[0].DateLastPosted = ""
+		threads[0].DateLastPosted = nil
 		threads[1].Timestamp = nil
-		threads[1].DateLastPosted = ""
+		threads[1].DateLastPosted = nil
 
 		assert.Equal(t, expectedThreads, threads)
 	})
@@ -173,9 +173,20 @@ func TestNewThreadRepo(t *testing.T) {
 		}
 
 		threads[0].Timestamp = nil
-		threads[0].DateLastPosted = ""
+		threads[0].DateLastPosted = nil
 
 		assert.Equal(t, expectedThreads, threads)
+	})
+
+	t.Run("successfully lists all posts", func(t *testing.T) {
+		posts, err := repo.ListPosts(10, 0)
+		require.NoError(t, err)
+
+		require.Len(t, posts, 5)
+		assert.Equal(t, 1, posts[4].ID)
+		assert.Equal(t, "Attn. Roxy", posts[4].Text)
+		assert.Equal(t, 5, posts[0].ID)
+		assert.Equal(t, "small d democratic", posts[0].Text)
 	})
 
 	t.Run("successfully saves a thread", func(t *testing.T) {
@@ -198,16 +209,5 @@ func TestNewThreadRepo(t *testing.T) {
 
 		assert.Equal(t, "Hello, BCO", subject)
 		assert.Equal(t, "It's me Roxy", body)
-	})
-
-	t.Run("successfully lists all posts", func(t *testing.T) {
-		posts, err := repo.ListPosts(10, 0)
-		require.NoError(t, err)
-
-		require.Len(t, posts, 5)
-		assert.Equal(t, 1, posts[4].ID)
-		assert.Equal(t, "Attn. Roxy", posts[4].Text)
-		assert.Equal(t, 5, posts[0].ID)
-		assert.Equal(t, "small d democratic", posts[0].Text)
 	})
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,6 +15,16 @@ import (
 	"io"
 	"log"
 )
+
+//go:embed public/views/*.html
+var templateFiles embed.FS
+
+//
+////go:embed public/css/*.css
+//var cssFiles embed.FS
+//
+////go:embed public/js/*.js
+//var jsFiles embed.FS
 
 type Template struct {
 	templates *template.Template
@@ -32,7 +43,7 @@ func main() {
 
 	sugar := l.Sugar()
 
-	dbURI := "postgres://boardking:test@localhost:5432/board"
+	dbURI := "postgres://boardking:test@board-postgres:5432/board?sslmode=disable"
 	pool, err := pgxpool.Connect(context.Background(), dbURI)
 	if err != nil {
 		log.Fatal(err)
@@ -48,7 +59,7 @@ func main() {
 	//memberHandler := member.NewHandler(memberService)
 
 	t := &Template{
-		templates: template.Must(template.ParseGlob("public/views/*.html")),
+		templates: template.Must(template.ParseFS(templateFiles, "public/views/*.html")),
 	}
 
 	e := echo.New()

@@ -3,6 +3,7 @@ package thread
 import (
 	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/ports"
+	"strconv"
 )
 
 type TemplateHandler struct {
@@ -15,6 +16,7 @@ func NewTemplateHandler(threadService ports.ThreadService) *TemplateHandler {
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/threads/all", h.ListThreads)
+	e.GET("/thread/:id", h.ListPostsForThread)
 	e.GET("/ping", h.Ping)
 }
 
@@ -22,6 +24,7 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	threads, err := h.threadService.ListThreads(10, 0)
 	if err != nil {
 		c.String(500, err.Error())
+		return err
 	}
 
 	return c.Render(200, "main", threads)
@@ -29,4 +32,18 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 
 func (h *TemplateHandler) Ping(c echo.Context) error {
 	return c.Render(200, "ping", nil)
+}
+
+func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
+	threadID := c.Param("id")
+
+	idAsInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	posts, err := h.threadService.GetPostsByThreadID(idAsInt)
+
+	return c.Render(200, "posts", posts)
 }

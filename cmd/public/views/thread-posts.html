@@ -1,0 +1,30 @@
+{{ define "posts" }}
+    <head>
+        <link rel="stylesheet" href="/static/css/core.css">
+        <title>elitism. secrecy. tradition.</title>
+    </head>
+    <body>
+        <div class="content">
+            <div class="pad">
+                <div id="wrap_lb0697" class="clear">
+                    <div id="view_328688">
+                        {{ range . }}
+                            <div class="post">
+                                <ul class="view">
+                                    <li class="info even">
+                                        <div class="postinfo">
+                                            <a href="/member/view/{{ .MemberName }}" class="memberlink">Roxy</a> posted this on {{ .Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
+                                        </div>
+                                    </li>
+                                    <li class="postbody odd">
+                                        {{ .Text }}
+                                    </li>
+                                </ul>
+                            </div>
+                        {{ end }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+{{ end }}

@@ -59,7 +59,7 @@ func (t *Thread) FromDomain(thread domain.Thread) {
 	t.LastPosterName = thread.LastPosterName
 	t.LastPosterID = thread.LastPosterID
 	t.LastPostText = thread.LastPostText
-	t.DateLastPosted = thread.DateLastPosted
+	t.DateLastPosted = thread.DateLastPosted.String()
 	t.Sticky = thread.Sticky
 	t.Locked = thread.Locked
 	t.Legendary = thread.Legendary
@@ -96,6 +96,8 @@ func (p *Post) ToDomain() domain.Post {
 }
 
 func (t *Thread) ToDomain() domain.Thread {
+	dateLastPosted, _ := time.Parse("2006-01-02 15:04:05", t.DateLastPosted)
+
 	var thread domain.Thread
 	thread.ID = t.ID
 	thread.Subject = t.Subject
@@ -105,7 +107,7 @@ func (t *Thread) ToDomain() domain.Thread {
 	thread.LastPosterName = t.LastPosterName
 	thread.LastPosterID = t.LastPosterID
 	thread.LastPostText = t.LastPostText
-	thread.DateLastPosted = t.DateLastPosted
+	thread.DateLastPosted = &dateLastPosted
 	thread.Sticky = t.Sticky
 	thread.Locked = t.Locked
 	thread.Legendary = t.Legendary

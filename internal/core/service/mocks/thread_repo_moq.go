@@ -28,8 +28,11 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
 //				panic("mock out the GetThreadByID method")
 //			},
-//			ListThreadsFunc: func(limit int) ([]domain.Thread, error) {
+//			ListThreadsFunc: func(limit int, offset int) ([]domain.Thread, error) {
 //				panic("mock out the ListThreads method")
+//			},
+//			ListThreadsByMemberIDFunc: func(memberID int, limit int, offset int) ([]domain.Thread, error) {
+//				panic("mock out the ListThreadsByMemberID method")
 //			},
 //			SavePostFunc: func(post domain.Post) (int, error) {
 //				panic("mock out the SavePost method")
@@ -54,7 +57,10 @@ type ThreadRepoMock struct {
 	GetThreadByIDFunc func(id int) (*domain.Thread, error)
 
 	// ListThreadsFunc mocks the ListThreads method.
-	ListThreadsFunc func(limit int) ([]domain.Thread, error)
+	ListThreadsFunc func(limit int, offset int) ([]domain.Thread, error)
+
+	// ListThreadsByMemberIDFunc mocks the ListThreadsByMemberID method.
+	ListThreadsByMemberIDFunc func(memberID int, limit int, offset int) ([]domain.Thread, error)
 
 	// SavePostFunc mocks the SavePost method.
 	SavePostFunc func(post domain.Post) (int, error)
@@ -83,6 +89,17 @@ type ThreadRepoMock struct {
 		ListThreads []struct {
 			// Limit is the limit argument value.
 			Limit int
+			// Offset is the offset argument value.
+			Offset int
+		}
+		// ListThreadsByMemberID holds details about calls to the ListThreadsByMemberID method.
+		ListThreadsByMemberID []struct {
+			// MemberID is the memberID argument value.
+			MemberID int
+			// Limit is the limit argument value.
+			Limit int
+			// Offset is the offset argument value.
+			Offset int
 		}
 		// SavePost holds details about calls to the SavePost method.
 		SavePost []struct {
@@ -95,12 +112,13 @@ type ThreadRepoMock struct {
 			Thread domain.Thread
 		}
 	}
-	lockGetPostByID        sync.RWMutex
-	lockGetPostsByThreadID sync.RWMutex
-	lockGetThreadByID      sync.RWMutex
-	lockListThreads        sync.RWMutex
-	lockSavePost           sync.RWMutex
-	lockSaveThread         sync.RWMutex
+	lockGetPostByID           sync.RWMutex
+	lockGetPostsByThreadID    sync.RWMutex
+	lockGetThreadByID         sync.RWMutex
+	lockListThreads           sync.RWMutex
+	lockListThreadsByMemberID sync.RWMutex
+	lockSavePost              sync.RWMutex
+	lockSaveThread            sync.RWMutex
 }
 
 // GetPostByID calls GetPostByIDFunc.
@@ -200,19 +218,21 @@ func (mock *ThreadRepoMock) GetThreadByIDCalls() []struct {
 }
 
 // ListThreads calls ListThreadsFunc.
-func (mock *ThreadRepoMock) ListThreads(limit int) ([]domain.Thread, error) {
+func (mock *ThreadRepoMock) ListThreads(limit int, offset int) ([]domain.Thread, error) {
 	if mock.ListThreadsFunc == nil {
 		panic("ThreadRepoMock.ListThreadsFunc: method is nil but ThreadRepo.ListThreads was just called")
 	}
 	callInfo := struct {
-		Limit int
+		Limit  int
+		Offset int
 	}{
-		Limit: limit,
+		Limit:  limit,
+		Offset: offset,
 	}
 	mock.lockListThreads.Lock()
 	mock.calls.ListThreads = append(mock.calls.ListThreads, callInfo)
 	mock.lockListThreads.Unlock()
-	return mock.ListThreadsFunc(limit)
+	return mock.ListThreadsFunc(limit, offset)
 }
 
 // ListThreadsCalls gets all the calls that were made to ListThreads.
@@ -220,14 +240,56 @@ func (mock *ThreadRepoMock) ListThreads(limit int) ([]domain.Thread, error) {
 //
 //	len(mockedThreadRepo.ListThreadsCalls())
 func (mock *ThreadRepoMock) ListThreadsCalls() []struct {
-	Limit int
+	Limit  int
+	Offset int
 } {
 	var calls []struct {
-		Limit int
+		Limit  int
+		Offset int
 	}
 	mock.lockListThreads.RLock()
 	calls = mock.calls.ListThreads
 	mock.lockListThreads.RUnlock()
+	return calls
+}
+
+// ListThreadsByMemberID calls ListThreadsByMemberIDFunc.
+func (mock *ThreadRepoMock) ListThreadsByMemberID(memberID int, limit int, offset int) ([]domain.Thread, error) {
+	if mock.ListThreadsByMemberIDFunc == nil {
+		panic("ThreadRepoMock.ListThreadsByMemberIDFunc: method is nil but ThreadRepo.ListThreadsByMemberID was just called")
+	}
+	callInfo := struct {
+		MemberID int
+		Limit    int
+		Offset   int
+	}{
+		MemberID: memberID,
+		Limit:    limit,
+		Offset:   offset,
+	}
+	mock.lockListThreadsByMemberID.Lock()
+	mock.calls.ListThreadsByMemberID = append(mock.calls.ListThreadsByMemberID, callInfo)
+	mock.lockListThreadsByMemberID.Unlock()
+	return mock.ListThreadsByMemberIDFunc(memberID, limit, offset)
+}
+
+// ListThreadsByMemberIDCalls gets all the calls that were made to ListThreadsByMemberID.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListThreadsByMemberIDCalls())
+func (mock *ThreadRepoMock) ListThreadsByMemberIDCalls() []struct {
+	MemberID int
+	Limit    int
+	Offset   int
+} {
+	var calls []struct {
+		MemberID int
+		Limit    int
+		Offset   int
+	}
+	mock.lockListThreadsByMemberID.RLock()
+	calls = mock.calls.ListThreadsByMemberID
+	mock.lockListThreadsByMemberID.RUnlock()
 	return calls
 }
 

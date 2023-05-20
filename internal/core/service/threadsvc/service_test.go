@@ -3,12 +3,16 @@ package threadsvc
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/service/mocks"
 	"testing"
 )
 
 func TestNewThreadService(t *testing.T) {
+	l := zap.NewNop()
+	sugar := l.Sugar()
+
 	t.Run("successfully gets a thread by id", func(t *testing.T) {
 		mockRepo := &mocks.ThreadRepoMock{
 			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
@@ -27,7 +31,7 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		svc := NewThreadService(mockRepo)
+		svc := NewThreadService(mockRepo, sugar)
 
 		expectedThread := domain.Thread{
 			ID:      1,
@@ -57,7 +61,7 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		svc := NewThreadService(mockRepo)
+		svc := NewThreadService(mockRepo, sugar)
 
 		thread, err := svc.GetThreadByID(1)
 		require.Error(t, err)
@@ -76,7 +80,7 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		svc := NewThreadService(mockRepo)
+		svc := NewThreadService(mockRepo, sugar)
 
 		thread, err := svc.GetThreadByID(1)
 		require.Error(t, err)

@@ -1,6 +1,6 @@
 SELECT
     t.id as thread,
-    extract(epoch from t.date_last_posted) as date_last_posted,
+    t.date_last_posted,
     m.id,
     m.name,
     l.id as lastid,

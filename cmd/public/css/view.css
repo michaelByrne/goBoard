@@ -29,3 +29,7 @@
   padding: 10px;
   margin-bottom: 1px;
 }
+
+.info > .even {
+  background-color: whitesmoke;
+}

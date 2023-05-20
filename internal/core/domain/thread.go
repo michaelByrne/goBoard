@@ -13,7 +13,7 @@ type Thread struct {
 	LastPosterName string
 	LastPosterID   int
 	LastPostText   string
-	DateLastPosted string
+	DateLastPosted *time.Time
 	Sticky         bool
 	Locked         bool
 	Legendary      bool
