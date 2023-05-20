@@ -32,12 +32,8 @@ func (s ThreadService) GetPostByID(id int) (*domain.Post, error) {
 	return s.threadRepo.GetPostByID(id)
 }
 
-func (s ThreadService) GetPostsByThreadID(threadID int) ([]domain.Post, error) {
-	return s.threadRepo.GetPostsByThreadID(threadID)
-}
-
-func (s ThreadService) GetThreadByID(id int) (*domain.Thread, error) {
-	posts, err := s.threadRepo.GetPostsByThreadID(id)
+func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, error) {
+	posts, err := s.threadRepo.ListPostsForThread(limit, offset, id)
 	if err != nil {
 		s.logger.Errorf("error getting posts by thread id: %v", err)
 		return nil, err

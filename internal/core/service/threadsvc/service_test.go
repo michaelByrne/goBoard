@@ -21,7 +21,7 @@ func TestNewThreadService(t *testing.T) {
 					Subject: "Hello, BCO",
 				}, nil
 			},
-			GetPostsByThreadIDFunc: func(threadID int) ([]domain.Post, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.Post, error) {
 				return []domain.Post{
 					{
 						ID:   2,
@@ -44,26 +44,26 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		thread, err := svc.GetThreadByID(1)
+		thread, err := svc.GetThreadByID(1, 1, 1)
 		require.NoError(t, err)
 
-		assert.Len(t, mockRepo.GetPostsByThreadIDCalls(), 1)
+		assert.Len(t, mockRepo.ListPostsForThreadCalls(), 1)
 		assert.Len(t, mockRepo.GetThreadByIDCalls(), 1)
-		assert.Equal(t, 1, mockRepo.GetPostsByThreadIDCalls()[0].ThreadID)
+		assert.Equal(t, 1, mockRepo.ListPostsForThreadCalls()[0].ID)
 		assert.Equal(t, 1, mockRepo.GetThreadByIDCalls()[0].ID)
 		assert.Equal(t, &expectedThread, thread)
 	})
 
 	t.Run("should bail if thread posts call returns an error", func(t *testing.T) {
 		mockRepo := &mocks.ThreadRepoMock{
-			GetPostsByThreadIDFunc: func(threadID int) ([]domain.Post, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.Post, error) {
 				return nil, assert.AnError
 			},
 		}
 
 		svc := NewThreadService(mockRepo, sugar)
 
-		thread, err := svc.GetThreadByID(1)
+		thread, err := svc.GetThreadByID(1, 1, 1)
 		require.Error(t, err)
 
 		assert.Nil(t, thread)
@@ -75,14 +75,14 @@ func TestNewThreadService(t *testing.T) {
 			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
 				return nil, assert.AnError
 			},
-			GetPostsByThreadIDFunc: func(threadID int) ([]domain.Post, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.Post, error) {
 				return nil, nil
 			},
 		}
 
 		svc := NewThreadService(mockRepo, sugar)
 
-		thread, err := svc.GetThreadByID(1)
+		thread, err := svc.GetThreadByID(1, 1, 1)
 		require.Error(t, err)
 
 		assert.Nil(t, thread)

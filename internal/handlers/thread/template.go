@@ -2,6 +2,7 @@ package thread
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"goBoard/internal/core/ports"
 	"strconv"
 )
@@ -43,7 +44,13 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	posts, err := h.threadService.GetPostsByThreadID(idAsInt)
+	posts, err := h.threadService.GetThreadByID(10, 0, idAsInt)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	log.Infof("posts: %+v", posts)
 
 	return c.Render(200, "posts", posts)
 }

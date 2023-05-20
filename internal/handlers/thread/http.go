@@ -53,7 +53,7 @@ func (h *Handler) GetThreadByID(ctx echo.Context) error {
 		return err
 	}
 
-	thread, err := h.threadService.GetThreadByID(id)
+	thread, err := h.threadService.GetThreadByID(100, 100, id)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
 		return err

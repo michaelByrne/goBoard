@@ -52,29 +52,6 @@ func (r ThreadRepo) GetPostByID(id int) (*domain.Post, error) {
 	return &post, nil
 }
 
-func (r ThreadRepo) GetPostsByThreadID(threadID int) ([]domain.Post, error) {
-	var posts []domain.Post
-	var cidr pgtype.CIDR
-	rows, err := r.connPool.Query(context.Background(), "SELECT id, thread_Id, member_id, member_ip, body, date_posted FROM thread_post WHERE thread_id = $1", threadID)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var post domain.Post
-		err := rows.Scan(&post.ID, &post.ThreadID, &post.MemberID, &cidr, &post.Text, &post.Timestamp)
-		if err != nil {
-			return nil, err
-		}
-
-		post.MemberIP = cidr.IPNet.String()
-
-		posts = append(posts, post)
-	}
-
-	return posts, nil
-}
-
 func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
 	var thread domain.Thread
 	err := r.connPool.QueryRow(context.Background(), "SELECT id, subject, date_posted, member_id, views FROM thread WHERE id = $1", id).Scan(&thread.ID, &thread.Subject, &thread.Timestamp, &thread.MemberID, &thread.Views)
@@ -191,10 +168,10 @@ func (r ThreadRepo) DeleteThread(id int) error {
 	return nil
 }
 
-func (r ThreadRepo) ListPosts(limit, offset int) ([]domain.Post, error) {
+func (r ThreadRepo) ListPostsForThread(limit, offset, id int) ([]domain.Post, error) {
 	var posts []domain.Post
 	var cidr pgtype.CIDR
-	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, offset, nil)
+	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, offset, id)
 	if err != nil {
 		return nil, err
 	}

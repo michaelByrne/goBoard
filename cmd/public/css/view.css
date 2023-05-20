@@ -30,6 +30,13 @@
   margin-bottom: 1px;
 }
 
-.info > .even {
-  background-color: whitesmoke;
+.posthead {
+  background-color: #c3dae4;
+  color: #000000;
+  height: 15px;
+}
+
+.postbody {
+  background-color: #acccdb;
+  color: black;
 }

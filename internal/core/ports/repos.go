@@ -7,11 +7,11 @@ import "goBoard/internal/core/domain"
 type ThreadRepo interface {
 	SavePost(post domain.Post) (int, error)
 	GetPostByID(id int) (*domain.Post, error)
-	GetPostsByThreadID(threadID int) ([]domain.Post, error)
 	GetThreadByID(id int) (*domain.Thread, error)
 	ListThreads(limit, offset int) ([]domain.Thread, error)
 	ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error)
 	SaveThread(thread domain.Thread) (int, error)
+	ListPostsForThread(limit, offset, id int) ([]domain.Post, error)
 }
 
 type MemberRepo interface {

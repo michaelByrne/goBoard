@@ -22,11 +22,11 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			GetPostByIDFunc: func(id int) (*domain.Post, error) {
 //				panic("mock out the GetPostByID method")
 //			},
-//			GetPostsByThreadIDFunc: func(threadID int) ([]domain.Post, error) {
-//				panic("mock out the GetPostsByThreadID method")
-//			},
 //			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
 //				panic("mock out the GetThreadByID method")
+//			},
+//			ListPostsForThreadFunc: func(limit int, offset int, id int) ([]domain.Post, error) {
+//				panic("mock out the ListPostsForThread method")
 //			},
 //			ListThreadsFunc: func(limit int, offset int) ([]domain.Thread, error) {
 //				panic("mock out the ListThreads method")
@@ -50,11 +50,11 @@ type ThreadRepoMock struct {
 	// GetPostByIDFunc mocks the GetPostByID method.
 	GetPostByIDFunc func(id int) (*domain.Post, error)
 
-	// GetPostsByThreadIDFunc mocks the GetPostsByThreadID method.
-	GetPostsByThreadIDFunc func(threadID int) ([]domain.Post, error)
-
 	// GetThreadByIDFunc mocks the GetThreadByID method.
 	GetThreadByIDFunc func(id int) (*domain.Thread, error)
+
+	// ListPostsForThreadFunc mocks the ListPostsForThread method.
+	ListPostsForThreadFunc func(limit int, offset int, id int) ([]domain.Post, error)
 
 	// ListThreadsFunc mocks the ListThreads method.
 	ListThreadsFunc func(limit int, offset int) ([]domain.Thread, error)
@@ -75,13 +75,17 @@ type ThreadRepoMock struct {
 			// ID is the id argument value.
 			ID int
 		}
-		// GetPostsByThreadID holds details about calls to the GetPostsByThreadID method.
-		GetPostsByThreadID []struct {
-			// ThreadID is the threadID argument value.
-			ThreadID int
-		}
 		// GetThreadByID holds details about calls to the GetThreadByID method.
 		GetThreadByID []struct {
+			// ID is the id argument value.
+			ID int
+		}
+		// ListPostsForThread holds details about calls to the ListPostsForThread method.
+		ListPostsForThread []struct {
+			// Limit is the limit argument value.
+			Limit int
+			// Offset is the offset argument value.
+			Offset int
 			// ID is the id argument value.
 			ID int
 		}
@@ -113,8 +117,8 @@ type ThreadRepoMock struct {
 		}
 	}
 	lockGetPostByID           sync.RWMutex
-	lockGetPostsByThreadID    sync.RWMutex
 	lockGetThreadByID         sync.RWMutex
+	lockListPostsForThread    sync.RWMutex
 	lockListThreads           sync.RWMutex
 	lockListThreadsByMemberID sync.RWMutex
 	lockSavePost              sync.RWMutex
@@ -153,38 +157,6 @@ func (mock *ThreadRepoMock) GetPostByIDCalls() []struct {
 	return calls
 }
 
-// GetPostsByThreadID calls GetPostsByThreadIDFunc.
-func (mock *ThreadRepoMock) GetPostsByThreadID(threadID int) ([]domain.Post, error) {
-	if mock.GetPostsByThreadIDFunc == nil {
-		panic("ThreadRepoMock.GetPostsByThreadIDFunc: method is nil but ThreadRepo.GetPostsByThreadID was just called")
-	}
-	callInfo := struct {
-		ThreadID int
-	}{
-		ThreadID: threadID,
-	}
-	mock.lockGetPostsByThreadID.Lock()
-	mock.calls.GetPostsByThreadID = append(mock.calls.GetPostsByThreadID, callInfo)
-	mock.lockGetPostsByThreadID.Unlock()
-	return mock.GetPostsByThreadIDFunc(threadID)
-}
-
-// GetPostsByThreadIDCalls gets all the calls that were made to GetPostsByThreadID.
-// Check the length with:
-//
-//	len(mockedThreadRepo.GetPostsByThreadIDCalls())
-func (mock *ThreadRepoMock) GetPostsByThreadIDCalls() []struct {
-	ThreadID int
-} {
-	var calls []struct {
-		ThreadID int
-	}
-	mock.lockGetPostsByThreadID.RLock()
-	calls = mock.calls.GetPostsByThreadID
-	mock.lockGetPostsByThreadID.RUnlock()
-	return calls
-}
-
 // GetThreadByID calls GetThreadByIDFunc.
 func (mock *ThreadRepoMock) GetThreadByID(id int) (*domain.Thread, error) {
 	if mock.GetThreadByIDFunc == nil {
@@ -214,6 +186,46 @@ func (mock *ThreadRepoMock) GetThreadByIDCalls() []struct {
 	mock.lockGetThreadByID.RLock()
 	calls = mock.calls.GetThreadByID
 	mock.lockGetThreadByID.RUnlock()
+	return calls
+}
+
+// ListPostsForThread calls ListPostsForThreadFunc.
+func (mock *ThreadRepoMock) ListPostsForThread(limit int, offset int, id int) ([]domain.Post, error) {
+	if mock.ListPostsForThreadFunc == nil {
+		panic("ThreadRepoMock.ListPostsForThreadFunc: method is nil but ThreadRepo.ListPostsForThread was just called")
+	}
+	callInfo := struct {
+		Limit  int
+		Offset int
+		ID     int
+	}{
+		Limit:  limit,
+		Offset: offset,
+		ID:     id,
+	}
+	mock.lockListPostsForThread.Lock()
+	mock.calls.ListPostsForThread = append(mock.calls.ListPostsForThread, callInfo)
+	mock.lockListPostsForThread.Unlock()
+	return mock.ListPostsForThreadFunc(limit, offset, id)
+}
+
+// ListPostsForThreadCalls gets all the calls that were made to ListPostsForThread.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListPostsForThreadCalls())
+func (mock *ThreadRepoMock) ListPostsForThreadCalls() []struct {
+	Limit  int
+	Offset int
+	ID     int
+} {
+	var calls []struct {
+		Limit  int
+		Offset int
+		ID     int
+	}
+	mock.lockListPostsForThread.RLock()
+	calls = mock.calls.ListPostsForThread
+	mock.lockListPostsForThread.RUnlock()
 	return calls
 }
 

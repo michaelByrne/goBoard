@@ -67,36 +67,6 @@ func TestNewThreadRepo(t *testing.T) {
 		assert.Equal(t, &expectedPost, post)
 	})
 
-	t.Run("successfully gets posts by thread id", func(t *testing.T) {
-		posts, err := repo.GetPostsByThreadID(1)
-		require.NoError(t, err)
-		require.Len(t, posts, 2)
-
-		expectedPosts := []domain.Post{
-			{
-				ID:        1,
-				Timestamp: nil,
-				MemberID:  1,
-				MemberIP:  "127.0.0.1/32",
-				ThreadID:  1,
-				Text:      "Attn. Roxy",
-			},
-			{
-				ID:        2,
-				Timestamp: nil,
-				MemberID:  1,
-				MemberIP:  "127.0.0.2/32",
-				ThreadID:  1,
-				Text:      "WCFRP",
-			},
-		}
-
-		posts[0].Timestamp = nil
-		posts[1].Timestamp = nil
-
-		assert.Equal(t, expectedPosts, posts)
-	})
-
 	t.Run("successfully gets a thread by id", func(t *testing.T) {
 		thread, err := repo.GetThreadByID(1)
 		require.NoError(t, err)
@@ -178,15 +148,15 @@ func TestNewThreadRepo(t *testing.T) {
 		assert.Equal(t, expectedThreads, threads)
 	})
 
-	t.Run("successfully lists all posts", func(t *testing.T) {
-		posts, err := repo.ListPosts(10, 0)
+	t.Run("successfully lists posts by thread id", func(t *testing.T) {
+		posts, err := repo.ListPostsForThread(10, 0, 1)
 		require.NoError(t, err)
 
-		require.Len(t, posts, 5)
-		assert.Equal(t, 1, posts[4].ID)
-		assert.Equal(t, "Attn. Roxy", posts[4].Text)
-		assert.Equal(t, 5, posts[0].ID)
-		assert.Equal(t, "small d democratic", posts[0].Text)
+		require.Len(t, posts, 2)
+		assert.Equal(t, 1, posts[1].ID)
+		assert.Equal(t, "Attn. Roxy", posts[1].Text)
+		assert.Equal(t, 2, posts[0].ID)
+		assert.Equal(t, "WCFRP", posts[0].Text)
 	})
 
 	t.Run("successfully saves a thread", func(t *testing.T) {

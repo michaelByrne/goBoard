@@ -19,7 +19,7 @@ LEFT JOIN
 ON
     t.id = tp.thread_id
 WHERE
-    tp.member_id = coalesce($3, tp.member_id)
-ORDER BY tp.date_posted DESC
+    tp.thread_id = coalesce($3, tp.thread_id)
+ORDER BY tp.date_posted ASC
 OFFSET $2
 LIMIT $1

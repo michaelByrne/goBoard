@@ -4,16 +4,16 @@
         <title>elitism. secrecy. tradition.</title>
     </head>
     <body>
-        <div class="content">
+        <div id="content">
             <div class="pad">
                 <div id="wrap_lb0697" class="clear">
                     <div id="view_328688">
-                        {{ range . }}
+                        {{ range .Posts }}
                             <div class="post">
                                 <ul class="view">
-                                    <li class="info even">
+                                    <li class="info even posthead">
                                         <div class="postinfo">
-                                            <a href="/member/view/{{ .MemberName }}" class="memberlink">Roxy</a> posted this on {{ .Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
+                                            <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a> posted this on {{ .Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
                                         </div>
                                     </li>
                                     <li class="postbody odd">
