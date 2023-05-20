@@ -59,7 +59,11 @@ func main() {
 	//memberHandler := member.NewHandler(memberService)
 
 	t := &Template{
-		templates: template.Must(template.ParseFS(templateFiles, "public/views/*.html")),
+		templates: template.Must(template.New("t").Funcs(template.FuncMap{
+			"add": func(a, b int) int {
+				return a + b
+			},
+		}).ParseFS(templateFiles, "public/views/*.html")),
 	}
 
 	e := echo.New()

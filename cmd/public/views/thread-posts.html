@@ -8,12 +8,15 @@
             <div class="pad">
                 <div id="wrap_lb0697" class="clear">
                     <div id="view_328688">
-                        {{ range .Posts }}
+                        {{ range $i, $p := .Posts }}
                             <div class="post">
                                 <ul class="view">
                                     <li class="info even posthead">
                                         <div class="postinfo">
-                                            <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a> posted this on {{ .Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
+                                            <a href="/member/view/{{ $p.MemberName }}" class="memberlink">{{ $p.MemberName }}</a> posted this on {{ $p.Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
+                                        </div>
+                                        <div class="count">
+                                           #{{ add $i 1 }}
                                         </div>
                                     </li>
                                     <li class="postbody odd">
