@@ -58,7 +58,11 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 		return nil, err
 	}
 
-	thread.Posts = posts
+	for idx, post := range posts {
+		postPtr := &post
+		postPtr.ThreadPosition = idx + 1
+		thread.Posts = append(thread.Posts, *postPtr)
+	}
 
 	return thread, nil
 }

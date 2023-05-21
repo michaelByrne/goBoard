@@ -36,7 +36,15 @@ func (r ThreadRepo) SavePost(post domain.Post) (int, error) {
 func (r ThreadRepo) GetPostByID(id int) (*domain.Post, error) {
 	var post domain.Post
 	var cidr pgtype.CIDR
-	err := r.connPool.QueryRow(context.Background(), "SELECT id, thread_Id, member_id, member_ip, body, date_posted FROM thread_post WHERE id = $1", id).Scan(&post.ID, &post.ThreadID, &post.MemberID, &cidr, &post.Text, &post.Timestamp)
+	var err = r.connPool.QueryRow(context.Background(), "SELECT thread_post.id, thread_Id, member_id, m.name, member_ip, body, date_posted FROM thread_post LEFT JOIN member m on m.id = thread_post.member_id WHERE thread_post.id = $1", id).Scan(
+		&post.ID,
+		&post.ThreadID,
+		&post.MemberID,
+		&post.MemberName,
+		&cidr,
+		&post.Text,
+		&post.Timestamp,
+	)
 	if err != nil {
 		return nil, err
 	}

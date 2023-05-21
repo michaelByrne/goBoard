@@ -1,0 +1,1 @@
+ALTER TABLE thread_post ADD COLUMN thread_position NUMERIC;

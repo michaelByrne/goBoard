@@ -32,7 +32,7 @@ function capture_submit(form,ajax)
   {
     if(window.completed){
       console.log('completed')
-      $(form).ajaxSubmit({ target: response, beforeSubmit: validate, success: completed });
+      $(form).ajaxSubmit({ target: response, beforeSubmit: validate, success: completed, dataType: 'json' });
     }
     else
     $(form).ajaxSubmit({ target: response, beforeSubmit: validate });

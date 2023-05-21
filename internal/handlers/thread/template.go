@@ -21,6 +21,7 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/", h.ListThreads)
 	e.GET("/thread/:id", h.ListPostsForThread)
+	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
 	e.POST("/thread/reply", h.ThreadReply)
 }
@@ -48,13 +49,41 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	posts, err := h.threadService.GetThreadByID(10, 0, idAsInt)
+	posts, err := h.threadService.GetThreadByID(100, 0, idAsInt)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
 	return c.Render(200, "posts", posts)
+}
+
+func (h *TemplateHandler) Post(c echo.Context) error {
+	postID := c.Param("id")
+
+	idAsInt, err := strconv.Atoi(postID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	position := c.Param("position")
+
+	positionAsInt, err := strconv.Atoi(position)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	post, err := h.threadService.GetPostByID(idAsInt)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	post.ThreadPosition = positionAsInt
+
+	return c.Render(200, "post", post)
 }
 
 func (h *TemplateHandler) ThreadReply(c echo.Context) error {
@@ -76,11 +105,21 @@ func (h *TemplateHandler) ThreadReply(c echo.Context) error {
 
 	ip := c.RealIP()
 
-	_, err = h.threadService.NewPost(body, ip, author, threadIDAsInt)
+	postID, err := h.threadService.NewPost(body, ip, author, threadIDAsInt)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
-	return c.String(200, "ThreadReply")
+	return c.JSON(200, NewPostResponse{
+		PostID: postID,
+	})
+}
+
+type GenericResponse struct {
+	Message string `json:"message"`
+}
+
+type NewPostResponse struct {
+	PostID int `json:"post_id"`
 }

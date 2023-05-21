@@ -24,7 +24,7 @@ func TestNewThreadRepo(t *testing.T) {
 		id, err := repo.SavePost(domain.Post{
 			ThreadID: 1,
 			MemberID: 1,
-			MemberIP: "127.0.0.1/27",
+			MemberIP: "127.0.0.1",
 			Text:     "Eyes barfing emoji",
 		})
 		require.NoError(t, err)
@@ -54,12 +54,13 @@ func TestNewThreadRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		expectedPost := domain.Post{
-			ID:        1,
-			Timestamp: nil,
-			MemberID:  1,
-			MemberIP:  "127.0.0.1/32",
-			ThreadID:  1,
-			Text:      "Attn. Roxy",
+			ID:         1,
+			Timestamp:  nil,
+			MemberID:   1,
+			MemberIP:   "127.0.0.1/32",
+			ThreadID:   1,
+			Text:       "Attn. Roxy",
+			MemberName: "admin",
 		}
 
 		post.Timestamp = nil
@@ -153,10 +154,10 @@ func TestNewThreadRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Len(t, posts, 2)
-		assert.Equal(t, 1, posts[1].ID)
-		assert.Equal(t, "Attn. Roxy", posts[1].Text)
-		assert.Equal(t, 2, posts[0].ID)
-		assert.Equal(t, "WCFRP", posts[0].Text)
+		assert.Equal(t, 2, posts[1].ID)
+		assert.Equal(t, "Attn. Roxy", posts[0].Text)
+		assert.Equal(t, 1, posts[0].ID)
+		assert.Equal(t, "WCFRP", posts[1].Text)
 	})
 
 	t.Run("successfully saves a thread", func(t *testing.T) {

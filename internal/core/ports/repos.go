@@ -14,6 +14,8 @@ type ThreadRepo interface {
 	ListPostsForThread(limit, offset, id int) ([]domain.Post, error)
 }
 
+//go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo
+
 type MemberRepo interface {
 	SaveMember(member domain.Member) (int, error)
 	GetMemberByID(id int) (*domain.Member, error)

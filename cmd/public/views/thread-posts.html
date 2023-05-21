@@ -9,70 +9,56 @@
             <div class="pad">
                 <div class="clear">
                     <h3>{{ .Subject }}</h3>
-                    <div id="view_328688">
-                        <ul class="nav top">
-                            <div class="setdown">
-                                <li>
-                                    <a href="/">threads</a>
-                                </li>
-                            </div>
-                        </ul>
+                    <ul class="nav top">
+                        <div class="setdown">
+                            <li>
+                                <a href="/">threads</a>
+                            </li>
+                        </div>
+                    </ul>
+                    {{ $CurrentPosition := 0}}
+                    <div id="view_{{ .ID }}">
                         {{ range $i, $p := .Posts }}
-                            <div class="post">
-                                <ul class="view">
-                                    <li class="info even posthead">
-                                        <script>
-                                            $(document).ready(function() {
-                                                $("#{{ $p.ID }}_quote").click(function() {
-                                                    quote_post({{ $p.ID }});
-                                                });
-                                            });
-                                        </script>
-                                        <div id="post_info_{{ $p.ID }}" class="postinfo">
-                                            <a href="/member/view/{{ $p.MemberName }}" class="memberlink">{{ $p.MemberName }}</a> posted this on {{ $p.Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
-                                        </div>
-                                        <div class="controls">
-                                            &nbsp;»
-                                            <a href="javascript:" id="{{ $p.ID }}_quote" >quote</a>
-                                        </div>
-                                        <div class="count">
-                                           #{{ add $i 1 }}
-                                        </div>
-                                    </li>
-                                    <li id="post_body_{{ $p.ID }}" class="postbody odd">
-                                        {{ .Text }}
-                                    </li>
-                                </ul>
-                            </div>
+                           {{ template "post" $p }}
+                           {{ $CurrentPosition = $i }}
                         {{ end }}
-                        <form method="post" name="form" id="form" class="coreform" action="/thread/reply" onsubmit="return capture_submit(this, true);">
-                            <input type="hidden" name="thread_id" value="{{ .ID }}">
-                            <fieldset>
-                                <legend>reply</legend>
-                                <ol>
-                                    <li>
-                                        <label id="label_body" for="body">Body: </label>
-                                        <textarea id="body" name="body" style="float: left; height: 100px; width: 500px;"></textarea>
-                                        <label for="member_name">Member Name:</label>
-                                        <textarea id="member_name" name="member_name" style="float: left; height: 20px; width: 200px;"></textarea>
-                                        <div class="clear"></div>
-                                    </li>
-                                </ol>
-                            </fieldset>
-                            <input type="submit" class="submit" value="say that shit" id="submit">
-                        </form>
-                        <script type="text/javascript">
-                            function completed(data)
-                            {
-                                if(jQuery.trim(data) === "")
-                                {
-                                    loadposts('thread',false);
-                                    e('form').reset();
-                                }
-                                $('.submit').attr('disabled',false);
-                            }
-                        </script>
                     </div>
+                    <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
+                        <input type="hidden" name="thread_id" value="{{ .ID }}">
+                        <fieldset>
+                            <legend>reply</legend>
+                            <ol>
+                                <li>
+                                    <label id="label_body" for="body">Body: </label>
+                                    <textarea id="body" name="body" style="float: left; height: 100px; width: 500px;"></textarea>
+                                    <label for="member_name">Member Name:</label>
+                                    <textarea id="member_name" name="member_name" style="float: left; height: 20px; width: 200px;"></textarea>
+                                    <div class="clear"></div>
+                                </li>
+                            </ol>
+                        </fieldset>
+                        <input type="submit" class="submit" value="say that shit" id="submit">
+                    </form>
+                    <script type="text/javascript">
+                        document.forms['form'].addEventListener('submit', (event) => {
+                            event.preventDefault();
+                            fetch(event.target.action, {
+                                method: 'POST',
+                                body: new URLSearchParams(new FormData(event.target)) // event.target is the form
+                            }).then((response) => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json(); // or response.text() or whatever the server sends
+                            }).then((body) => {
+                                {{ $CurrentPosition = add $CurrentPosition 1 }}
+                                loadposts('thread', false, body.post_id, {{ $CurrentPosition }})
+                                $('.submit').attr('disabled',false);
+                            }).catch((error) => {
+                                // TODO handle error
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>

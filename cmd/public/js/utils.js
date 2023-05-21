@@ -80,7 +80,7 @@ function uncollapser(type,media,count)
   });
 };
 
-function loadposts(type,ob)
+function loadposts(type,ob,pid, currentPosition)
 {
   if(ob)
   {
@@ -89,15 +89,18 @@ function loadposts(type,ob)
   }
   data = $('.post:last')[0].id.split('_');
   id = data[1];
-  lastpost = parseInt(data[data.length-1]);
+  lastpost = parseInt(data[data.length-2]);
+  lastposition = parseInt(data[data.length-1]);
   $.ajax(
   {
-    url: '/'+type+'/view/'+id+'/'+lastpost+'/&ajax=true',
+    url: '/post/'+pid+'/'+currentPosition,
     cache: false,
     success: function(html)
              {
                $('#view_'+id).append(html);
-               if(html) $(document).scrollTop($(document).height()+500);
+               $('.post:last').attr('id','view_'+id+'_'+pid+'_'+(currentPosition+1));
+               $('.post:last').find('.count').text('#' + (currentPosition + 1));
+               $('textarea').val('')
                if(ob) ob.innerHTML = ob.save;
              }
   });
