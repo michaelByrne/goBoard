@@ -8,18 +8,31 @@ import (
 
 type ThreadService struct {
 	threadRepo ports.ThreadRepo
+	memberRepo ports.MemberRepo
 	logger     *zap.SugaredLogger
 }
 
-func NewThreadService(postRepo ports.ThreadRepo, logger *zap.SugaredLogger) ThreadService {
+func NewThreadService(postRepo ports.ThreadRepo, memberREpo ports.MemberRepo, logger *zap.SugaredLogger) ThreadService {
 	return ThreadService{
 		threadRepo: postRepo,
 		logger:     logger,
+		memberRepo: memberREpo,
 	}
 }
 
-func (s ThreadService) Save(post domain.Post) (int, error) {
-	id, err := s.threadRepo.SavePost(post)
+func (s ThreadService) NewPost(body, ip, memberName string, threadID int) (int, error) {
+	memberID, err := s.memberRepo.GetMemberIDByUsername(memberName)
+	if err != nil {
+		s.logger.Errorf("error getting member id by username: %v", err)
+		return 0, err
+	}
+
+	id, err := s.threadRepo.SavePost(domain.Post{
+		Text:     body,
+		MemberIP: ip,
+		ThreadID: threadID,
+		MemberID: memberID,
+	})
 	if err != nil {
 		s.logger.Errorf("error saving post: %v", err)
 		return 0, err

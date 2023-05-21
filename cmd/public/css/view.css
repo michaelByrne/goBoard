@@ -40,3 +40,8 @@
   background-color: #acccdb;
   color: black;
 }
+
+.top li {
+  background-color: #c3dae4;
+  border-top: 3px solid #acccdb;
+}

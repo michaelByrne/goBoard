@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"goBoard/internal/core/domain"
-	"net"
 )
 
 //go:embed queries/list_threads.sql
@@ -25,13 +24,8 @@ func NewThreadRepo(pool *pgxpool.Pool) ThreadRepo {
 }
 
 func (r ThreadRepo) SavePost(post domain.Post) (int, error) {
-	ip, _, err := net.ParseCIDR(post.MemberIP)
-	if err != nil {
-		return 0, err
-	}
-
 	var id int
-	err = r.connPool.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", post.ThreadID, post.MemberID, ip, post.Text).Scan(&id)
+	err := r.connPool.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", post.ThreadID, post.MemberID, post.MemberIP, post.Text).Scan(&id)
 	if err != nil {
 		return 0, err
 	}

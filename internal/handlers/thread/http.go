@@ -17,7 +17,6 @@ func NewHandler(threadService ports.ThreadService) *Handler {
 func (h *Handler) Register(e *echo.Echo) {
 	e.GET("/threads/all", h.ListThreads)
 	e.GET("/threads/:id", h.GetThreadByID)
-	e.POST("/threads/posts", h.SavePost)
 	e.POST("/threads", h.NewThread)
 }
 
@@ -65,22 +64,23 @@ func (h *Handler) GetThreadByID(ctx echo.Context) error {
 	return ctx.JSON(200, threadOut)
 }
 
-func (h *Handler) SavePost(ctx echo.Context) error {
-	post := &Post{}
-	err := ctx.Bind(post)
-	if err != nil {
-		ctx.JSON(400, ErrorResponse{Message: err.Error()})
-		return err
-	}
-
-	id, err := h.threadService.Save(post.ToDomain())
-	if err != nil {
-		ctx.JSON(500, ErrorResponse{Message: err.Error()})
-		return err
-	}
-
-	return ctx.JSON(200, ID{id})
-}
+//
+//func (h *Handler) SavePost(ctx echo.Context) error {
+//	post := &Post{}
+//	err := ctx.Bind(post)
+//	if err != nil {
+//		ctx.JSON(400, ErrorResponse{Message: err.Error()})
+//		return err
+//	}
+//
+//	id, err := h.threadService.Save(post.ToDomain())
+//	if err != nil {
+//		ctx.JSON(500, ErrorResponse{Message: err.Error()})
+//		return err
+//	}
+//
+//	return ctx.JSON(200, ID{id})
+//}
 
 func (h *Handler) NewThread(c echo.Context) error {
 	thread := &Thread{}

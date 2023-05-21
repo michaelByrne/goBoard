@@ -28,3 +28,7 @@ func (s MemberService) Save(member domain.Member) (int, error) {
 func (s MemberService) GetMemberByID(id int) (*domain.Member, error) {
 	return s.memberRepo.GetMemberByID(id)
 }
+
+func (s MemberService) GetMemberIDByUsername(username string) (int, error) {
+	return s.memberRepo.GetMemberIDByUsername(username)
+}

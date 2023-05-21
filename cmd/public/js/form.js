@@ -19,6 +19,7 @@ function validate(data,form,options)
   });
   if(window.custom_validate) res = custom_validate();
   if(res) $('#'+id+' input[type=submit]').not('.nodisable').attr('disabled',true);
+  console.log('validate',res)
   return res;
 }
 
@@ -29,7 +30,10 @@ function capture_submit(form,ajax)
   if(!ajax) return validate(false,form,false);
   else
   {
-    if(window.completed) $(form).ajaxSubmit({ target: response, beforeSubmit: validate, success: completed });
+    if(window.completed){
+      console.log('completed')
+      $(form).ajaxSubmit({ target: response, beforeSubmit: validate, success: completed });
+    }
     else
     $(form).ajaxSubmit({ target: response, beforeSubmit: validate });
   }

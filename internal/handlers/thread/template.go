@@ -2,23 +2,27 @@ package thread
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"goBoard/internal/core/ports"
 	"strconv"
 )
 
 type TemplateHandler struct {
 	threadService ports.ThreadService
+	memberService ports.MemberService
 }
 
-func NewTemplateHandler(threadService ports.ThreadService) *TemplateHandler {
-	return &TemplateHandler{threadService}
+func NewTemplateHandler(threadService ports.ThreadService, memberService ports.MemberService) *TemplateHandler {
+	return &TemplateHandler{
+		threadService: threadService,
+		memberService: memberService,
+	}
 }
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
-	e.GET("/threads/all", h.ListThreads)
+	e.GET("/", h.ListThreads)
 	e.GET("/thread/:id", h.ListPostsForThread)
 	e.GET("/ping", h.Ping)
+	e.POST("/thread/reply", h.ThreadReply)
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -50,7 +54,33 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	log.Infof("posts: %+v", posts)
-
 	return c.Render(200, "posts", posts)
+}
+
+func (h *TemplateHandler) ThreadReply(c echo.Context) error {
+	values, err := c.FormParams()
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	threadID := values.Get("thread_id")
+	threadIDAsInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	author := values.Get("member_name")
+	body := values.Get("body")
+
+	ip := c.RealIP()
+
+	_, err = h.threadService.NewPost(body, ip, author, threadIDAsInt)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.String(200, "ThreadReply")
 }

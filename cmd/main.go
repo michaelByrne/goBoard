@@ -8,8 +8,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
+	"goBoard/internal/core/service/membersvc"
 	"goBoard/internal/core/service/threadsvc"
 	"goBoard/internal/handlers/thread"
+	"goBoard/internal/repos/memberrepo"
 	"goBoard/internal/repos/threadrepo"
 	"html/template"
 	"io"
@@ -49,14 +51,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	memberRepo := memberrepo.NewMemberRepo(pool)
+	memberService := membersvc.NewMemberService(memberRepo, sugar)
+
 	threadRepo := threadrepo.NewThreadRepo(pool)
-	threadService := threadsvc.NewThreadService(threadRepo, sugar)
-	//threadHandler := thread.NewHandler(threadService)
-	threadTemplateHandler := thread.NewTemplateHandler(threadService)
-	//
-	//memberRepo := memberrepo.NewMemberRepo(pool)
-	//memberService := membersvc.NewMemberService(memberRepo, sugar)
-	//memberHandler := member.NewHandler(memberService)
+	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar)
+
+	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService)
 
 	t := &Template{
 		templates: template.Must(template.New("t").Funcs(template.FuncMap{
@@ -71,9 +72,6 @@ func main() {
 	e.Renderer = t
 
 	e.Use(middleware.CORS())
-
-	//threadHandler.Register(e)
-	//memberHandler.Register(e)
 
 	threadTemplateHandler.Register(e)
 

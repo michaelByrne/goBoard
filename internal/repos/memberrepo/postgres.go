@@ -39,3 +39,13 @@ func (m MemberRepo) GetMemberByID(id int) (*domain.Member, error) {
 
 	return &member, nil
 }
+
+func (m MemberRepo) GetMemberIDByUsername(username string) (int, error) {
+	var id int
+	err := m.connPool.QueryRow(context.Background(), "SELECT id FROM member WHERE name = $1", username).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
