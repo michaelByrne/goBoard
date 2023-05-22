@@ -22,6 +22,9 @@ var _ ports.MemberRepo = &MemberRepoMock{}
 //			GetMemberByIDFunc: func(id int) (*domain.Member, error) {
 //				panic("mock out the GetMemberByID method")
 //			},
+//			GetMemberByUsernameFunc: func(username string) (*domain.Member, error) {
+//				panic("mock out the GetMemberByUsername method")
+//			},
 //			GetMemberIDByUsernameFunc: func(username string) (int, error) {
 //				panic("mock out the GetMemberIDByUsername method")
 //			},
@@ -38,6 +41,9 @@ type MemberRepoMock struct {
 	// GetMemberByIDFunc mocks the GetMemberByID method.
 	GetMemberByIDFunc func(id int) (*domain.Member, error)
 
+	// GetMemberByUsernameFunc mocks the GetMemberByUsername method.
+	GetMemberByUsernameFunc func(username string) (*domain.Member, error)
+
 	// GetMemberIDByUsernameFunc mocks the GetMemberIDByUsername method.
 	GetMemberIDByUsernameFunc func(username string) (int, error)
 
@@ -51,6 +57,11 @@ type MemberRepoMock struct {
 			// ID is the id argument value.
 			ID int
 		}
+		// GetMemberByUsername holds details about calls to the GetMemberByUsername method.
+		GetMemberByUsername []struct {
+			// Username is the username argument value.
+			Username string
+		}
 		// GetMemberIDByUsername holds details about calls to the GetMemberIDByUsername method.
 		GetMemberIDByUsername []struct {
 			// Username is the username argument value.
@@ -63,6 +74,7 @@ type MemberRepoMock struct {
 		}
 	}
 	lockGetMemberByID         sync.RWMutex
+	lockGetMemberByUsername   sync.RWMutex
 	lockGetMemberIDByUsername sync.RWMutex
 	lockSaveMember            sync.RWMutex
 }
@@ -96,6 +108,38 @@ func (mock *MemberRepoMock) GetMemberByIDCalls() []struct {
 	mock.lockGetMemberByID.RLock()
 	calls = mock.calls.GetMemberByID
 	mock.lockGetMemberByID.RUnlock()
+	return calls
+}
+
+// GetMemberByUsername calls GetMemberByUsernameFunc.
+func (mock *MemberRepoMock) GetMemberByUsername(username string) (*domain.Member, error) {
+	if mock.GetMemberByUsernameFunc == nil {
+		panic("MemberRepoMock.GetMemberByUsernameFunc: method is nil but MemberRepo.GetMemberByUsername was just called")
+	}
+	callInfo := struct {
+		Username string
+	}{
+		Username: username,
+	}
+	mock.lockGetMemberByUsername.Lock()
+	mock.calls.GetMemberByUsername = append(mock.calls.GetMemberByUsername, callInfo)
+	mock.lockGetMemberByUsername.Unlock()
+	return mock.GetMemberByUsernameFunc(username)
+}
+
+// GetMemberByUsernameCalls gets all the calls that were made to GetMemberByUsername.
+// Check the length with:
+//
+//	len(mockedMemberRepo.GetMemberByUsernameCalls())
+func (mock *MemberRepoMock) GetMemberByUsernameCalls() []struct {
+	Username string
+} {
+	var calls []struct {
+		Username string
+	}
+	mock.lockGetMemberByUsername.RLock()
+	calls = mock.calls.GetMemberByUsername
+	mock.lockGetMemberByUsername.RUnlock()
 	return calls
 }
 

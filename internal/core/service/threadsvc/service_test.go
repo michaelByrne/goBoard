@@ -126,4 +126,36 @@ func TestNewThreadService(t *testing.T) {
 
 		assert.Equal(t, expectedPostArg, actualPostArg)
 	})
+
+	t.Run("successfully saves a new thread", func(t *testing.T) {
+		expectedThreadArg := domain.Thread{
+			MemberIP:      "127.0.0.1",
+			MemberID:      1,
+			Subject:       "Hello, BCO",
+			FirstPostText: "Attn Roxy",
+			LastPosterID:  1,
+		}
+
+		actualThreadArg := domain.Thread{}
+
+		mockMemberRepo := &mocks.MemberRepoMock{
+			GetMemberIDByUsernameFunc: func(username string) (int, error) {
+				return 1, nil
+			},
+		}
+
+		mockThreadRepo := &mocks.ThreadRepoMock{
+			SaveThreadFunc: func(thread domain.Thread) (int, error) {
+				actualThreadArg = thread
+				return 1, nil
+			},
+		}
+
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+
+		_, err := svc.NewThread("gofreescout", "127.0.0.1", "Attn Roxy", "Hello, BCO")
+		require.NoError(t, err)
+
+		assert.Equal(t, expectedThreadArg, actualThreadArg)
+	})
 }

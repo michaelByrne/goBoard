@@ -9,7 +9,7 @@
             <div class="pad">
                 <div class="clear">
                     <h3>{{ .Subject }}</h3>
-                    {{template "top-nav"}}
+                    {{template "topnav"}}
                     {{ $CurrentPosition := 0}}
                     <div id="view_{{ .ID }}">
                         {{ range $i, $p := .Posts }}
