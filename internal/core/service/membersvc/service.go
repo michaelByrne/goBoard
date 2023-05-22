@@ -32,3 +32,7 @@ func (s MemberService) GetMemberByID(id int) (*domain.Member, error) {
 func (s MemberService) GetMemberIDByUsername(username string) (int, error) {
 	return s.memberRepo.GetMemberIDByUsername(username)
 }
+
+func (s MemberService) GetMemberByUsername(username string) (*domain.Member, error) {
+	return s.memberRepo.GetMemberByUsername(username)
+}

@@ -17,8 +17,12 @@ type Member struct {
 	Secret      string `json:"secret"`
 	PostalCode  string `json:"postal_code"`
 	Banned      bool   `json:"banned"`
+	DateJoined	string `json:"date_joined"`
 	FirstPosted string `json:"first_posted"`
 	LastPosted  string `json:"last_posted"`
+	LastView	string `json:"last_view"`
+	TotalThreads int `json:"total_threads"`
+	TotalThreadPosts int `json:"total_thread_posts"`
 	IP          string `json:"ip"`
 }
 

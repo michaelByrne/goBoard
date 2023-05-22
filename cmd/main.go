@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"goBoard/internal/core/service/membersvc"
+	"goBoard/internal/handlers/member"
 	"goBoard/internal/core/service/threadsvc"
 	"goBoard/internal/handlers/thread"
 	"goBoard/internal/repos/memberrepo"
@@ -53,10 +54,10 @@ func main() {
 
 	memberRepo := memberrepo.NewMemberRepo(pool)
 	memberService := membersvc.NewMemberService(memberRepo, sugar)
-
 	threadRepo := threadrepo.NewThreadRepo(pool)
 	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar)
 
+	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
 	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService)
 
 	t := &Template{
@@ -74,6 +75,7 @@ func main() {
 	e.Use(middleware.CORS())
 
 	threadTemplateHandler.Register(e)
+	memberTemplateHandler.Register(e)
 
 	e.Static("/static", "public")
 
