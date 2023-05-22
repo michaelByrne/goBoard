@@ -87,10 +87,10 @@ function loadposts(type,ob,pid, currentPosition)
     if(!ob.save) ob.save = ob.innerHTML;
     ob.innerHTML = "loading...";
   }
-  data = $('.post:last')[0].id.split('_');
-  id = data[1];
-  lastpost = parseInt(data[data.length-2]);
-  lastposition = parseInt(data[data.length-1]);
+  let data = $('.post:last')[0].id.split('_');
+  let id = data[1];
+  let lastpost = parseInt(data[data.length - 2]);
+  let lastposition = parseInt(data[data.length - 1]);
   $.ajax(
   {
     url: '/post/'+pid+'/'+currentPosition,

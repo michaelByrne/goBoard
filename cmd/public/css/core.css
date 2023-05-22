@@ -42,4 +42,8 @@ h5 { font-size: 1.2em; }
 a {
     color: #000000;
 }
+
+.hr {
+  background-color: #c3dae4;
+}
 /* End Base Styles */

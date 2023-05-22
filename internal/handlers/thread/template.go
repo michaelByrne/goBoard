@@ -20,10 +20,12 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/", h.ListThreads)
-	e.GET("/thread/:id", h.ListPostsForThread)
+	e.GET("/thread/list/:id", h.ListPostsForThread)
 	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
 	e.POST("/thread/reply", h.ThreadReply)
+	e.POST("/thread/create", h.CreateThread)
+	e.GET("/thread/create", h.NewThread)
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -116,10 +118,37 @@ func (h *TemplateHandler) ThreadReply(c echo.Context) error {
 	})
 }
 
+func (h *TemplateHandler) NewThread(c echo.Context) error {
+	return c.Render(200, "newthread", nil)
+}
+
+func (h *TemplateHandler) CreateThread(c echo.Context) error {
+	body := c.FormValue("body")
+	subject := c.FormValue("subject")
+
+	ip := c.RealIP()
+
+	author := c.FormValue("member")
+
+	threadID, err := h.threadService.NewThread(author, ip, body, subject)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.JSON(200, NewThreadResponse{
+		ThreadID: threadID,
+	})
+}
+
 type GenericResponse struct {
 	Message string `json:"message"`
 }
 
 type NewPostResponse struct {
 	PostID int `json:"post_id"`
+}
+
+type NewThreadResponse struct {
+	ThreadID int `json:"thread_id"`
 }

@@ -71,12 +71,26 @@ func (s ThreadService) ListThreads(limit, offset int) ([]domain.Thread, error) {
 	return s.threadRepo.ListThreads(limit, offset)
 }
 
-func (s ThreadService) NewThread(thread domain.Thread) (int, error) {
-	id, err := s.threadRepo.SaveThread(thread)
+func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (int, error) {
+	id, err := s.memberRepo.GetMemberIDByUsername(memberName)
+	if err != nil {
+		s.logger.Errorf("error getting member id by username: %v", err)
+		return 0, err
+	}
+
+	thread := domain.Thread{
+		Subject:       subject,
+		FirstPostText: body,
+		MemberID:      id,
+		LastPosterID:  id,
+		MemberIP:      memberIP,
+	}
+
+	threadID, err := s.threadRepo.SaveThread(thread)
 	if err != nil {
 		s.logger.Errorf("error saving thread: %v", err)
 		return 0, err
 	}
 
-	return id, nil
+	return threadID, nil
 }
