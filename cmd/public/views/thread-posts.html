@@ -9,13 +9,7 @@
             <div class="pad">
                 <div class="clear">
                     <h3>{{ .Subject }}</h3>
-                    <ul class="nav top">
-                        <div class="setdown">
-                            <li>
-                                <a href="/">threads</a>
-                            </li>
-                        </div>
-                    </ul>
+                    {{template "top-nav"}}
                     {{ $CurrentPosition := 0}}
                     <div id="view_{{ .ID }}">
                         {{ range $i, $p := .Posts }}
