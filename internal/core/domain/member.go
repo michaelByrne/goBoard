@@ -7,8 +7,12 @@ type Member struct {
 	Name        string
 	Pass        string
 	Secret      string
+	DateJoined  *time.Time
 	FirstPosted *time.Time
 	LastPosted  *time.Time
+	LastView	*time.Time
+	TotalThreads int
+	TotalThreadPosts int
 	Email       string
 	PostalCode  string
 	Banned      bool

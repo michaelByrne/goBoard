@@ -49,3 +49,16 @@ func (m MemberRepo) GetMemberIDByUsername(username string) (int, error) {
 
 	return id, nil
 }
+
+func (m MemberRepo) GetMemberByUsername(username string) (*domain.Member, error) {
+	var member domain.Member
+	var ip pgtype.CIDR
+	err := m.connPool.QueryRow(context.Background(), "SELECT id, name, pass, secret, email_signup, postalcode, ip, date_joined, date_first_post, last_post, last_view, total_threads, total_thread_posts FROM member WHERE name = $1", username).Scan(&member.ID, &member.Name, &member.Pass, &member.Secret, &member.Email, &member.PostalCode, &ip, &member.DateJoined, &member.FirstPosted, &member.LastPosted, &member.LastView, &member.TotalThreads, &member.TotalThreadPosts)
+	if err != nil {
+		return nil, err
+	}
+
+	member.IP = ip.IPNet.String()
+
+	return &member, nil
+}

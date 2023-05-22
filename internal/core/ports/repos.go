@@ -20,4 +20,5 @@ type MemberRepo interface {
 	SaveMember(member domain.Member) (int, error)
 	GetMemberByID(id int) (*domain.Member, error)
 	GetMemberIDByUsername(username string) (int, error)
+	GetMemberByUsername(username string) (*domain.Member, error)
 }
