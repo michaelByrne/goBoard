@@ -3,10 +3,11 @@ package threadrepo
 import (
 	"context"
 	_ "embed"
+	"goBoard/internal/core/domain"
+
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"goBoard/internal/core/domain"
 )
 
 //go:embed queries/list_threads.sql
@@ -64,11 +65,11 @@ func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
 	return &thread, nil
 }
 
-func (r ThreadRepo) ListThreads(limit, offset int) ([]domain.Thread, error) {
+func (r ThreadRepo) ListThreads(limit, offset int) (domain.ThreadPage, error) {
 	var threads []domain.Thread
 	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
 	if err != nil {
-		return nil, err
+		return domain.ThreadPage{}, err
 	}
 
 	for rows.Next() {
@@ -89,13 +90,14 @@ func (r ThreadRepo) ListThreads(limit, offset int) ([]domain.Thread, error) {
 			&thread.Legendary,
 		)
 		if err != nil {
-			return nil, err
+			return domain.ThreadPage{}, err
 		}
 
 		threads = append(threads, thread)
 	}
+	threadPage := domain.ThreadPage{Threads: threads}
 
-	return threads, nil
+	return threadPage, nil
 }
 
 func (r ThreadRepo) ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error) {

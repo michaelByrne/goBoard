@@ -12,7 +12,7 @@
             <div class="clear"></div>
                 {{template "topnav"}}
             <div class="data">
-                {{ range . }}
+                {{ range .Threads }}
                 <div>
                     <ul class="list read" id="list_l56761">
                         <li class="readbar" onclick="testClick()">&nbsp;</li>
@@ -20,7 +20,7 @@
                             <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a>
                         </li>
                         <li class="subject">
-                            <a href="/thread/list/{{ .ID }}">{{ .Subject }}</a>
+                            <a href="/thread/view/{{ .ID }}">{{ .Subject }}</a>
                         </li>
                         <li class="posts">
                             {{ .NumPosts }}
@@ -35,6 +35,7 @@
             </div>
         </div>
     </div>
+    {{template "bottom-nav" .}}
 </div>
 </body>
 
