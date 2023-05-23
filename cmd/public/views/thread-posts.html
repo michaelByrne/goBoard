@@ -5,56 +5,67 @@
         <title>elitism. secrecy. tradition.</title>
     </head>
     <body>
-        <div id="content">
-            <div class="pad">
-                <div class="clear">
-                    <h3>{{ .Subject }}</h3>
-                    {{template "topnav"}}
-                    {{ $CurrentPosition := 0}}
-                    <div id="view_{{ .ID }}">
-                        {{ range $i, $p := .Posts }}
-                           {{ template "post" $p }}
-                           {{ $CurrentPosition = $i }}
-                        {{ end }}
-                    </div>
-                    <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
-                        <input type="hidden" name="thread_id" value="{{ .ID }}">
-                        <fieldset>
-                            <legend>reply</legend>
-                            <ol>
-                                <li>
-                                    <label id="label_body" for="body">Body: </label>
-                                    <textarea id="body" name="body" style="float: left; height: 100px; width: 500px;"></textarea>
-                                    <label for="member_name">Member Name:</label>
-                                    <textarea id="member_name" name="member_name" style="float: left; height: 20px; width: 200px;"></textarea>
-                                    <div class="clear"></div>
-                                </li>
-                            </ol>
-                        </fieldset>
-                        <input type="submit" class="submit" value="say that shit" id="submit">
-                    </form>
-                    <script type="text/javascript">
-                        document.forms['form'].addEventListener('submit', (event) => {
-                            event.preventDefault();
-                            fetch(event.target.action, {
-                                method: 'POST',
-                                body: new URLSearchParams(new FormData(event.target)) // event.target is the form
-                            }).then((response) => {
-                                if (!response.ok) {
-                                    throw new Error(`HTTP error! Status: ${response.status}`);
-                                }
-                                return response.json(); // or response.text() or whatever the server sends
-                            }).then((body) => {
-                                {{ $CurrentPosition = add $CurrentPosition 1 }}
-                                loadposts('thread', false, body.post_id, {{ $CurrentPosition }})
-                                $('.submit').attr('disabled',false);
-                            }).catch((error) => {
-                                // TODO handle error
-                            });
-                        });
-                    </script>
+    <div id="content">
+        <div class="pad">
+            <div class="clear">
+                <h3>{{ .Subject }}</h3>
+                {{template "topnav"}}
+                {{ $CurrentPosition := 0}}
+                <div id="view_{{ .ID }}">
+                    {{ range $i, $p := .Posts }}
+                        {{ template "post" $p }}
+                        {{ $CurrentPosition = $i }}
+                    {{ end }}
                 </div>
+                <ul class="nav bottom clear shiftup"></ul>
+                <div class="clear"></div>
+                <div id="response_form"></div>
+                <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
+                    <input type="hidden" name="thread_id" value="{{ .ID }}">
+                    <input type="hidden" name="position" value="{{ add $CurrentPosition 2 }}">
+                    <fieldset>
+                        <legend>reply</legend>
+                        <ol>
+                            <li>
+                                <label id="label_body" for="body">Body: </label>
+                                <textarea id="body" name="body"
+                                          style="float: left; height: 100px; width: 500px;"></textarea>
+                                <label for="member_name">Member Name:</label>
+                                <textarea id="member_name" name="member_name"
+                                          style="float: left; height: 20px; width: 200px;"></textarea>
+                                <div class="clear"></div>
+                            </li>
+                        </ol>
+                    </fieldset>
+                    <input type="submit" class="submit" value="say that shit" id="submit">
+                    <input type="button" name="preview" id="preview" value="preview">
+                </form>
+                <script type="text/javascript">
+                    document.getElementById('preview').addEventListener('click', (event) => {
+                        showPreview(new URLSearchParams(new FormData(event.target.form)))
+                    })
+                    document.forms['form'].addEventListener('submit', (event) => {
+                        event.preventDefault();
+                        fetch(event.target.action, {
+                            method: 'POST',
+                            body: new URLSearchParams(new FormData(event.target)) // event.target is the form
+                        }).then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json(); // or response.text() or whatever the server sends
+                        }).then((body) => {
+                            {{ $CurrentPosition = add $CurrentPosition 1 }}
+                            loadposts('thread', false, body.post_id, {{ $CurrentPosition }})
+                            $('.submit').attr('disabled', false);
+                            $('#response_form').html('');
+                        }).catch((error) => {
+                            // TODO handle error
+                        });
+                    });
+                </script>
             </div>
         </div>
+    </div>
     </body>
 {{ end }}
