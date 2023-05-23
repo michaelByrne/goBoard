@@ -1,0 +1,11 @@
+{{define "bottom-nav"}}
+    <ul class="nav bottom clear">
+        <li><a href="/thread/list">back to the shit</a></li>
+        {{if eq .PageNum 1}}
+            <li><a href="/thread/list">« prev</a></li>
+        {{else if gt .PageNum 1}}
+            <li><a href="/thread/list/{{add .PageNum -1 }}">« prev</a></li>
+        {{end}}
+        <li><a href="/thread/list/{{add .PageNum 1 }}">next »</a></li>
+    </ul>
+{{end}}

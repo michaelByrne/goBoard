@@ -1,9 +1,10 @@
 package thread
 
 import (
-	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/ports"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
 type TemplateHandler struct {
@@ -19,8 +20,10 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 }
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
-	e.GET("/", h.ListThreads)
-	e.GET("/thread/list/:id", h.ListPostsForThread)
+	e.GET("/", h.ListFirstPageThreads)
+	e.GET("/thread/list", h.ListFirstPageThreads)
+	e.GET("/thread/list/:page", h.ListThreads)
+	e.GET("/thread/view/:id", h.ListPostsForThread)
 	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
 	e.POST("/thread/reply", h.ThreadReply)
@@ -28,14 +31,32 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/thread/create", h.NewThread)
 }
 
-func (h *TemplateHandler) ListThreads(c echo.Context) error {
-	threads, err := h.threadService.ListThreads(10, 0)
+func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
+	threadListLength := 100
+	threadPage, err := h.threadService.ListThreads(threadListLength, 0)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
+	threadPage.PageNum = 0
+	return c.Render(200, "main", threadPage)
+}
 
-	return c.Render(200, "main", threads)
+func (h *TemplateHandler) ListThreads(c echo.Context) error {
+	threadListLength := 100
+	pageNum, err := strconv.Atoi(c.Param("page"))
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+	offset := pageNum * threadListLength
+	threadPage, err := h.threadService.ListThreads(threadListLength, offset)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+	threadPage.PageNum = pageNum
+	return c.Render(200, "main", threadPage)
 }
 
 func (h *TemplateHandler) Ping(c echo.Context) error {

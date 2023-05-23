@@ -1,9 +1,10 @@
 package thread
 
 import (
-	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/ports"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -33,16 +34,13 @@ func (h *Handler) ListThreads(ctx echo.Context) error {
 		return err
 	}
 
-	threads, err := h.threadService.ListThreads(limit, offset)
+	threadList, err := h.threadService.ListThreads(limit, offset)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
 		return err
 	}
 
-	threadsOut := &Threads{}
-	threadsOut.FromDomain(threads)
-
-	return ctx.JSON(200, threadsOut)
+	return ctx.JSON(200, threadList)
 }
 
 func (h *Handler) GetThreadByID(ctx echo.Context) error {

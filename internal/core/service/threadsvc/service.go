@@ -1,9 +1,10 @@
 package threadsvc
 
 import (
-	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+
+	"go.uber.org/zap"
 )
 
 type ThreadService struct {
@@ -12,11 +13,11 @@ type ThreadService struct {
 	logger     *zap.SugaredLogger
 }
 
-func NewThreadService(postRepo ports.ThreadRepo, memberREpo ports.MemberRepo, logger *zap.SugaredLogger) ThreadService {
+func NewThreadService(postRepo ports.ThreadRepo, memberRepo ports.MemberRepo, logger *zap.SugaredLogger) ThreadService {
 	return ThreadService{
 		threadRepo: postRepo,
 		logger:     logger,
-		memberRepo: memberREpo,
+		memberRepo: memberRepo,
 	}
 }
 
@@ -67,7 +68,7 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 	return thread, nil
 }
 
-func (s ThreadService) ListThreads(limit, offset int) ([]domain.Thread, error) {
+func (s ThreadService) ListThreads(limit, offset int) (domain.ThreadPage, error) {
 	return s.threadRepo.ListThreads(limit, offset)
 }
 
