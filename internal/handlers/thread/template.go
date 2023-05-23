@@ -1,10 +1,11 @@
 package thread
 
 import (
+	"github.com/labstack/echo/v4"
+	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
-
-	"github.com/labstack/echo/v4"
+	"time"
 )
 
 type TemplateHandler struct {
@@ -29,6 +30,7 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.POST("/thread/reply", h.ThreadReply)
 	e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
+	e.POST("/thread/previewpost", h.PreviewPost)
 }
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
@@ -163,6 +165,43 @@ func (h *TemplateHandler) CreateThread(c echo.Context) error {
 	return c.JSON(200, NewThreadResponse{
 		ThreadID: threadID,
 	})
+}
+
+func (h *TemplateHandler) PreviewPost(c echo.Context) error {
+	values, err := c.FormParams()
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	body := values.Get("body")
+	threadID := values.Get("thread_id")
+	position := values.Get("position")
+	author := values.Get("member_name")
+
+	threadIDAsInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	positionAsInt, err := strconv.Atoi(position)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	now := time.Now()
+
+	post := domain.Post{
+		Text:           body,
+		MemberName:     author,
+		ThreadID:       threadIDAsInt,
+		ThreadPosition: positionAsInt,
+		Timestamp:      &now,
+	}
+
+	return c.Render(200, "post", post)
 }
 
 type GenericResponse struct {
