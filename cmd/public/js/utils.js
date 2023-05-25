@@ -67,43 +67,39 @@ function uncollapser(type, media, count) {
         });
 };
 
-function loadposts(type, ob, pid, currentPosition) {
+const loadPosts = (type, ob, pid) => {
     if (ob) {
         if (!ob.save) ob.save = ob.innerHTML;
         ob.innerHTML = "loading...";
     }
     let data = $('.post:last')[0].id.split('_');
     let id = data[1];
-    let lastpost = parseInt(data[data.length - 2]);
-    let lastposition = parseInt(data[data.length - 1]);
-    $.ajax(
-        {
-            url: '/post/' + pid + '/' + currentPosition,
-            cache: false,
-            success: function (html) {
-                $('#view_' + id).append(html);
-                $('.post:last').attr('id', 'view_' + id + '_' + pid + '_' + (currentPosition + 1));
-                $('.post:last').find('.count').text('#' + (currentPosition + 1));
-                $('textarea').val('')
-                if (ob) ob.innerHTML = ob.save;
-            }
-        });
-};
+    let lastPosition = parseInt(data[data.length - 1]);
 
-function preview_post(form, type, id) {
-    $('#' + form).ajaxSubmit(
-        {
-            target: '#response_' + form,
-            beforeSubmit: validate,
-            url: '/' + type + '/previewpost/' + id,
-            success: function () {
-                $('.submit').attr('disabled', false);
-            }
-        });
+    fetch('/post/' + pid + '/' + lastPosition, {
+        method: 'GET',
+        cache: 'no-cache',
+    }).then((res) => {
+        if (!res.ok) {
+            throw new Error(`Network response was not ok ${res.status}`);
+        }
+        return res.text()
+    }).then(html => {
+        $('#view_' + id).append(html);
+        $('.post:last').attr('id', 'view_' + id + '_' + pid + '_' + (lastPosition + 1));
+        $('.post:last').find('.count').text('#' + (lastPosition + 1));
+        $('textarea').val('')
+        if (ob) ob.innerHTML = ob.save;
+    }).catch((error) => {
+        $('#response_form').html('<div class="error">Error: ' + error + '</div>');
+    })
 };
 
 const showPreview = (post) => {
-    fetch('/thread/previewpost', {
+    let data = $('.post:last')[0].id.split('_');
+    let lastPosition = parseInt(data[data.length - 1]);
+
+    fetch('/thread/previewpost/' + lastPosition, {
         method: 'POST',
         body: post
     }).then((res) => {
@@ -114,6 +110,38 @@ const showPreview = (post) => {
     }).then(html => {
         $('#response_form').html(html);
     })
+}
+
+const captureSubmit = (event) => {
+    event.preventDefault();
+    fetch(event.target.action, {
+        method: 'POST',
+        body: new URLSearchParams(new FormData(event.target)) // event.target is the form
+    }).then((response) => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json(); // or response.text() or whatever the server sends
+    }).then(({post_id}) => {
+        $('#response_form').html('');
+        loadPosts('thread', false, post_id)
+        $('.submit').attr('disabled', false);
+    }).catch((error) => {
+        // TODO handle error
+    });
+}
+
+const doCollapse = (maxViewablePosts, minPostsToHide) => {
+    let post = $('.post')
+    if (post.length > maxViewablePosts) {
+        $(post.slice(0, minPostsToHide).hide());
+        $('#uncollapse').show();
+    }
+}
+
+const uncollapse = () => {
+    $('.post').show();
+    $('#uncollapse').hide();
 }
 
 function quote_post(id) {

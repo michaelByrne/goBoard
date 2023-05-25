@@ -46,3 +46,7 @@
 }
 .even, .odd { clear: both; }
 #noresults { padding: 2em; }
+
+#uncollapse {
+  cursor: pointer;
+}

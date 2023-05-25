@@ -12,6 +12,7 @@
                 {{template "topnav"}}
                 {{ $CurrentPosition := 0}}
                 <div id="view_{{ .ID }}">
+                    <div id="uncollapse" class="postbody odd collapse" hidden>show previous 10 threads</div>
                     {{ range $i, $p := .Posts }}
                         {{ template "post" $p }}
                         {{ $CurrentPosition = $i }}
@@ -22,7 +23,6 @@
                 <div id="response_form"></div>
                 <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
                     <input type="hidden" name="thread_id" value="{{ .ID }}">
-                    <input type="hidden" name="position" value="{{ add $CurrentPosition 2 }}">
                     <fieldset>
                         <legend>reply</legend>
                         <ol>
@@ -44,25 +44,11 @@
                     document.getElementById('preview').addEventListener('click', (event) => {
                         showPreview(new URLSearchParams(new FormData(event.target.form)))
                     })
-                    document.forms['form'].addEventListener('submit', (event) => {
-                        event.preventDefault();
-                        fetch(event.target.action, {
-                            method: 'POST',
-                            body: new URLSearchParams(new FormData(event.target)) // event.target is the form
-                        }).then((response) => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! Status: ${response.status}`);
-                            }
-                            return response.json(); // or response.text() or whatever the server sends
-                        }).then((body) => {
-                            {{ $CurrentPosition = add $CurrentPosition 1 }}
-                            loadposts('thread', false, body.post_id, {{ $CurrentPosition }})
-                            $('.submit').attr('disabled', false);
-                            $('#response_form').html('');
-                        }).catch((error) => {
-                            // TODO handle error
-                        });
-                    });
+                    document.forms['form'].addEventListener('submit', captureSubmit);
+                    e('uncollapse').addEventListener('click', uncollapse)
+                    $(document).ready(() => {
+                        doCollapse(15, 10);
+                    })
                 </script>
             </div>
         </div>
