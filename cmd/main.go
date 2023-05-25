@@ -9,8 +9,8 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"goBoard/internal/core/service/membersvc"
-	"goBoard/internal/handlers/member"
 	"goBoard/internal/core/service/threadsvc"
+	"goBoard/internal/handlers/member"
 	"goBoard/internal/handlers/thread"
 	"goBoard/internal/repos/memberrepo"
 	"goBoard/internal/repos/threadrepo"
@@ -60,6 +60,8 @@ func main() {
 	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
 	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService)
 
+	threadHTTPHandler := thread.NewHandler(threadService)
+
 	t := &Template{
 		templates: template.Must(template.New("t").Funcs(template.FuncMap{
 			"add": func(a, b int) int {
@@ -76,6 +78,7 @@ func main() {
 
 	threadTemplateHandler.Register(e)
 	memberTemplateHandler.Register(e)
+	threadHTTPHandler.Register(e)
 
 	e.Static("/static", "public")
 
