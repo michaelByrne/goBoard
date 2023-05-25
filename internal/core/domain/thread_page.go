@@ -1,6 +1,7 @@
 package domain
 
 type ThreadPage struct {
-	PageNum int
-	Threads []Thread
+	PageNum    int
+	TotalPages int
+	Threads    []Thread
 }

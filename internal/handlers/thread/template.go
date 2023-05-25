@@ -50,6 +50,7 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		c.String(500, err.Error())
 		return err
 	}
+
 	offset := pageNum * threadListLength
 	siteContext, err := h.threadService.ListThreads(threadListLength, offset)
 	if err != nil {
