@@ -1,9 +1,10 @@
 package membersvc
 
 import (
-	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+
+	"go.uber.org/zap"
 )
 
 type MemberService struct {
@@ -33,6 +34,6 @@ func (s MemberService) GetMemberIDByUsername(username string) (int, error) {
 	return s.memberRepo.GetMemberIDByUsername(username)
 }
 
-func (s MemberService) GetMemberByUsername(username string) (*domain.Member, error) {
+func (s MemberService) GetMemberByUsername(username string) (*domain.SiteContext, error) {
 	return s.memberRepo.GetMemberByUsername(username)
 }

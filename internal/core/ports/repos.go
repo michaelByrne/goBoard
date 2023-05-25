@@ -8,7 +8,7 @@ type ThreadRepo interface {
 	SavePost(post domain.Post) (int, error)
 	GetPostByID(id int) (*domain.Post, error)
 	GetThreadByID(id int) (*domain.Thread, error)
-	ListThreads(limit, offset int) (domain.ThreadPage, error)
+	ListThreads(limit, offset int) (*domain.SiteContext, error)
 	ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error)
 	SaveThread(thread domain.Thread) (int, error)
 	ListPostsForThread(limit, offset, id int) ([]domain.Post, error)
@@ -20,5 +20,5 @@ type MemberRepo interface {
 	SaveMember(member domain.Member) (int, error)
 	GetMemberByID(id int) (*domain.Member, error)
 	GetMemberIDByUsername(username string) (int, error)
-	GetMemberByUsername(username string) (*domain.Member, error)
+	GetMemberByUsername(username string) (*domain.SiteContext, error)
 }

@@ -33,13 +33,14 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 	threadListLength := 100
-	threadPage, err := h.threadService.ListThreads(threadListLength, 0)
+	siteContext, err := h.threadService.ListThreads(threadListLength, 0)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
-	threadPage.PageNum = 0
-	return c.Render(200, "main", threadPage)
+	siteContext.ThreadPage.PageNum = 0
+	siteContext.PageName = "main"
+	return c.Render(200, "main", siteContext)
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -50,13 +51,14 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		return err
 	}
 	offset := pageNum * threadListLength
-	threadPage, err := h.threadService.ListThreads(threadListLength, offset)
+	siteContext, err := h.threadService.ListThreads(threadListLength, offset)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
-	threadPage.PageNum = pageNum
-	return c.Render(200, "main", threadPage)
+	siteContext.ThreadPage.PageNum = pageNum
+	siteContext.PageName = "main"
+	return c.Render(200, "main", siteContext)
 }
 
 func (h *TemplateHandler) Ping(c echo.Context) error {

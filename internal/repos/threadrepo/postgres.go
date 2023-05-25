@@ -65,11 +65,11 @@ func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
 	return &thread, nil
 }
 
-func (r ThreadRepo) ListThreads(limit, offset int) (domain.ThreadPage, error) {
+func (r ThreadRepo) ListThreads(limit, offset int) (*domain.SiteContext, error) {
 	var threads []domain.Thread
 	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
 	if err != nil {
-		return domain.ThreadPage{}, err
+		return nil, err
 	}
 
 	for rows.Next() {
@@ -90,14 +90,15 @@ func (r ThreadRepo) ListThreads(limit, offset int) (domain.ThreadPage, error) {
 			&thread.Legendary,
 		)
 		if err != nil {
-			return domain.ThreadPage{}, err
+			return nil, err
 		}
 
 		threads = append(threads, thread)
 	}
 	threadPage := domain.ThreadPage{Threads: threads}
+	siteContext := &domain.SiteContext{ThreadPage: threadPage}
 
-	return threadPage, nil
+	return siteContext, nil
 }
 
 func (r ThreadRepo) ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error) {

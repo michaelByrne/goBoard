@@ -1,9 +1,10 @@
 package member
 
 import (
-	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/ports"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -59,16 +60,13 @@ func (h *Handler) GetMemberByID(ctx echo.Context) error {
 func (h *Handler) GetMemberByUsername(ctx echo.Context) error {
 	username := ctx.Param("username")
 
-	member, err := h.memberService.GetMemberByUsername(username)
+	siteContext, err := h.memberService.GetMemberByUsername(username)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
 		return err
 	}
 
-	memberOut := &Member{}
-	memberOut.FromDomain(*member)
-
-	return ctx.JSON(200, memberOut)
+	return ctx.JSON(200, siteContext)
 }
 
 type ErrorResponse struct {
