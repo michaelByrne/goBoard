@@ -40,7 +40,14 @@ func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 	}
 	siteContext.ThreadPage.PageNum = 0
 	siteContext.PageName = "main"
-	return c.Render(200, "main", siteContext)
+
+	err = c.Render(200, "main", siteContext)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -81,7 +88,13 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	return c.Render(200, "posts", posts)
+	err = c.Render(200, "posts", posts)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (h *TemplateHandler) Post(c echo.Context) error {
