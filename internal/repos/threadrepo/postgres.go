@@ -13,6 +13,9 @@ import (
 //go:embed queries/list_threads.sql
 var listThreadsQuery string
 
+//go:embed queries/count_threads.sql
+var countThreadsQuery string
+
 //go:embed queries/list_posts.sql
 var listPostsQuery string
 
@@ -65,11 +68,12 @@ func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
 	return &thread, nil
 }
 
-func (r ThreadRepo) ListThreads(limit, offset int) (domain.ThreadPage, error) {
+func (r ThreadRepo) ListThreads(limit, offset int) (*domain.ThreadPage, error) {
 	var threads []domain.Thread
+	threadPage := &domain.ThreadPage{}
 	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
 	if err != nil {
-		return domain.ThreadPage{}, err
+		return nil, err
 	}
 
 	for rows.Next() {
@@ -90,12 +94,22 @@ func (r ThreadRepo) ListThreads(limit, offset int) (domain.ThreadPage, error) {
 			&thread.Legendary,
 		)
 		if err != nil {
-			return domain.ThreadPage{}, err
+			return nil, err
 		}
 
 		threads = append(threads, thread)
 	}
-	threadPage := domain.ThreadPage{Threads: threads}
+	threadPage.Threads = threads
+
+	var totalThreads int
+	threadCountRows, err := r.connPool.Query(context.Background(), countThreadsQuery)
+	for threadCountRows.Next() {
+		err := threadCountRows.Scan(&totalThreads)
+		if err != nil {
+			return nil, err
+		}
+	}
+	threadPage.TotalPages = totalThreads / limit
 
 	return threadPage, nil
 }
