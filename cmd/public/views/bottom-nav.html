@@ -6,6 +6,8 @@
         {{else if gt .PageNum 1}}
             <li><a href="/thread/list/{{add .PageNum -1 }}">« prev</a></li>
         {{end}}
-        <li><a href="/thread/list/{{add .PageNum 1 }}">next »</a></li>
+        {{ if lt .PageNum .TotalPages}}
+            <li><a href="/thread/list/{{add .PageNum 1 }}">next »</a></li>
+        {{end}}
     </ul>
 {{end}}

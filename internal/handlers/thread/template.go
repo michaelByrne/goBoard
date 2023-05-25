@@ -49,6 +49,7 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		c.String(500, err.Error())
 		return err
 	}
+
 	offset := pageNum * threadListLength
 	threadPage, err := h.threadService.ListThreads(threadListLength, offset)
 	if err != nil {
@@ -56,6 +57,11 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		return err
 	}
 	threadPage.PageNum = pageNum
+
+	if threadPage.PageNum > threadPage.TotalPages {
+		return c.String(404, "Nothing to see here.")
+	}
+
 	return c.Render(200, "main", threadPage)
 }
 
