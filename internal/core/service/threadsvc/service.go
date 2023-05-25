@@ -68,7 +68,7 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 	return thread, nil
 }
 
-func (s ThreadService) ListThreads(limit, offset int) (*domain.ThreadPage, error) {
+func (s ThreadService) ListThreads(limit, offset int) (*domain.SiteContext, error) {
 	return s.threadRepo.ListThreads(limit, offset)
 }
 

@@ -1,10 +1,11 @@
 package thread
 
 import (
+	"github.com/labstack/echo/v4"
+	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
-
-	"github.com/labstack/echo/v4"
+	"time"
 )
 
 type TemplateHandler struct {
@@ -26,20 +27,27 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/thread/view/:id", h.ListPostsForThread)
 	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
-	e.POST("/thread/reply", h.ThreadReply)
-	e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
+	e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 	threadListLength := 100
-	threadPage, err := h.threadService.ListThreads(threadListLength, 0)
+	siteContext, err := h.threadService.ListThreads(threadListLength, 0)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
-	threadPage.PageNum = 0
-	return c.Render(200, "main", threadPage)
+	siteContext.ThreadPage.PageNum = 0
+	siteContext.PageName = "main"
+
+	err = c.Render(200, "main", siteContext)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -51,18 +59,14 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	}
 
 	offset := pageNum * threadListLength
-	threadPage, err := h.threadService.ListThreads(threadListLength, offset)
+	siteContext, err := h.threadService.ListThreads(threadListLength, offset)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
-	threadPage.PageNum = pageNum
-
-	if threadPage.PageNum > threadPage.TotalPages {
-		return c.String(404, "Nothing to see here.")
-	}
-
-	return c.Render(200, "main", threadPage)
+	siteContext.ThreadPage.PageNum = pageNum
+	siteContext.PageName = "main"
+	return c.Render(200, "main", siteContext)
 }
 
 func (h *TemplateHandler) Ping(c echo.Context) error {
@@ -84,7 +88,13 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	return c.Render(200, "posts", posts)
+	err = c.Render(200, "posts", posts)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (h *TemplateHandler) Post(c echo.Context) error {
@@ -96,6 +106,20 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 		return err
 	}
 
+	post, err := h.threadService.GetPostByID(idAsInt)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.Render(200, "post", post)
+}
+
+func (h *TemplateHandler) NewThread(c echo.Context) error {
+	return c.Render(200, "newthread", nil)
+}
+
+func (h *TemplateHandler) PreviewPost(c echo.Context) error {
 	position := c.Param("position")
 
 	positionAsInt, err := strconv.Atoi(position)
@@ -104,78 +128,35 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 		return err
 	}
 
-	post, err := h.threadService.GetPostByID(idAsInt)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	post.ThreadPosition = positionAsInt
-
-	return c.Render(200, "post", post)
-}
-
-func (h *TemplateHandler) ThreadReply(c echo.Context) error {
 	values, err := c.FormParams()
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
+	body := values.Get("body")
 	threadID := values.Get("thread_id")
+	author := values.Get("member_name")
+
 	threadIDAsInt, err := strconv.Atoi(threadID)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
-	author := values.Get("member_name")
-	body := values.Get("body")
+	now := time.Now()
 
-	ip := c.RealIP()
-
-	postID, err := h.threadService.NewPost(body, ip, author, threadIDAsInt)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
+	post := domain.Post{
+		Text:           body,
+		MemberName:     author,
+		ThreadID:       threadIDAsInt,
+		Timestamp:      &now,
+		ThreadPosition: positionAsInt + 1,
 	}
 
-	return c.JSON(200, NewPostResponse{
-		PostID: postID,
-	})
-}
-
-func (h *TemplateHandler) NewThread(c echo.Context) error {
-	return c.Render(200, "newthread", nil)
-}
-
-func (h *TemplateHandler) CreateThread(c echo.Context) error {
-	body := c.FormValue("body")
-	subject := c.FormValue("subject")
-
-	ip := c.RealIP()
-
-	author := c.FormValue("member")
-
-	threadID, err := h.threadService.NewThread(author, ip, body, subject)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return c.JSON(200, NewThreadResponse{
-		ThreadID: threadID,
-	})
+	return c.Render(200, "post", post)
 }
 
 type GenericResponse struct {
 	Message string `json:"message"`
-}
-
-type NewPostResponse struct {
-	PostID int `json:"post_id"`
-}
-
-type NewThreadResponse struct {
-	ThreadID int `json:"thread_id"`
 }

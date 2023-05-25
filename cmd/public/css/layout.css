@@ -93,6 +93,10 @@
   margin-left: 5px;
   float: left;
 }
+.bottom li {
+  background-color: #acccdb;
+  border-bottom: 3px solid #c3dae4;
+}
 .nav li a
 {
   display: block;

@@ -1,13 +1,7 @@
-{{define "bottom-nav"}}
-    <ul class="nav bottom clear">
-        <li><a href="/thread/list">back to the shit</a></li>
-        {{if eq .PageNum 1}}
-            <li><a href="/thread/list">« prev</a></li>
-        {{else if gt .PageNum 1}}
-            <li><a href="/thread/list/{{add .PageNum -1 }}">« prev</a></li>
-        {{end}}
-        {{ if lt .PageNum .TotalPages}}
-            <li><a href="/thread/list/{{add .PageNum 1 }}">next »</a></li>
-        {{end}}
-    </ul>
-{{end}}
+{{ define "bottomnav" }}
+    {{if eq .PageName "main"}}
+        {{template "thread-list-nav" .}}
+    {{else if eq .PageName "member"}}
+        {{template "member-profile-nav" .}}
+    {{end}}
+{{ end }}

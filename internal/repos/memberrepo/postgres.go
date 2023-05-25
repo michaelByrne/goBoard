@@ -2,9 +2,10 @@ package memberrepo
 
 import (
 	"context"
+	"goBoard/internal/core/domain"
+
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"goBoard/internal/core/domain"
 )
 
 const saveMemberQuery = "INSERT INTO member (name, pass, secret, email_signup, postalcode, ip) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
@@ -50,7 +51,7 @@ func (m MemberRepo) GetMemberIDByUsername(username string) (int, error) {
 	return id, nil
 }
 
-func (m MemberRepo) GetMemberByUsername(username string) (*domain.Member, error) {
+func (m MemberRepo) GetMemberByUsername(username string) (*domain.SiteContext, error) {
 	var member domain.Member
 	var ip pgtype.CIDR
 	err := m.connPool.QueryRow(context.Background(), "SELECT id, name, pass, secret, email_signup, postalcode, ip, date_joined, date_first_post, last_post, last_view, total_threads, total_thread_posts FROM member WHERE name = $1", username).Scan(&member.ID, &member.Name, &member.Pass, &member.Secret, &member.Email, &member.PostalCode, &ip, &member.DateJoined, &member.FirstPosted, &member.LastPosted, &member.LastView, &member.TotalThreads, &member.TotalThreadPosts)
@@ -60,5 +61,5 @@ func (m MemberRepo) GetMemberByUsername(username string) (*domain.Member, error)
 
 	member.IP = ip.IPNet.String()
 
-	return &member, nil
+	return &domain.SiteContext{MemberPage: member}, nil
 }
