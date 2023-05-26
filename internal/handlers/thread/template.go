@@ -1,11 +1,12 @@
 package thread
 
 import (
-	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
 	"time"
+
+	"github.com/labstack/echo/v4"
 )
 
 type TemplateHandler struct {
@@ -27,6 +28,8 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/thread/view/:id", h.ListPostsForThread)
 	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
+	e.POST("/thread/reply", h.ThreadReply)
+	e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
 	e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
@@ -40,14 +43,7 @@ func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 	}
 	siteContext.ThreadPage.PageNum = 0
 	siteContext.PageName = "main"
-
-	err = c.Render(200, "main", siteContext)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return nil
+	return c.Render(200, "main", siteContext)
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -65,6 +61,11 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		return err
 	}
 	siteContext.ThreadPage.PageNum = pageNum
+
+	if siteContext.ThreadPage.PageNum > siteContext.ThreadPage.TotalPages {
+		return c.String(404, "Nothing to see here.")
+	}
+
 	siteContext.PageName = "main"
 	return c.Render(200, "main", siteContext)
 }
@@ -88,18 +89,11 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	err = c.Render(200, "posts", posts)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return nil
+	return c.Render(200, "posts", posts)
 }
 
 func (h *TemplateHandler) Post(c echo.Context) error {
 	postID := c.Param("id")
-
 	idAsInt, err := strconv.Atoi(postID)
 	if err != nil {
 		c.String(500, err.Error())
@@ -113,6 +107,55 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 	}
 
 	return c.Render(200, "post", post)
+}
+
+func (h *TemplateHandler) ThreadReply(c echo.Context) error {
+	values, err := c.FormParams()
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	threadID := values.Get("thread_id")
+	threadIDAsInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	author := values.Get("member_name")
+	body := values.Get("body")
+
+	ip := c.RealIP()
+
+	postID, err := h.threadService.NewPost(body, ip, author, threadIDAsInt)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.JSON(200, NewPostResponse{
+		PostID: postID,
+	})
+}
+
+func (h *TemplateHandler) CreateThread(c echo.Context) error {
+	body := c.FormValue("body")
+	subject := c.FormValue("subject")
+
+	ip := c.RealIP()
+
+	author := c.FormValue("member")
+
+	threadID, err := h.threadService.NewThread(author, ip, body, subject)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.JSON(200, NewThreadResponse{
+		ThreadID: threadID,
+	})
 }
 
 func (h *TemplateHandler) NewThread(c echo.Context) error {

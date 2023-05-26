@@ -93,23 +93,22 @@ func (h *Handler) GetThreadByID(ctx echo.Context) error {
 	return ctx.JSON(200, threadOut)
 }
 
+//	func (h *Handler) SavePost(ctx echo.Context) error {
+//		post := &Post{}
+//		err := ctx.Bind(post)
+//		if err != nil {
+//			ctx.JSON(400, ErrorResponse{Message: err.Error()})
+//			return err
+//		}
 //
-//func (h *Handler) SavePost(ctx echo.Context) error {
-//	post := &Post{}
-//	err := ctx.Bind(post)
-//	if err != nil {
-//		ctx.JSON(400, ErrorResponse{Message: err.Error()})
-//		return err
+//		id, err := h.threadService.Save(post.ToDomain())
+//		if err != nil {
+//			ctx.JSON(500, ErrorResponse{Message: err.Error()})
+//			return err
+//		}
+//
+//		return ctx.JSON(200, ID{id})
 //	}
-//
-//	id, err := h.threadService.Save(post.ToDomain())
-//	if err != nil {
-//		ctx.JSON(500, ErrorResponse{Message: err.Error()})
-//		return err
-//	}
-//
-//	return ctx.JSON(200, ID{id})
-//}
 
 func (h *Handler) CreateThread(c echo.Context) error {
 	body := c.FormValue("body")
