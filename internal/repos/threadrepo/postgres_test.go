@@ -6,6 +6,7 @@ import (
 	"goBoard/internal/core/domain"
 	"goBoard/internal/repos/seed"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -182,5 +183,13 @@ func TestNewThreadRepo(t *testing.T) {
 
 		assert.Equal(t, "Hello, BCO", subject)
 		assert.Equal(t, "It's me Roxy", body)
+	})
+
+	t.Run("successfully gets threads by cursor", func(t *testing.T) {
+		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
+		site, err := repo.ListThreadsByCursor(1, &cursor)
+		require.NoError(t, err)
+
+		assert.Greater(t, cursor, *site.ThreadPage.Threads[0].DateLastPosted)
 	})
 }

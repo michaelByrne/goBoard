@@ -1,6 +1,9 @@
 package ports
 
-import "goBoard/internal/core/domain"
+import (
+	"goBoard/internal/core/domain"
+	"time"
+)
 
 type ThreadService interface {
 	NewPost(body, ip, memberName string, threadID int) (int, error)
@@ -8,6 +11,7 @@ type ThreadService interface {
 	GetThreadByID(limit, offset, id int) (*domain.Thread, error)
 	ListThreads(limit, offset int) (*domain.SiteContext, error)
 	NewThread(memberName, memberIP, body, subject string) (int, error)
+	GetThreadsWithCursor(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error)
 }
 
 type MemberService interface {

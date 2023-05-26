@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"goBoard/internal/core/domain"
+	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -18,6 +19,12 @@ var countThreadsQuery string
 
 //go:embed queries/list_posts.sql
 var listPostsQuery string
+
+//go:embed queries/lists_posts_cursor.sql
+var listPostsCursorQuery string
+
+//go:embed queries/list_threads_cursor.sql
+var listThreadsCursorQuery string
 
 type ThreadRepo struct {
 	connPool *pgxpool.Pool
@@ -209,4 +216,66 @@ func (r ThreadRepo) ListPostsForThread(limit, offset, id int) ([]domain.Post, er
 	}
 
 	return posts, nil
+}
+
+func (r ThreadRepo) ListPostsForThreadByCursor(limit, id int, cursor *time.Time) ([]domain.Post, error) {
+	var posts []domain.Post
+	var cidr pgtype.CIDR
+	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, id, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var post domain.Post
+		err := rows.Scan(&post.ID, &post.Timestamp, &post.MemberID, &post.MemberName, &post.Text, &cidr, &post.ThreadSubject, &post.ThreadID, &post.IsAdmin)
+		if err != nil {
+			return nil, err
+		}
+
+		post.MemberIP = cidr.IPNet.String()
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}
+
+func (r ThreadRepo) ListThreadsByCursor(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+	var threads []domain.Thread
+	threadPage := &domain.ThreadPage{}
+	rows, err := r.connPool.Query(context.Background(), listThreadsCursorQuery, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var thread domain.Thread
+		err := rows.Scan(
+			&thread.ID,
+			&thread.DateLastPosted,
+			&thread.DatePosted,
+			&thread.MemberID,
+			&thread.MemberName,
+			&thread.LastPosterID,
+			&thread.LastPosterName,
+			&thread.Subject,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPostText,
+			&thread.Sticky,
+			&thread.Locked,
+			&thread.Legendary,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		threads = append(threads, thread)
+	}
+
+	threadPage.Threads = threads
+	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
+
+	return siteContext, nil
 }

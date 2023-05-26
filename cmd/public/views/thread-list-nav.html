@@ -1,13 +1,10 @@
 {{define "thread-list-nav"}}
     <ul class="nav bottom clear">
-        <li><a href="/thread/list">back to the shit</a></li>
-        {{if eq .ThreadPage.PageNum 1}}
-            <li><a href="/thread/list">« prev</a></li>
-        {{else if gt .ThreadPage.PageNum 1}}
-            <li><a href="/thread/list/{{add .ThreadPage.PageNum -1 }}">« prev</a></li>
-        {{end}}
-        {{ if lt .ThreadPage.PageNum .ThreadPage.TotalPages}}
-            <li><a href="/thread/list/{{add .ThreadPage.PageNum 1 }}">next »</a></li>
+        <li><a href="/">back to the shit</a></li>
+        {{if .PageCursor }}
+            <li>
+                <a href="/thread/list?limit=3&cursor={{.PageCursor.Format "2006-01-02T15:04:05Z07:00"}}">next</a>
+            </li>
         {{end}}
     </ul>
 {{end}}

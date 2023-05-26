@@ -20,6 +20,6 @@ ON
     t.id = tp.thread_id
 WHERE
     tp.thread_id = coalesce($3, tp.thread_id)
-ORDER BY tp.date_posted ASC
+ORDER BY tp.date_posted ASC, tp.id ASC
 OFFSET $2
 LIMIT $1

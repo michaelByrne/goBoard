@@ -14,10 +14,12 @@ type Thread struct {
 	LastPosterID   int
 	LastPostText   string
 	DateLastPosted *time.Time
+	DatePosted     *time.Time
 	Sticky         bool
 	Locked         bool
 	Legendary      bool
 	NumPosts       int
 	Posts          []Post
 	Timestamp      *time.Time
+	PageCursor     *time.Time
 }

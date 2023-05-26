@@ -42,28 +42,6 @@
                     document.getElementById('preview').addEventListener('click', (event) => {
                         showPreview(new URLSearchParams(new FormData(event.target.form)))
                     })
-                    document.forms['form'].addEventListener('submit', captureSubmit);
-                    e('uncollapse').addEventListener('click', uncollapse)
-                    $(document).ready(() => {
-                        doCollapse(15,  document.getElementsByClassName('.post').length - 15);
-                        let numPosts = document.getElementsByClassName('post').length
-                        document.getElementById('uncollapse').textContent = 'uncollapse ' + (numPosts - 15) + ' posts';
-                    })
-
-                    const target = document.getElementById('view_{{ .ID }}')
-                    const config = { attributes: true, childList: true, subtree: true };
-                    const callback = (mutationList, observer) => {
-                        for (const mutation of mutationList) {
-                            if (mutation.type === "childList") {
-                                let numPosts = document.getElementsByClassName('post').length
-                                doCollapse(15, numPosts - 15);
-                                document.getElementById('uncollapse').textContent = 'uncollapse ' + (numPosts - 15) + ' posts';
-                            }
-                        }
-                    };
-
-                    const observer = new MutationObserver(callback);
-                    observer.observe(target, config);
                 </script>
             </div>
         </div>

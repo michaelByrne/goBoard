@@ -3,6 +3,7 @@ package thread
 import (
 	"goBoard/internal/core/ports"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -20,6 +21,9 @@ func (h *Handler) Register(e *echo.Echo) {
 	e.GET("/threads/:id", h.GetThreadByID)
 	e.POST("/thread/create", h.CreateThread)
 	e.POST("/thread/reply", h.ThreadReply)
+	e.GET("/threads/cursor", h.GetThreadsWithCursor)
+	e.GET("threads/first", h.GetFirstPageThreads)
+
 }
 
 func (h *Handler) ThreadReply(c echo.Context) error {
@@ -127,6 +131,46 @@ func (h *Handler) CreateThread(c echo.Context) error {
 	return c.JSON(200, NewThreadResponse{
 		ThreadID: threadID,
 	})
+}
+
+func (h *Handler) GetThreadsWithCursor(c echo.Context) error {
+	cursor := c.QueryParams().Get("cursor")
+	limit, err := strconv.Atoi(c.QueryParams().Get("limit"))
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	cursorAsTime, err := time.Parse(time.RFC3339Nano, cursor)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	threads, err := h.threadService.GetThreadsWithCursor(limit, false, &cursorAsTime)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.JSON(200, threads)
+}
+
+func (h *Handler) GetFirstPageThreads(c echo.Context) error {
+	limit := c.QueryParams().Get("limit")
+	limitAsInt, err := strconv.Atoi(limit)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	threads, err := h.threadService.GetThreadsWithCursor(limitAsInt, true, nil)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.JSON(200, threads)
 }
 
 //

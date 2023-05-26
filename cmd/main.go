@@ -76,6 +76,7 @@ func main() {
 	e := echo.New()
 
 	e.Renderer = t
+	e.Debug = true
 
 	e.Use(middleware.CORS())
 

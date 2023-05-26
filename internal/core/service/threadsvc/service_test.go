@@ -7,6 +7,7 @@ import (
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/service/mocks"
 	"testing"
+	"time"
 )
 
 func TestNewThreadService(t *testing.T) {
@@ -157,5 +158,107 @@ func TestNewThreadService(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, expectedThreadArg, actualThreadArg)
+	})
+
+	t.Run("successfully gets first page threads by cursor", func(t *testing.T) {
+		cursor := time.Date(2019, 1, 7, 0, 0, 0, 0, time.UTC)
+		firstLastPosted := time.Date(2019, 1, 5, 0, 0, 0, 0, time.UTC)
+		secondLastPosted := time.Date(2019, 1, 10, 0, 0, 0, 0, time.UTC)
+		thirdLastPosted := time.Date(2019, 1, 15, 0, 0, 0, 0, time.UTC)
+
+		siteContext := &domain.SiteContext{
+			ThreadPage: domain.ThreadPage{
+				Threads: []domain.Thread{
+					{
+						ID:             1,
+						DateLastPosted: &firstLastPosted,
+					},
+					{
+						ID:             2,
+						DateLastPosted: &secondLastPosted,
+					},
+					{
+						ID:             3,
+						DateLastPosted: &thirdLastPosted,
+					},
+				},
+			},
+		}
+
+		mockThreadRepo := &mocks.ThreadRepoMock{
+			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+				return siteContext, nil
+			},
+		}
+
+		mockMemberRepo := &mocks.MemberRepoMock{}
+
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+
+		actualSiteContext, err := svc.GetThreadsWithCursor(1, true, &cursor)
+		require.NoError(t, err)
+
+		assert.Equal(t, &thirdLastPosted, actualSiteContext.PageCursor)
+	})
+
+	t.Run("successfully gets page threads by cursor", func(t *testing.T) {
+		cursor := time.Date(2019, 1, 7, 0, 0, 0, 0, time.UTC)
+		firstLastPosted := time.Date(2019, 1, 5, 0, 0, 0, 0, time.UTC)
+		//secondLastPosted := time.Date(2019, 1, 10, 0, 0, 0, 0, time.UTC)
+		//thirdLastPosted := time.Date(2019, 1, 15, 0, 0, 0, 0, time.UTC)
+
+		siteContext := &domain.SiteContext{
+			ThreadPage: domain.ThreadPage{
+				Threads: []domain.Thread{
+					{
+						ID:             1,
+						DateLastPosted: &firstLastPosted,
+					},
+				},
+			},
+		}
+
+		mockThreadRepo := &mocks.ThreadRepoMock{
+			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+				return siteContext, nil
+			},
+		}
+
+		mockMemberRepo := &mocks.MemberRepoMock{}
+
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+
+		actualSiteContext, err := svc.GetThreadsWithCursor(1, false, &cursor)
+		require.NoError(t, err)
+
+		assert.Equal(t, &firstLastPosted, actualSiteContext.PageCursor)
+	})
+
+	t.Run("if no threads are returned, cursor should be nil", func(t *testing.T) {
+		cursor := time.Date(2019, 1, 7, 0, 0, 0, 0, time.UTC)
+		//firstLastPosted := time.Date(2019, 1, 5, 0, 0, 0, 0, time.UTC)
+		//secondLastPosted := time.Date(2019, 1, 10, 0, 0, 0, 0, time.UTC)
+		//thirdLastPosted := time.Date(2019, 1, 15, 0, 0, 0, 0, time.UTC)
+
+		siteContext := &domain.SiteContext{
+			ThreadPage: domain.ThreadPage{
+				Threads: []domain.Thread{},
+			},
+		}
+
+		mockThreadRepo := &mocks.ThreadRepoMock{
+			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+				return siteContext, nil
+			},
+		}
+
+		mockMemberRepo := &mocks.MemberRepoMock{}
+
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+
+		actualSiteContext, err := svc.GetThreadsWithCursor(1, false, &cursor)
+		require.NoError(t, err)
+
+		assert.Nil(t, actualSiteContext.PageCursor)
 	})
 }

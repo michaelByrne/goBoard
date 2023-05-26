@@ -3,6 +3,7 @@ package threadsvc
 import (
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -66,6 +67,35 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 	}
 
 	return thread, nil
+}
+
+func (s ThreadService) GetThreadsWithCursor(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error) {
+	if firstPage {
+		start := time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC)
+		site, err := s.threadRepo.ListThreadsByCursor(limit, &start)
+		if err != nil {
+			s.logger.Errorf("error getting first page of threads by cursor: %v", err)
+			return nil, err
+		}
+
+		if len(site.ThreadPage.Threads) != 0 {
+			site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
+		}
+
+		return site, nil
+	}
+
+	site, err := s.threadRepo.ListThreadsByCursor(limit, cursor)
+	if err != nil {
+		s.logger.Errorf("error getting page of threads by cursor: %v", err)
+		return nil, err
+	}
+
+	if len(site.ThreadPage.Threads) != 0 {
+		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
+	}
+
+	return site, nil
 }
 
 func (s ThreadService) ListThreads(limit, offset int) (*domain.SiteContext, error) {

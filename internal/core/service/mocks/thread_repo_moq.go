@@ -7,6 +7,7 @@ import (
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"sync"
+	"time"
 )
 
 // Ensure, that ThreadRepoMock does implement ports.ThreadRepo.
@@ -28,8 +29,14 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			ListPostsForThreadFunc: func(limit int, offset int, id int) ([]domain.Post, error) {
 //				panic("mock out the ListPostsForThread method")
 //			},
+//			ListPostsForThreadByCursorFunc: func(limit int, id int, cursor *time.Time) ([]domain.Post, error) {
+//				panic("mock out the ListPostsForThreadByCursor method")
+//			},
 //			ListThreadsFunc: func(limit int, offset int) (*domain.SiteContext, error) {
 //				panic("mock out the ListThreads method")
+//			},
+//			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+//				panic("mock out the ListThreadsByCursor method")
 //			},
 //			ListThreadsByMemberIDFunc: func(memberID int, limit int, offset int) ([]domain.Thread, error) {
 //				panic("mock out the ListThreadsByMemberID method")
@@ -56,8 +63,14 @@ type ThreadRepoMock struct {
 	// ListPostsForThreadFunc mocks the ListPostsForThread method.
 	ListPostsForThreadFunc func(limit int, offset int, id int) ([]domain.Post, error)
 
+	// ListPostsForThreadByCursorFunc mocks the ListPostsForThreadByCursor method.
+	ListPostsForThreadByCursorFunc func(limit int, id int, cursor *time.Time) ([]domain.Post, error)
+
 	// ListThreadsFunc mocks the ListThreads method.
 	ListThreadsFunc func(limit int, offset int) (*domain.SiteContext, error)
+
+	// ListThreadsByCursorFunc mocks the ListThreadsByCursor method.
+	ListThreadsByCursorFunc func(limit int, cursor *time.Time) (*domain.SiteContext, error)
 
 	// ListThreadsByMemberIDFunc mocks the ListThreadsByMemberID method.
 	ListThreadsByMemberIDFunc func(memberID int, limit int, offset int) ([]domain.Thread, error)
@@ -89,12 +102,28 @@ type ThreadRepoMock struct {
 			// ID is the id argument value.
 			ID int
 		}
+		// ListPostsForThreadByCursor holds details about calls to the ListPostsForThreadByCursor method.
+		ListPostsForThreadByCursor []struct {
+			// Limit is the limit argument value.
+			Limit int
+			// ID is the id argument value.
+			ID int
+			// Cursor is the cursor argument value.
+			Cursor *time.Time
+		}
 		// ListThreads holds details about calls to the ListThreads method.
 		ListThreads []struct {
 			// Limit is the limit argument value.
 			Limit int
 			// Offset is the offset argument value.
 			Offset int
+		}
+		// ListThreadsByCursor holds details about calls to the ListThreadsByCursor method.
+		ListThreadsByCursor []struct {
+			// Limit is the limit argument value.
+			Limit int
+			// Cursor is the cursor argument value.
+			Cursor *time.Time
 		}
 		// ListThreadsByMemberID holds details about calls to the ListThreadsByMemberID method.
 		ListThreadsByMemberID []struct {
@@ -116,13 +145,15 @@ type ThreadRepoMock struct {
 			Thread domain.Thread
 		}
 	}
-	lockGetPostByID           sync.RWMutex
-	lockGetThreadByID         sync.RWMutex
-	lockListPostsForThread    sync.RWMutex
-	lockListThreads           sync.RWMutex
-	lockListThreadsByMemberID sync.RWMutex
-	lockSavePost              sync.RWMutex
-	lockSaveThread            sync.RWMutex
+	lockGetPostByID                sync.RWMutex
+	lockGetThreadByID              sync.RWMutex
+	lockListPostsForThread         sync.RWMutex
+	lockListPostsForThreadByCursor sync.RWMutex
+	lockListThreads                sync.RWMutex
+	lockListThreadsByCursor        sync.RWMutex
+	lockListThreadsByMemberID      sync.RWMutex
+	lockSavePost                   sync.RWMutex
+	lockSaveThread                 sync.RWMutex
 }
 
 // GetPostByID calls GetPostByIDFunc.
@@ -229,6 +260,46 @@ func (mock *ThreadRepoMock) ListPostsForThreadCalls() []struct {
 	return calls
 }
 
+// ListPostsForThreadByCursor calls ListPostsForThreadByCursorFunc.
+func (mock *ThreadRepoMock) ListPostsForThreadByCursor(limit int, id int, cursor *time.Time) ([]domain.Post, error) {
+	if mock.ListPostsForThreadByCursorFunc == nil {
+		panic("ThreadRepoMock.ListPostsForThreadByCursorFunc: method is nil but ThreadRepo.ListPostsForThreadByCursor was just called")
+	}
+	callInfo := struct {
+		Limit  int
+		ID     int
+		Cursor *time.Time
+	}{
+		Limit:  limit,
+		ID:     id,
+		Cursor: cursor,
+	}
+	mock.lockListPostsForThreadByCursor.Lock()
+	mock.calls.ListPostsForThreadByCursor = append(mock.calls.ListPostsForThreadByCursor, callInfo)
+	mock.lockListPostsForThreadByCursor.Unlock()
+	return mock.ListPostsForThreadByCursorFunc(limit, id, cursor)
+}
+
+// ListPostsForThreadByCursorCalls gets all the calls that were made to ListPostsForThreadByCursor.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListPostsForThreadByCursorCalls())
+func (mock *ThreadRepoMock) ListPostsForThreadByCursorCalls() []struct {
+	Limit  int
+	ID     int
+	Cursor *time.Time
+} {
+	var calls []struct {
+		Limit  int
+		ID     int
+		Cursor *time.Time
+	}
+	mock.lockListPostsForThreadByCursor.RLock()
+	calls = mock.calls.ListPostsForThreadByCursor
+	mock.lockListPostsForThreadByCursor.RUnlock()
+	return calls
+}
+
 // ListThreads calls ListThreadsFunc.
 func (mock *ThreadRepoMock) ListThreads(limit int, offset int) (*domain.SiteContext, error) {
 	if mock.ListThreadsFunc == nil {
@@ -262,6 +333,42 @@ func (mock *ThreadRepoMock) ListThreadsCalls() []struct {
 	mock.lockListThreads.RLock()
 	calls = mock.calls.ListThreads
 	mock.lockListThreads.RUnlock()
+	return calls
+}
+
+// ListThreadsByCursor calls ListThreadsByCursorFunc.
+func (mock *ThreadRepoMock) ListThreadsByCursor(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+	if mock.ListThreadsByCursorFunc == nil {
+		panic("ThreadRepoMock.ListThreadsByCursorFunc: method is nil but ThreadRepo.ListThreadsByCursor was just called")
+	}
+	callInfo := struct {
+		Limit  int
+		Cursor *time.Time
+	}{
+		Limit:  limit,
+		Cursor: cursor,
+	}
+	mock.lockListThreadsByCursor.Lock()
+	mock.calls.ListThreadsByCursor = append(mock.calls.ListThreadsByCursor, callInfo)
+	mock.lockListThreadsByCursor.Unlock()
+	return mock.ListThreadsByCursorFunc(limit, cursor)
+}
+
+// ListThreadsByCursorCalls gets all the calls that were made to ListThreadsByCursor.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListThreadsByCursorCalls())
+func (mock *ThreadRepoMock) ListThreadsByCursorCalls() []struct {
+	Limit  int
+	Cursor *time.Time
+} {
+	var calls []struct {
+		Limit  int
+		Cursor *time.Time
+	}
+	mock.lockListThreadsByCursor.RLock()
+	calls = mock.calls.ListThreadsByCursor
+	mock.lockListThreadsByCursor.RUnlock()
 	return calls
 }
 

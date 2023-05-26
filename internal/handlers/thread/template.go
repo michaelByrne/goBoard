@@ -23,8 +23,7 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/", h.ListFirstPageThreads)
-	e.GET("/thread/list", h.ListFirstPageThreads)
-	e.GET("/thread/list/:page", h.ListThreads)
+	e.GET("/thread/list", h.ListThreads)
 	e.GET("/thread/view/:id", h.ListPostsForThread)
 	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
@@ -35,8 +34,8 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 }
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
-	threadListLength := 100
-	siteContext, err := h.threadService.ListThreads(threadListLength, 0)
+	threadListLength := 3
+	siteContext, err := h.threadService.GetThreadsWithCursor(threadListLength, true, nil)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -47,23 +46,23 @@ func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
-	threadListLength := 100
-	pageNum, err := strconv.Atoi(c.Param("page"))
+	cursor := c.QueryParams().Get("cursor")
+	limit, err := strconv.Atoi(c.QueryParams().Get("limit"))
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
-	offset := pageNum * threadListLength
-	siteContext, err := h.threadService.ListThreads(threadListLength, offset)
+	cursorAsTime, err := time.Parse(time.RFC3339, cursor)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
-	siteContext.ThreadPage.PageNum = pageNum
 
-	if siteContext.ThreadPage.PageNum > siteContext.ThreadPage.TotalPages {
-		return c.String(404, "Nothing to see here.")
+	siteContext, err := h.threadService.GetThreadsWithCursor(limit, false, &cursorAsTime)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
 	}
 
 	siteContext.PageName = "main"
