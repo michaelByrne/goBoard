@@ -22,7 +22,7 @@ var _ ports.MemberRepo = &MemberRepoMock{}
 //			GetMemberByIDFunc: func(id int) (*domain.Member, error) {
 //				panic("mock out the GetMemberByID method")
 //			},
-//			GetMemberByUsernameFunc: func(username string) (*domain.Member, error) {
+//			GetMemberByUsernameFunc: func(username string) (*domain.SiteContext, error) {
 //				panic("mock out the GetMemberByUsername method")
 //			},
 //			GetMemberIDByUsernameFunc: func(username string) (int, error) {
@@ -42,7 +42,7 @@ type MemberRepoMock struct {
 	GetMemberByIDFunc func(id int) (*domain.Member, error)
 
 	// GetMemberByUsernameFunc mocks the GetMemberByUsername method.
-	GetMemberByUsernameFunc func(username string) (*domain.Member, error)
+	GetMemberByUsernameFunc func(username string) (*domain.SiteContext, error)
 
 	// GetMemberIDByUsernameFunc mocks the GetMemberIDByUsername method.
 	GetMemberIDByUsernameFunc func(username string) (int, error)
@@ -112,7 +112,7 @@ func (mock *MemberRepoMock) GetMemberByIDCalls() []struct {
 }
 
 // GetMemberByUsername calls GetMemberByUsernameFunc.
-func (mock *MemberRepoMock) GetMemberByUsername(username string) (*domain.Member, error) {
+func (mock *MemberRepoMock) GetMemberByUsername(username string) (*domain.SiteContext, error) {
 	if mock.GetMemberByUsernameFunc == nil {
 		panic("MemberRepoMock.GetMemberByUsernameFunc: method is nil but MemberRepo.GetMemberByUsername was just called")
 	}

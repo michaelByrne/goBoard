@@ -67,6 +67,9 @@ func main() {
 			"add": func(a, b int) int {
 				return a + b
 			},
+			"sub": func(a, b int) int {
+				return a - b
+			},
 		}).ParseFS(templateFiles, "public/views/*.html")),
 	}
 
