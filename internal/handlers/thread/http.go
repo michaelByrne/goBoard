@@ -18,7 +18,6 @@ func NewHandler(threadService ports.ThreadService) *Handler {
 func (h *Handler) Register(e *echo.Echo) {
 	e.GET("/threads/all", h.ListThreads)
 	e.GET("/threads/:id", h.GetThreadByID)
-	e.GET("/thread/create", h.NewThread)
 	e.POST("/thread/create", h.CreateThread)
 	e.POST("/thread/reply", h.ThreadReply)
 }
@@ -147,23 +146,6 @@ func (h *Handler) CreateThread(c echo.Context) error {
 //
 //	return c.JSON(200, ID{ID: id})
 //}
-
-func (h *Handler) NewThread(c echo.Context) error {
-	thread := &Thread{}
-	err := c.Bind(thread)
-	if err != nil {
-		c.JSON(400, ErrorResponse{Message: err.Error()})
-		return err
-	}
-
-	id, err := h.threadService.NewThread(strconv.Itoa(thread.MemberID), thread.MemberIP, thread.FirstPostText, thread.Subject)
-	if err != nil {
-		c.JSON(500, ErrorResponse{Message: err.Error()})
-		return err
-	}
-
-	return c.JSON(200, ID{ID: id})
-}
 
 type ErrorResponse struct {
 	Message string `json:"message"`
