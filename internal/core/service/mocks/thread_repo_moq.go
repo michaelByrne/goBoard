@@ -28,7 +28,7 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			ListPostsForThreadFunc: func(limit int, offset int, id int) ([]domain.Post, error) {
 //				panic("mock out the ListPostsForThread method")
 //			},
-//			ListThreadsFunc: func(limit int, offset int) (domain.ThreadPage, error) {
+//			ListThreadsFunc: func(limit int, offset int) (*domain.SiteContext, error) {
 //				panic("mock out the ListThreads method")
 //			},
 //			ListThreadsByMemberIDFunc: func(memberID int, limit int, offset int) ([]domain.Thread, error) {
@@ -57,7 +57,7 @@ type ThreadRepoMock struct {
 	ListPostsForThreadFunc func(limit int, offset int, id int) ([]domain.Post, error)
 
 	// ListThreadsFunc mocks the ListThreads method.
-	ListThreadsFunc func(limit int, offset int) (domain.ThreadPage, error)
+	ListThreadsFunc func(limit int, offset int) (*domain.SiteContext, error)
 
 	// ListThreadsByMemberIDFunc mocks the ListThreadsByMemberID method.
 	ListThreadsByMemberIDFunc func(memberID int, limit int, offset int) ([]domain.Thread, error)
@@ -230,7 +230,7 @@ func (mock *ThreadRepoMock) ListPostsForThreadCalls() []struct {
 }
 
 // ListThreads calls ListThreadsFunc.
-func (mock *ThreadRepoMock) ListThreads(limit int, offset int) (domain.ThreadPage, error) {
+func (mock *ThreadRepoMock) ListThreads(limit int, offset int) (*domain.SiteContext, error) {
 	if mock.ListThreadsFunc == nil {
 		panic("ThreadRepoMock.ListThreadsFunc: method is nil but ThreadRepo.ListThreads was just called")
 	}

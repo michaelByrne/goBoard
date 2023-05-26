@@ -2,12 +2,13 @@ package threadrepo
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"goBoard/db"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/repos/seed"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewThreadRepo(t *testing.T) {
@@ -86,7 +87,8 @@ func TestNewThreadRepo(t *testing.T) {
 	})
 
 	t.Run("successfully lists all threads", func(t *testing.T) {
-		threads, err := repo.ListThreads(10, 0)
+		siteContext, err := repo.ListThreads(10, 0)
+		threads := siteContext.ThreadPage.Threads
 		require.NoError(t, err)
 
 		expectedThreads := []domain.Thread{

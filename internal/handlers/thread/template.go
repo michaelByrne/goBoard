@@ -1,8 +1,10 @@
 package thread
 
 import (
+	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -29,6 +31,7 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.POST("/thread/reply", h.ThreadReply)
 	e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
+	e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
@@ -91,16 +94,7 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 
 func (h *TemplateHandler) Post(c echo.Context) error {
 	postID := c.Param("id")
-
 	idAsInt, err := strconv.Atoi(postID)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	position := c.Param("position")
-
-	positionAsInt, err := strconv.Atoi(position)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -111,8 +105,6 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 		c.String(500, err.Error())
 		return err
 	}
-
-	post.ThreadPosition = positionAsInt
 
 	return c.Render(200, "post", post)
 }
@@ -147,10 +139,6 @@ func (h *TemplateHandler) ThreadReply(c echo.Context) error {
 	})
 }
 
-func (h *TemplateHandler) NewThread(c echo.Context) error {
-	return c.Render(200, "newthread", nil)
-}
-
 func (h *TemplateHandler) CreateThread(c echo.Context) error {
 	body := c.FormValue("body")
 	subject := c.FormValue("subject")
@@ -170,14 +158,48 @@ func (h *TemplateHandler) CreateThread(c echo.Context) error {
 	})
 }
 
+func (h *TemplateHandler) NewThread(c echo.Context) error {
+	return c.Render(200, "newthread", nil)
+}
+
+func (h *TemplateHandler) PreviewPost(c echo.Context) error {
+	position := c.Param("position")
+
+	positionAsInt, err := strconv.Atoi(position)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	values, err := c.FormParams()
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	body := values.Get("body")
+	threadID := values.Get("thread_id")
+	author := values.Get("member_name")
+
+	threadIDAsInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	now := time.Now()
+
+	post := domain.Post{
+		Text:           body,
+		MemberName:     author,
+		ThreadID:       threadIDAsInt,
+		Timestamp:      &now,
+		ThreadPosition: positionAsInt + 1,
+	}
+
+	return c.Render(200, "post", post)
+}
+
 type GenericResponse struct {
 	Message string `json:"message"`
-}
-
-type NewPostResponse struct {
-	PostID int `json:"post_id"`
-}
-
-type NewThreadResponse struct {
-	ThreadID int `json:"thread_id"`
 }
