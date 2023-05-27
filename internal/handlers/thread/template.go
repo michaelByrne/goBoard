@@ -59,6 +59,24 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		return err
 	}
 
+	reverse := c.QueryParams().Get("reverse")
+	reverseAsBool, err := strconv.ParseBool(reverse)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	if reverseAsBool {
+		threads, err := h.threadService.GetThreadsWithCursorReverse(limit, &cursorAsTime)
+		if err != nil {
+			c.String(500, err.Error())
+			return err
+		}
+
+		threads.PageName = "main"
+		return c.Render(200, "main", threads)
+	}
+
 	siteContext, err := h.threadService.GetThreadsWithCursor(limit, false, &cursorAsTime)
 	if err != nil {
 		c.String(500, err.Error())

@@ -26,6 +26,9 @@ var listPostsCursorQuery string
 //go:embed queries/list_threads_cursor.sql
 var listThreadsCursorQuery string
 
+//go:embed queries/list_threads_cursor_reverse.sql
+var listThreadsCursorReverseQuery string
+
 type ThreadRepo struct {
 	connPool *pgxpool.Pool
 }
@@ -276,6 +279,46 @@ func (r ThreadRepo) ListThreadsByCursor(limit int, cursor *time.Time) (*domain.S
 
 	threadPage.Threads = threads
 	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
+
+	return siteContext, nil
+}
+
+func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+	var threads []domain.Thread
+	threadPage := &domain.ThreadPage{}
+	rows, err := r.connPool.Query(context.Background(), listThreadsCursorReverseQuery, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var thread domain.Thread
+		err := rows.Scan(
+			&thread.ID,
+			&thread.DateLastPosted,
+			&thread.DatePosted,
+			&thread.MemberID,
+			&thread.MemberName,
+			&thread.LastPosterID,
+			&thread.LastPosterName,
+			&thread.Subject,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPostText,
+			&thread.Sticky,
+			&thread.Locked,
+			&thread.Legendary,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		threads = append(threads, thread)
+	}
+
+	threadPage.Threads = threads[:len(threads)-1]
+	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
+	siteContext.PrevPageCursor = threads[0].DateLastPosted
 
 	return siteContext, nil
 }

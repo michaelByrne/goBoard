@@ -12,6 +12,7 @@ type ThreadService interface {
 	ListThreads(limit, offset int) (*domain.SiteContext, error)
 	NewThread(memberName, memberIP, body, subject string) (int, error)
 	GetThreadsWithCursor(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error)
+	GetThreadsWithCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error)
 }
 
 type MemberService interface {

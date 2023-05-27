@@ -80,12 +80,28 @@ func (s ThreadService) GetThreadsWithCursor(limit int, firstPage bool, cursor *t
 
 		if len(site.ThreadPage.Threads) != 0 {
 			site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
+			site.PrevPageCursor = nil
 		}
 
 		return site, nil
 	}
 
 	site, err := s.threadRepo.ListThreadsByCursor(limit, cursor)
+	if err != nil {
+		s.logger.Errorf("error getting page of threads by cursor: %v", err)
+		return nil, err
+	}
+
+	if len(site.ThreadPage.Threads) != 0 {
+		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
+		site.PrevPageCursor = site.ThreadPage.Threads[0].DateLastPosted
+	}
+
+	return site, nil
+}
+
+func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+	site, err := s.threadRepo.ListThreadsByCursorReverse(limit, cursor)
 	if err != nil {
 		s.logger.Errorf("error getting page of threads by cursor: %v", err)
 		return nil, err

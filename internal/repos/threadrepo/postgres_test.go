@@ -192,4 +192,12 @@ func TestNewThreadRepo(t *testing.T) {
 
 		assert.Greater(t, cursor, *site.ThreadPage.Threads[0].DateLastPosted)
 	})
+
+	t.Run("successfully gets threads in reverse by cursor", func(t *testing.T) {
+		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
+		site, err := repo.ListThreadsByCursorReverse(1, &cursor)
+		require.NoError(t, err)
+
+		assert.Less(t, cursor, *site.ThreadPage.Threads[0].DateLastPosted)
+	})
 }

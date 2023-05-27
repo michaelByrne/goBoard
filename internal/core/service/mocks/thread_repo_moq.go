@@ -38,6 +38,9 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
 //				panic("mock out the ListThreadsByCursor method")
 //			},
+//			ListThreadsByCursorReverseFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+//				panic("mock out the ListThreadsByCursorReverse method")
+//			},
 //			ListThreadsByMemberIDFunc: func(memberID int, limit int, offset int) ([]domain.Thread, error) {
 //				panic("mock out the ListThreadsByMemberID method")
 //			},
@@ -71,6 +74,9 @@ type ThreadRepoMock struct {
 
 	// ListThreadsByCursorFunc mocks the ListThreadsByCursor method.
 	ListThreadsByCursorFunc func(limit int, cursor *time.Time) (*domain.SiteContext, error)
+
+	// ListThreadsByCursorReverseFunc mocks the ListThreadsByCursorReverse method.
+	ListThreadsByCursorReverseFunc func(limit int, cursor *time.Time) (*domain.SiteContext, error)
 
 	// ListThreadsByMemberIDFunc mocks the ListThreadsByMemberID method.
 	ListThreadsByMemberIDFunc func(memberID int, limit int, offset int) ([]domain.Thread, error)
@@ -125,6 +131,13 @@ type ThreadRepoMock struct {
 			// Cursor is the cursor argument value.
 			Cursor *time.Time
 		}
+		// ListThreadsByCursorReverse holds details about calls to the ListThreadsByCursorReverse method.
+		ListThreadsByCursorReverse []struct {
+			// Limit is the limit argument value.
+			Limit int
+			// Cursor is the cursor argument value.
+			Cursor *time.Time
+		}
 		// ListThreadsByMemberID holds details about calls to the ListThreadsByMemberID method.
 		ListThreadsByMemberID []struct {
 			// MemberID is the memberID argument value.
@@ -151,6 +164,7 @@ type ThreadRepoMock struct {
 	lockListPostsForThreadByCursor sync.RWMutex
 	lockListThreads                sync.RWMutex
 	lockListThreadsByCursor        sync.RWMutex
+	lockListThreadsByCursorReverse sync.RWMutex
 	lockListThreadsByMemberID      sync.RWMutex
 	lockSavePost                   sync.RWMutex
 	lockSaveThread                 sync.RWMutex
@@ -369,6 +383,42 @@ func (mock *ThreadRepoMock) ListThreadsByCursorCalls() []struct {
 	mock.lockListThreadsByCursor.RLock()
 	calls = mock.calls.ListThreadsByCursor
 	mock.lockListThreadsByCursor.RUnlock()
+	return calls
+}
+
+// ListThreadsByCursorReverse calls ListThreadsByCursorReverseFunc.
+func (mock *ThreadRepoMock) ListThreadsByCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+	if mock.ListThreadsByCursorReverseFunc == nil {
+		panic("ThreadRepoMock.ListThreadsByCursorReverseFunc: method is nil but ThreadRepo.ListThreadsByCursorReverse was just called")
+	}
+	callInfo := struct {
+		Limit  int
+		Cursor *time.Time
+	}{
+		Limit:  limit,
+		Cursor: cursor,
+	}
+	mock.lockListThreadsByCursorReverse.Lock()
+	mock.calls.ListThreadsByCursorReverse = append(mock.calls.ListThreadsByCursorReverse, callInfo)
+	mock.lockListThreadsByCursorReverse.Unlock()
+	return mock.ListThreadsByCursorReverseFunc(limit, cursor)
+}
+
+// ListThreadsByCursorReverseCalls gets all the calls that were made to ListThreadsByCursorReverse.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListThreadsByCursorReverseCalls())
+func (mock *ThreadRepoMock) ListThreadsByCursorReverseCalls() []struct {
+	Limit  int
+	Cursor *time.Time
+} {
+	var calls []struct {
+		Limit  int
+		Cursor *time.Time
+	}
+	mock.lockListThreadsByCursorReverse.RLock()
+	calls = mock.calls.ListThreadsByCursorReverse
+	mock.lockListThreadsByCursorReverse.RUnlock()
 	return calls
 }
 
