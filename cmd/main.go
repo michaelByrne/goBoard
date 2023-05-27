@@ -58,7 +58,7 @@ func main() {
 	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar)
 
 	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
-	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService)
+	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, 5)
 
 	threadHTTPHandler := thread.NewHandler(threadService)
 

@@ -10,14 +10,16 @@ import (
 )
 
 type TemplateHandler struct {
-	threadService ports.ThreadService
-	memberService ports.MemberService
+	threadService      ports.ThreadService
+	memberService      ports.MemberService
+	defaultThreadLimit int
 }
 
-func NewTemplateHandler(threadService ports.ThreadService, memberService ports.MemberService) *TemplateHandler {
+func NewTemplateHandler(threadService ports.ThreadService, memberService ports.MemberService, defaultThreadLimit int) *TemplateHandler {
 	return &TemplateHandler{
-		threadService: threadService,
-		memberService: memberService,
+		threadService:      threadService,
+		memberService:      memberService,
+		defaultThreadLimit: defaultThreadLimit,
 	}
 }
 
@@ -34,8 +36,7 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 }
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
-	threadListLength := 3
-	siteContext, err := h.threadService.GetThreadsWithCursor(threadListLength, true, nil)
+	siteContext, err := h.threadService.GetThreadsWithCursor(h.defaultThreadLimit, true, nil)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -47,12 +48,6 @@ func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	cursor := c.QueryParams().Get("cursor")
-	limit, err := strconv.Atoi(c.QueryParams().Get("limit"))
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
 	cursorAsTime, err := time.Parse(time.RFC3339, cursor)
 	if err != nil {
 		c.String(500, err.Error())
@@ -67,17 +62,17 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	}
 
 	if reverseAsBool {
-		threads, err := h.threadService.GetThreadsWithCursorReverse(limit, &cursorAsTime)
+		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime)
 		if err != nil {
 			c.String(500, err.Error())
 			return err
 		}
 
-		threads.PageName = "main"
-		return c.Render(200, "main", threads)
+		siteContext.PageName = "main"
+		return c.Render(200, "main", siteContext)
 	}
 
-	siteContext, err := h.threadService.GetThreadsWithCursor(limit, false, &cursorAsTime)
+	siteContext, err := h.threadService.GetThreadsWithCursor(h.defaultThreadLimit, false, &cursorAsTime)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
