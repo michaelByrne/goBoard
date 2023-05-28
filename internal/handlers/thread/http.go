@@ -147,7 +147,7 @@ func (h *Handler) GetThreadsWithCursor(c echo.Context) error {
 		return err
 	}
 
-	threads, err := h.threadService.GetThreadsWithCursor(limit, false, &cursorAsTime)
+	threads, err := h.threadService.GetThreadsWithCursorForward(limit, false, &cursorAsTime)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -164,7 +164,7 @@ func (h *Handler) GetFirstPageThreads(c echo.Context) error {
 		return err
 	}
 
-	threads, err := h.threadService.GetThreadsWithCursor(limitAsInt, true, nil)
+	threads, err := h.threadService.GetThreadsWithCursorForward(limitAsInt, true, nil)
 	if err != nil {
 		c.String(500, err.Error())
 		return err

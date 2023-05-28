@@ -9,16 +9,18 @@ import (
 )
 
 type ThreadService struct {
-	threadRepo ports.ThreadRepo
-	memberRepo ports.MemberRepo
-	logger     *zap.SugaredLogger
+	threadRepo            ports.ThreadRepo
+	memberRepo            ports.MemberRepo
+	logger                *zap.SugaredLogger
+	defaultMaxThreadLimit int
 }
 
-func NewThreadService(postRepo ports.ThreadRepo, memberRepo ports.MemberRepo, logger *zap.SugaredLogger) ThreadService {
+func NewThreadService(postRepo ports.ThreadRepo, memberRepo ports.MemberRepo, logger *zap.SugaredLogger, defaultMaxThreadLimit int) ThreadService {
 	return ThreadService{
-		threadRepo: postRepo,
-		logger:     logger,
-		memberRepo: memberRepo,
+		threadRepo:            postRepo,
+		logger:                logger,
+		memberRepo:            memberRepo,
+		defaultMaxThreadLimit: defaultMaxThreadLimit,
 	}
 }
 
@@ -69,14 +71,36 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 	return thread, nil
 }
 
-func (s ThreadService) GetThreadsWithCursor(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error) {
+func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error) {
 	if firstPage {
 		start := time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC)
-		site, err := s.threadRepo.ListThreadsByCursor(limit, &start)
+		threads, err := s.threadRepo.ListThreadsByCursorForward(limit, &start)
 		if err != nil {
 			s.logger.Errorf("error getting first page of threads by cursor: %v", err)
 			return nil, err
 		}
+
+		site := &domain.SiteContext{
+			ThreadPage: domain.ThreadPage{
+				Threads: threads,
+			},
+		}
+
+		if len(threads) > s.defaultMaxThreadLimit {
+			site.ThreadPage.HasNextPage = true
+			threads = threads[:s.defaultMaxThreadLimit]
+		} else {
+			site.ThreadPage.HasNextPage = false
+		}
+
+		site.ThreadPage.Threads = threads
+
+		prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+		if err != nil {
+			return nil, err
+		}
+
+		site.ThreadPage.HasPrevPage = prevExists
 
 		if len(site.ThreadPage.Threads) != 0 {
 			site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
@@ -86,11 +110,29 @@ func (s ThreadService) GetThreadsWithCursor(limit int, firstPage bool, cursor *t
 		return site, nil
 	}
 
-	site, err := s.threadRepo.ListThreadsByCursor(limit, cursor)
+	threads, err := s.threadRepo.ListThreadsByCursorForward(limit, cursor)
 	if err != nil {
 		s.logger.Errorf("error getting page of threads by cursor: %v", err)
 		return nil, err
 	}
+
+	site := &domain.SiteContext{}
+
+	if len(threads) > s.defaultMaxThreadLimit {
+		site.ThreadPage.HasNextPage = true
+		threads = threads[:s.defaultMaxThreadLimit]
+	} else {
+		site.ThreadPage.HasNextPage = false
+	}
+
+	site.ThreadPage.Threads = threads
+
+	prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+	if err != nil {
+		return nil, err
+	}
+
+	site.ThreadPage.HasPrevPage = prevExists
 
 	if len(site.ThreadPage.Threads) != 0 {
 		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
@@ -101,10 +143,29 @@ func (s ThreadService) GetThreadsWithCursor(limit int, firstPage bool, cursor *t
 }
 
 func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error) {
-	site, err := s.threadRepo.ListThreadsByCursorReverse(limit, cursor)
+	threads, err := s.threadRepo.ListThreadsByCursorReverse(limit, cursor)
 	if err != nil {
 		s.logger.Errorf("error getting page of threads by cursor: %v", err)
 		return nil, err
+	}
+
+	site := &domain.SiteContext{}
+
+	site.ThreadPage.Threads = threads[:len(threads)-1]
+	site.PrevPageCursor = threads[0].DateLastPosted
+
+	prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+	if err != nil {
+		return nil, err
+	}
+
+	site.ThreadPage.HasPrevPage = prevExists
+
+	if len(threads) > s.defaultMaxThreadLimit {
+		site.ThreadPage.HasNextPage = true
+		site.ThreadPage.Threads = site.ThreadPage.Threads[:s.defaultMaxThreadLimit]
+	} else {
+		site.ThreadPage.HasNextPage = false
 	}
 
 	if len(site.ThreadPage.Threads) != 0 {

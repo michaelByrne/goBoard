@@ -42,6 +42,7 @@
                     document.getElementById('preview').addEventListener('click', (event) => {
                         showPreview(new URLSearchParams(new FormData(event.target.form)))
                     })
+                    document.forms['form'].addEventListener('submit', captureSubmit);
                 </script>
             </div>
         </div>
