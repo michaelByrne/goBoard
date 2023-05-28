@@ -95,16 +95,15 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 
 		site.ThreadPage.Threads = threads
 
-		prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
-		if err != nil {
-			return nil, err
-		}
-
-		site.ThreadPage.HasPrevPage = prevExists
-
 		if len(site.ThreadPage.Threads) != 0 {
 			site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
 			site.PrevPageCursor = nil
+			prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+			if err != nil {
+				return nil, err
+			}
+
+			site.ThreadPage.HasPrevPage = prevExists
 		}
 
 		return site, nil
@@ -127,16 +126,16 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 
 	site.ThreadPage.Threads = threads
 
-	prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
-	if err != nil {
-		return nil, err
-	}
-
-	site.ThreadPage.HasPrevPage = prevExists
-
 	if len(site.ThreadPage.Threads) != 0 {
 		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
 		site.PrevPageCursor = site.ThreadPage.Threads[0].DateLastPosted
+
+		prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+		if err != nil {
+			return nil, err
+		}
+
+		site.ThreadPage.HasPrevPage = prevExists
 	}
 
 	return site, nil
