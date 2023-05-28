@@ -31,4 +31,4 @@ WHERE t.sticky IS false
   AND t.date_last_posted < $2
 ORDER BY
     t.date_last_posted DESC
-LIMIT $1
+LIMIT $1+1

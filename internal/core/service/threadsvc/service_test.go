@@ -14,6 +14,14 @@ func TestNewThreadService(t *testing.T) {
 	l := zap.NewNop()
 	sugar := l.Sugar()
 
+	mayFirst := time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC)
+	maySecond := time.Date(2020, 5, 2, 0, 0, 0, 0, time.UTC)
+	mayThird := time.Date(2020, 5, 3, 0, 0, 0, 0, time.UTC)
+	mayFourth := time.Date(2020, 5, 4, 0, 0, 0, 0, time.UTC)
+	mayFifth := time.Date(2020, 5, 5, 0, 0, 0, 0, time.UTC)
+	maySixth := time.Date(2020, 5, 6, 0, 0, 0, 0, time.UTC)
+	maySeventh := time.Date(2020, 5, 7, 0, 0, 0, 0, time.UTC)
+
 	t.Run("successfully gets a thread by id", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
 			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
@@ -34,7 +42,7 @@ func TestNewThreadService(t *testing.T) {
 
 		mockMemberRepo := &mocks.MemberRepoMock{}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
 		expectedThread := domain.Thread{
 			ID:      1,
@@ -67,7 +75,7 @@ func TestNewThreadService(t *testing.T) {
 
 		mockMemberRepo := &mocks.MemberRepoMock{}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
 		thread, err := svc.GetThreadByID(1, 1, 1)
 		require.Error(t, err)
@@ -88,7 +96,7 @@ func TestNewThreadService(t *testing.T) {
 
 		mockMemberRepo := &mocks.MemberRepoMock{}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
 		thread, err := svc.GetThreadByID(1, 1, 1)
 		require.Error(t, err)
@@ -120,7 +128,7 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
 		_, err := svc.NewPost("Hello, BCO", "127.0.0.1", "roxy", 1)
 		require.NoError(t, err)
@@ -152,7 +160,7 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
 		_, err := svc.NewThread("gofreescout", "127.0.0.1", "Attn Roxy", "Hello, BCO")
 		require.NoError(t, err)
@@ -160,105 +168,107 @@ func TestNewThreadService(t *testing.T) {
 		assert.Equal(t, expectedThreadArg, actualThreadArg)
 	})
 
-	t.Run("successfully gets first page threads by cursor", func(t *testing.T) {
-		cursor := time.Date(2019, 1, 7, 0, 0, 0, 0, time.UTC)
-		firstLastPosted := time.Date(2019, 1, 5, 0, 0, 0, 0, time.UTC)
-		secondLastPosted := time.Date(2019, 1, 10, 0, 0, 0, 0, time.UTC)
-		thirdLastPosted := time.Date(2019, 1, 15, 0, 0, 0, 0, time.UTC)
-
-		siteContext := &domain.SiteContext{
-			ThreadPage: domain.ThreadPage{
-				Threads: []domain.Thread{
+	t.Run("successfully gets a list of threads by page forward", func(t *testing.T) {
+		mockThreadRepo := &mocks.ThreadRepoMock{
+			ListThreadsByCursorForwardFunc: func(limit int, cursor *time.Time) ([]domain.Thread, error) {
+				return []domain.Thread{
 					{
 						ID:             1,
-						DateLastPosted: &firstLastPosted,
+						DateLastPosted: &maySecond,
+						Subject:        "Hello, BCO",
 					},
 					{
 						ID:             2,
-						DateLastPosted: &secondLastPosted,
+						DateLastPosted: &mayFirst,
+						Subject:        "Post a picture of yourself thread",
 					},
 					{
 						ID:             3,
-						DateLastPosted: &thirdLastPosted,
+						DateLastPosted: &mayFifth,
+						Subject:        "Who peed in the pool",
 					},
-				},
+				}, nil
 			},
-		}
-
-		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
-				return siteContext, nil
+			PeekPreviousFunc: func(timestamp *time.Time) (bool, error) {
+				return false, nil
 			},
 		}
 
 		mockMemberRepo := &mocks.MemberRepoMock{}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
 
-		actualSiteContext, err := svc.GetThreadsWithCursor(1, true, &cursor)
+		site, err := svc.GetThreadsWithCursorForward(2, false, &mayThird)
 		require.NoError(t, err)
 
-		assert.Equal(t, &thirdLastPosted, actualSiteContext.PageCursor)
+		assert.Len(t, site.ThreadPage.Threads, 2)
+		assert.Equal(t, 1, site.ThreadPage.Threads[0].ID)
+		assert.Equal(t, 2, site.ThreadPage.Threads[1].ID)
+		assert.Equal(t, "Hello, BCO", site.ThreadPage.Threads[0].Subject)
+		assert.Equal(t, "Post a picture of yourself thread", site.ThreadPage.Threads[1].Subject)
+		assert.Equal(t, &maySecond, site.ThreadPage.Threads[0].DateLastPosted)
+		assert.Equal(t, &mayFirst, site.ThreadPage.Threads[1].DateLastPosted)
+		assert.Equal(t, false, site.ThreadPage.HasPrevPage)
+		assert.Equal(t, &mayFirst, site.PageCursor)
+		assert.Equal(t, &maySecond, site.PrevPageCursor)
 	})
 
-	t.Run("successfully gets page threads by cursor", func(t *testing.T) {
-		cursor := time.Date(2019, 1, 7, 0, 0, 0, 0, time.UTC)
-		firstLastPosted := time.Date(2019, 1, 5, 0, 0, 0, 0, time.UTC)
-		//secondLastPosted := time.Date(2019, 1, 10, 0, 0, 0, 0, time.UTC)
-		//thirdLastPosted := time.Date(2019, 1, 15, 0, 0, 0, 0, time.UTC)
-
-		siteContext := &domain.SiteContext{
-			ThreadPage: domain.ThreadPage{
-				Threads: []domain.Thread{
+	t.Run("successfully gets a list of threads by page reverse", func(t *testing.T) {
+		mockThreadRepo := &mocks.ThreadRepoMock{
+			ListThreadsByCursorReverseFunc: func(limit int, cursor *time.Time) ([]domain.Thread, error) {
+				return []domain.Thread{
 					{
 						ID:             1,
-						DateLastPosted: &firstLastPosted,
+						DateLastPosted: &maySeventh,
+						Subject:        "Hello, BCO",
 					},
-				},
+					{
+						ID:             2,
+						DateLastPosted: &maySixth,
+						Subject:        "Post a picture of yourself thread",
+					},
+					{
+						ID:             3,
+						DateLastPosted: &mayFifth,
+						Subject:        "Who peed in the pool",
+					},
+					{
+						ID:             4,
+						DateLastPosted: &mayFourth,
+						Subject:        "soup's on!",
+					},
+					{
+						ID:             5,
+						DateLastPosted: &mayThird,
+						Subject:        "I'm in outeep space",
+					},
+					{
+						ID:             6,
+						DateLastPosted: &maySecond,
+						Subject:        "new experiences thread",
+					},
+					{
+						ID:             7,
+						DateLastPosted: &mayFirst,
+						Subject:        "thread for eataly",
+					},
+				}, nil
 			},
-		}
-
-		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
-				return siteContext, nil
+			PeekPreviousFunc: func(timestamp *time.Time) (bool, error) {
+				return true, nil
 			},
 		}
 
 		mockMemberRepo := &mocks.MemberRepoMock{}
 
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
+		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
 
-		actualSiteContext, err := svc.GetThreadsWithCursor(1, false, &cursor)
+		site, err := svc.GetThreadsWithCursorReverse(3, &mayFourth)
 		require.NoError(t, err)
 
-		assert.Equal(t, &firstLastPosted, actualSiteContext.PageCursor)
-	})
-
-	t.Run("if no threads are returned, cursor should be nil", func(t *testing.T) {
-		cursor := time.Date(2019, 1, 7, 0, 0, 0, 0, time.UTC)
-		//firstLastPosted := time.Date(2019, 1, 5, 0, 0, 0, 0, time.UTC)
-		//secondLastPosted := time.Date(2019, 1, 10, 0, 0, 0, 0, time.UTC)
-		//thirdLastPosted := time.Date(2019, 1, 15, 0, 0, 0, 0, time.UTC)
-
-		siteContext := &domain.SiteContext{
-			ThreadPage: domain.ThreadPage{
-				Threads: []domain.Thread{},
-			},
-		}
-
-		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorFunc: func(limit int, cursor *time.Time) (*domain.SiteContext, error) {
-				return siteContext, nil
-			},
-		}
-
-		mockMemberRepo := &mocks.MemberRepoMock{}
-
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar)
-
-		actualSiteContext, err := svc.GetThreadsWithCursor(1, false, &cursor)
-		require.NoError(t, err)
-
-		assert.Nil(t, actualSiteContext.PageCursor)
+		assert.Len(t, site.ThreadPage.Threads, 2)
+		assert.Equal(t, &maySixth, site.PageCursor)
+		assert.True(t, site.ThreadPage.HasPrevPage)
+		assert.Equal(t, &maySeventh, site.PrevPageCursor)
 	})
 }

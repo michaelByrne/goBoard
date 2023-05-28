@@ -16,7 +16,9 @@ type ThreadRepo interface {
 	SaveThread(thread domain.Thread) (int, error)
 	ListPostsForThread(limit, offset, id int) ([]domain.Post, error)
 	ListPostsForThreadByCursor(limit, id int, cursor *time.Time) ([]domain.Post, error)
-	ListThreadsByCursor(limit int, cursor *time.Time) (*domain.SiteContext, error)
+	ListThreadsByCursorForward(limit int, cursor *time.Time) ([]domain.Thread, error)
+	ListThreadsByCursorReverse(limit int, cursor *time.Time) ([]domain.Thread, error)
+	PeekPrevious(timestamp *time.Time) (bool, error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo

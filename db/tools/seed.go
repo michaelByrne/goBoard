@@ -1,32 +1,65 @@
 package main
 
 import (
-	"strconv"
-	"fmt"
 	"context"
+	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
+	"math/rand"
+	"time"
 )
+
+var DATA = [30]string{"Lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "Mauris", "faucibus", "lectus", "eget", "cursus", "tempus", "ligula", "orci", "mattis", "massa", "nec", "eleifend", "lorem", "ipsum", "congue", "erat", "Pellentesque", "suscipit", "semper", "sapien", "sed", "luctus"}
 
 func main() {
 	dbURI := "postgres://boardking:test@localhost:5432/board?sslmode=disable"
 	var pool, err = pgxpool.Connect(context.Background(), dbURI)
-	if err != nil { 
-		fmt.Println(err) 
+	if err != nil {
+		fmt.Println(err)
 	}
-	
-	pool.Exec(context.Background(), `INSERT INTO member (name, pass, ip, email_signup, postalcode, secret) VALUES ($1, $2, $3, $4, $5, $6)`, "admin", "admin", "127.0.0.1", "admin@test.com", "12345", "topsecret")
-	pool.Exec(context.Background(), `INSERT INTO member (name, pass, ip, email_signup, postalcode, secret) VALUES ($1, $2, $3, $4, $5, $6)`, "gofreescout", "test", "127.0.0.2", "gofreescout@gmail.com", "48225", "topsecret")
 
-	n := 1
-	for n < 10000 {
-		t := strconv.Itoa(n)
-		pool.Exec(context.Background(), `INSERT INTO thread (member_id, first_post_id, last_member_id, subject) VALUES ($1, $2, $3, $4)`, 1, 1, 1, "Hello, BCO"+t)
-		pool.Exec(context.Background(), `INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4)`, n, 1, "127.0.0.1", "Attn. Roxy")
-		pool.Exec(context.Background(), `INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4)`, n, 1, "127.0.0.2", "WCFRP")
-		pool.Exec(context.Background(), `INSERT INTO thread (member_id, first_post_id, last_member_id, subject) VALUES ($1, $2, $3, $4)`, 2, 3, 1, "It stinks! A new moratorium thread"+t)
-		pool.Exec(context.Background(), `INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4)`, n+1, 2, "127.0.0.1", "I listened to a podcast earlier that had five minutes of ads at the beginning")
-		pool.Exec(context.Background(), `INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4)`, n+1, 1, "127.0.0.1", "moratorium on anything to do with AI")
-		pool.Exec(context.Background(), `INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4)`, n+1, 2, "127.0.0.1", "small d democratic")
-		n++
+	begin, err := pool.Begin(context.Background())
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	b := &pgx.Batch{}
+
+	b.Queue("INSERT INTO member (id, name, pass, postalcode, email_signup, secret, ip) VALUES ($1, $2, $3, $4, $5, $6, $7)", 1, "gofreescout", "test", "97217", "mpbyrne@hotmail.com", "fishsticks", "172.0.0.1")
+	b.Queue("INSERT INTO member (id, name, pass, postalcode, email_signup, secret, ip) VALUES ($1, $2, $3, $4, $5, $6, $7)", 2, "elliott", "test2", "97217", "admin@admin.net", "admin", "172.0.0.1")
+
+	for i := 1; i < 100; i++ {
+		b.Queue("INSERT INTO thread (id, subject, member_id, last_member_id) VALUES ($1, $2, $3, $4)", i, DATA[i%30], 1, 1)
+
+		b.Queue("INSERT INTO thread (id, subject, member_id, last_member_id) VALUES ($1, $2, $3, $4)", i*100, DATA[i%30], 2, 2)
+	}
+
+	for i := 1; i < 100; i++ {
+		b.Queue("INSERT INTO board.public.thread_post (id, member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4, $5)", i, 1, i%100, DATA[i%30], "172.0.0.1")
+		b.Queue("INSERT INTO board.public.thread_post (id, member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4, $5)", i*100, 2, i*100, DATA[i%30], "172.0.0.1")
+		randDay := rand.Intn(28) + 1
+		randMonth := rand.Intn(12) + 1
+		randYear := rand.Intn(20) + 2000
+		b.Queue("UPDATE thread SET date_last_posted = $1 WHERE id = $2", time.Date(randYear, time.Month(randMonth), randDay, 0, 0, 0, 0, time.UTC), i)
+		randDay = rand.Intn(28) + 1
+		randMonth = rand.Intn(12) + 1
+		randYear = rand.Intn(20) + 2000
+		b.Queue("UPDATE thread SET date_last_posted = $1 WHERE id = $2", time.Date(randYear, time.Month(randMonth), randDay, 0, 0, 0, 0, time.UTC), i*100)
+	}
+
+	results := begin.SendBatch(context.Background(), b)
+
+	var qerr error
+	var rows pgx.Rows
+	for qerr == nil {
+		rows, qerr = results.Query()
+		rows.Close()
+	}
+
+	err = begin.Commit(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

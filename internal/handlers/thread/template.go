@@ -10,14 +10,16 @@ import (
 )
 
 type TemplateHandler struct {
-	threadService ports.ThreadService
-	memberService ports.MemberService
+	threadService      ports.ThreadService
+	memberService      ports.MemberService
+	defaultThreadLimit int
 }
 
-func NewTemplateHandler(threadService ports.ThreadService, memberService ports.MemberService) *TemplateHandler {
+func NewTemplateHandler(threadService ports.ThreadService, memberService ports.MemberService, defaultThreadLimit int) *TemplateHandler {
 	return &TemplateHandler{
-		threadService: threadService,
-		memberService: memberService,
+		threadService:      threadService,
+		memberService:      memberService,
+		defaultThreadLimit: defaultThreadLimit,
 	}
 }
 
@@ -27,15 +29,14 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/thread/view/:id", h.ListPostsForThread)
 	e.GET("/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
-	e.POST("/thread/reply", h.ThreadReply)
+	//e.POST("/thread/reply", h.ThreadReply)
 	e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
 	e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
 
 func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
-	threadListLength := 3
-	siteContext, err := h.threadService.GetThreadsWithCursor(threadListLength, true, nil)
+	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, true, nil)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -47,19 +48,31 @@ func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	cursor := c.QueryParams().Get("cursor")
-	limit, err := strconv.Atoi(c.QueryParams().Get("limit"))
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
 	cursorAsTime, err := time.Parse(time.RFC3339, cursor)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
-	siteContext, err := h.threadService.GetThreadsWithCursor(limit, false, &cursorAsTime)
+	reverse := c.QueryParams().Get("reverse")
+	reverseAsBool, err := strconv.ParseBool(reverse)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	if reverseAsBool {
+		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime)
+		if err != nil {
+			c.String(500, err.Error())
+			return err
+		}
+
+		siteContext.PageName = "main"
+		return c.Render(200, "main", siteContext)
+	}
+
+	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, false, &cursorAsTime)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -108,35 +121,35 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 	return c.Render(200, "post", post)
 }
 
-func (h *TemplateHandler) ThreadReply(c echo.Context) error {
-	values, err := c.FormParams()
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	threadID := values.Get("thread_id")
-	threadIDAsInt, err := strconv.Atoi(threadID)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	author := values.Get("member_name")
-	body := values.Get("body")
-
-	ip := c.RealIP()
-
-	postID, err := h.threadService.NewPost(body, ip, author, threadIDAsInt)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return c.JSON(200, NewPostResponse{
-		PostID: postID,
-	})
-}
+//func (h *TemplateHandler) ThreadReply(c echo.Context) error {
+//	values, err := c.FormParams()
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//
+//	threadID := values.Get("thread_id")
+//	threadIDAsInt, err := strconv.Atoi(threadID)
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//
+//	author := values.Get("member_name")
+//	body := values.Get("body")
+//
+//	ip := c.RealIP()
+//
+//	postID, err := h.threadService.NewPost(body, ip, author, threadIDAsInt)
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//
+//	return c.JSON(200, NewPostResponse{
+//		PostID: postID,
+//	})
+//}
 
 func (h *TemplateHandler) CreateThread(c echo.Context) error {
 	body := c.FormValue("body")

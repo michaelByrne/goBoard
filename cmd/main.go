@@ -54,11 +54,11 @@ func main() {
 
 	memberRepo := memberrepo.NewMemberRepo(pool)
 	memberService := membersvc.NewMemberService(memberRepo, sugar)
-	threadRepo := threadrepo.NewThreadRepo(pool)
-	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar)
+	threadRepo := threadrepo.NewThreadRepo(pool, 5)
+	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, 5)
 
 	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
-	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService)
+	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, 5)
 
 	threadHTTPHandler := thread.NewHandler(threadService)
 

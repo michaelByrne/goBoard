@@ -20,18 +20,25 @@ var countThreadsQuery string
 //go:embed queries/list_posts.sql
 var listPostsQuery string
 
-//go:embed queries/lists_posts_cursor.sql
+//go:embed queries/lists_posts_cursor_forward.sql
 var listPostsCursorQuery string
 
-//go:embed queries/list_threads_cursor.sql
-var listThreadsCursorQuery string
+//go:embed queries/list_threads_cursor_forward.sql
+var listThreadsCursorForwardQuery string
+
+//go:embed queries/list_threads_cursor_reverse.sql
+var listThreadsCursorReverseQuery string
 
 type ThreadRepo struct {
-	connPool *pgxpool.Pool
+	connPool              *pgxpool.Pool
+	defaultMaxThreadLimit int
 }
 
-func NewThreadRepo(pool *pgxpool.Pool) ThreadRepo {
-	return ThreadRepo{pool}
+func NewThreadRepo(pool *pgxpool.Pool, defaultMaxThreadLimit int) ThreadRepo {
+	return ThreadRepo{
+		connPool:              pool,
+		defaultMaxThreadLimit: defaultMaxThreadLimit,
+	}
 }
 
 func (r ThreadRepo) SavePost(post domain.Post) (int, error) {
@@ -241,10 +248,9 @@ func (r ThreadRepo) ListPostsForThreadByCursor(limit, id int, cursor *time.Time)
 	return posts, nil
 }
 
-func (r ThreadRepo) ListThreadsByCursor(limit int, cursor *time.Time) (*domain.SiteContext, error) {
+func (r ThreadRepo) ListThreadsByCursorForward(limit int, cursor *time.Time) ([]domain.Thread, error) {
 	var threads []domain.Thread
-	threadPage := &domain.ThreadPage{}
-	rows, err := r.connPool.Query(context.Background(), listThreadsCursorQuery, limit, cursor)
+	rows, err := r.connPool.Query(context.Background(), listThreadsCursorForwardQuery, limit, cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -274,8 +280,51 @@ func (r ThreadRepo) ListThreadsByCursor(limit int, cursor *time.Time) (*domain.S
 		threads = append(threads, thread)
 	}
 
-	threadPage.Threads = threads
-	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
+	return threads, nil
+}
 
-	return siteContext, nil
+func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time) ([]domain.Thread, error) {
+	var threads []domain.Thread
+	rows, err := r.connPool.Query(context.Background(), listThreadsCursorReverseQuery, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var thread domain.Thread
+		err := rows.Scan(
+			&thread.ID,
+			&thread.DateLastPosted,
+			&thread.DatePosted,
+			&thread.MemberID,
+			&thread.MemberName,
+			&thread.LastPosterID,
+			&thread.LastPosterName,
+			&thread.Subject,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPostText,
+			&thread.Sticky,
+			&thread.Locked,
+			&thread.Legendary,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		threads = append(threads, thread)
+	}
+
+	return threads, nil
+}
+
+func (r ThreadRepo) PeekPrevious(timestamp *time.Time) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM thread WHERE date_last_posted > $1)"
+	var exists bool
+	err := r.connPool.QueryRow(context.Background(), query, timestamp).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
