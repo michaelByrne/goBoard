@@ -31,10 +31,10 @@ func (s ThreadService) NewPost(body, ip, memberName string, threadID int) (int, 
 		return 0, err
 	}
 
-	id, err := s.threadRepo.SavePost(domain.Post{
-		Text:     body,
+	id, err := s.threadRepo.SavePost(domain.ThreadPost{
+		Body:     body,
 		MemberIP: ip,
-		ThreadID: threadID,
+		ParentID: threadID,
 		MemberID: memberID,
 	})
 	if err != nil {
@@ -45,7 +45,7 @@ func (s ThreadService) NewPost(body, ip, memberName string, threadID int) (int, 
 	return id, nil
 }
 
-func (s ThreadService) GetPostByID(id int) (*domain.Post, error) {
+func (s ThreadService) GetPostByID(id int) (*domain.ThreadPost, error) {
 	return s.threadRepo.GetPostByID(id)
 }
 
@@ -64,7 +64,7 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 
 	for idx, post := range posts {
 		postPtr := &post
-		postPtr.ThreadPosition = idx + 1
+		postPtr.Position = idx + 1
 		thread.Posts = append(thread.Posts, *postPtr)
 	}
 

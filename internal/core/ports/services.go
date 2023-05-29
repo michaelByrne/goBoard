@@ -7,7 +7,7 @@ import (
 
 type ThreadService interface {
 	NewPost(body, ip, memberName string, threadID int) (int, error)
-	GetPostByID(id int) (*domain.Post, error)
+	GetPostByID(id int) (*domain.ThreadPost, error)
 	GetThreadByID(limit, offset, id int) (*domain.Thread, error)
 	ListThreads(limit, offset int) (*domain.SiteContext, error)
 	NewThread(memberName, memberIP, body, subject string) (int, error)
@@ -20,4 +20,13 @@ type MemberService interface {
 	GetMemberByID(id int) (*domain.Member, error)
 	GetMemberIDByUsername(username string) (int, error)
 	GetMemberByUsername(username string) (*domain.SiteContext, error)
+	ValidateMembers(names []string) ([]domain.Member, error)
+}
+
+type MessageService interface {
+	SendMessage(subject, body, memberIP string, memberID int, recipientIDs []int) (int, error)
+	GetMessagesByMemberID(memberID int) ([]domain.Message, error)
+	GetMessageByID(messageID, memberID int) (*domain.Message, error)
+	NewPost(body, ip, memberName string, messageID int) (int, error)
+	GetMessagePostByID(id int) (*domain.MessagePost, error)
 }

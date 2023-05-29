@@ -19,7 +19,7 @@ type Thread struct {
 	Locked         bool
 	Legendary      bool
 	NumPosts       int
-	Posts          []Post
+	Posts          []ThreadPost
 	Timestamp      *time.Time
 	PageCursor     *time.Time
 }

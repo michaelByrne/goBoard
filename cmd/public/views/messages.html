@@ -1,0 +1,52 @@
+{{ define "messages" }}
+    <head>
+        <link rel="stylesheet" href="/static/css/core.css">
+        <script type="text/javascript" src="/static/js/core.js"></script>
+        <title>elitism. secrecy. tradition.</title>
+    </head>
+    <body>
+    <div id="content">
+        <div class="pad">
+            <div class="clear" id="wrap_l56761">
+                <h3 class="title">elitism. secrecy. tradition.</h3>
+                <div class="clear"></div>
+                {{template "top-nav"}}
+                <div class="hr">
+                    <hr/>
+                </div>
+                <div class="data">
+                    {{ range .}}
+                    <div>
+                        <ul class="list read" id="list_l56761">
+                            <li class="readbar" onclick="testClick()">&nbsp;</li>
+                            <li class="member">
+                                <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a>
+                            </li>
+                            <li class="subject">
+                                <a href="/message/view/{{ .ID }}">{{ .Subject }}</a>
+                            </li>
+                            <li class="posts">
+                                {{ .NumPosts }}
+                            </li>
+                            <li class="lastpost">
+                                <a href="/member/view/{{ .LastPosterName }}"
+                                   class="memberlink">{{ .LastPosterName }}</a> on
+                                {{ .DateLastPosted.Format "Jan 02, 2006 15:04:05 UTC" }}
+                            </li>
+                        </ul>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+
+    <script>
+        $(document).ready(function () {
+            $('.data div:even').css({'background-color': '#c3dae4', 'color': 'black'});
+            $('.data div:odd').css({'background-color': '#acccdb', 'color': 'black'});
+        });
+    </script>
+
+{{ end }}

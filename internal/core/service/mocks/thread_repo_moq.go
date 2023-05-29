@@ -20,16 +20,16 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //
 //		// make and configure a mocked ports.ThreadRepo
 //		mockedThreadRepo := &ThreadRepoMock{
-//			GetPostByIDFunc: func(id int) (*domain.Post, error) {
+//			GetPostByIDFunc: func(id int) (*domain.ThreadPost, error) {
 //				panic("mock out the GetPostByID method")
 //			},
 //			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
 //				panic("mock out the GetThreadByID method")
 //			},
-//			ListPostsForThreadFunc: func(limit int, offset int, id int) ([]domain.Post, error) {
+//			ListPostsForThreadFunc: func(limit int, offset int, id int) ([]domain.ThreadPost, error) {
 //				panic("mock out the ListPostsForThread method")
 //			},
-//			ListPostsForThreadByCursorFunc: func(limit int, id int, cursor *time.Time) ([]domain.Post, error) {
+//			ListPostsForThreadByCursorFunc: func(limit int, id int, cursor *time.Time) ([]domain.ThreadPost, error) {
 //				panic("mock out the ListPostsForThreadByCursor method")
 //			},
 //			ListThreadsFunc: func(limit int, offset int) (*domain.SiteContext, error) {
@@ -47,7 +47,7 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			PeekPreviousFunc: func(timestamp *time.Time) (bool, error) {
 //				panic("mock out the PeekPrevious method")
 //			},
-//			SavePostFunc: func(post domain.Post) (int, error) {
+//			SavePostFunc: func(post domain.ThreadPost) (int, error) {
 //				panic("mock out the SavePost method")
 //			},
 //			SaveThreadFunc: func(thread domain.Thread) (int, error) {
@@ -61,16 +61,16 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //	}
 type ThreadRepoMock struct {
 	// GetPostByIDFunc mocks the GetPostByID method.
-	GetPostByIDFunc func(id int) (*domain.Post, error)
+	GetPostByIDFunc func(id int) (*domain.ThreadPost, error)
 
 	// GetThreadByIDFunc mocks the GetThreadByID method.
 	GetThreadByIDFunc func(id int) (*domain.Thread, error)
 
 	// ListPostsForThreadFunc mocks the ListPostsForThread method.
-	ListPostsForThreadFunc func(limit int, offset int, id int) ([]domain.Post, error)
+	ListPostsForThreadFunc func(limit int, offset int, id int) ([]domain.ThreadPost, error)
 
 	// ListPostsForThreadByCursorFunc mocks the ListPostsForThreadByCursor method.
-	ListPostsForThreadByCursorFunc func(limit int, id int, cursor *time.Time) ([]domain.Post, error)
+	ListPostsForThreadByCursorFunc func(limit int, id int, cursor *time.Time) ([]domain.ThreadPost, error)
 
 	// ListThreadsFunc mocks the ListThreads method.
 	ListThreadsFunc func(limit int, offset int) (*domain.SiteContext, error)
@@ -88,7 +88,7 @@ type ThreadRepoMock struct {
 	PeekPreviousFunc func(timestamp *time.Time) (bool, error)
 
 	// SavePostFunc mocks the SavePost method.
-	SavePostFunc func(post domain.Post) (int, error)
+	SavePostFunc func(post domain.ThreadPost) (int, error)
 
 	// SaveThreadFunc mocks the SaveThread method.
 	SaveThreadFunc func(thread domain.Thread) (int, error)
@@ -160,8 +160,8 @@ type ThreadRepoMock struct {
 		}
 		// SavePost holds details about calls to the SavePost method.
 		SavePost []struct {
-			// Post is the post argument value.
-			Post domain.Post
+			// ThreadPost is the post argument value.
+			Post domain.ThreadPost
 		}
 		// SaveThread holds details about calls to the SaveThread method.
 		SaveThread []struct {
@@ -183,7 +183,7 @@ type ThreadRepoMock struct {
 }
 
 // GetPostByID calls GetPostByIDFunc.
-func (mock *ThreadRepoMock) GetPostByID(id int) (*domain.Post, error) {
+func (mock *ThreadRepoMock) GetPostByID(id int) (*domain.ThreadPost, error) {
 	if mock.GetPostByIDFunc == nil {
 		panic("ThreadRepoMock.GetPostByIDFunc: method is nil but ThreadRepo.GetPostByID was just called")
 	}
@@ -247,7 +247,7 @@ func (mock *ThreadRepoMock) GetThreadByIDCalls() []struct {
 }
 
 // ListPostsForThread calls ListPostsForThreadFunc.
-func (mock *ThreadRepoMock) ListPostsForThread(limit int, offset int, id int) ([]domain.Post, error) {
+func (mock *ThreadRepoMock) ListPostsForThread(limit int, offset int, id int) ([]domain.ThreadPost, error) {
 	if mock.ListPostsForThreadFunc == nil {
 		panic("ThreadRepoMock.ListPostsForThreadFunc: method is nil but ThreadRepo.ListPostsForThread was just called")
 	}
@@ -287,7 +287,7 @@ func (mock *ThreadRepoMock) ListPostsForThreadCalls() []struct {
 }
 
 // ListPostsForThreadByCursor calls ListPostsForThreadByCursorFunc.
-func (mock *ThreadRepoMock) ListPostsForThreadByCursor(limit int, id int, cursor *time.Time) ([]domain.Post, error) {
+func (mock *ThreadRepoMock) ListPostsForThreadByCursor(limit int, id int, cursor *time.Time) ([]domain.ThreadPost, error) {
 	if mock.ListPostsForThreadByCursorFunc == nil {
 		panic("ThreadRepoMock.ListPostsForThreadByCursorFunc: method is nil but ThreadRepo.ListPostsForThreadByCursor was just called")
 	}
@@ -507,12 +507,12 @@ func (mock *ThreadRepoMock) PeekPreviousCalls() []struct {
 }
 
 // SavePost calls SavePostFunc.
-func (mock *ThreadRepoMock) SavePost(post domain.Post) (int, error) {
+func (mock *ThreadRepoMock) SavePost(post domain.ThreadPost) (int, error) {
 	if mock.SavePostFunc == nil {
 		panic("ThreadRepoMock.SavePostFunc: method is nil but ThreadRepo.SavePost was just called")
 	}
 	callInfo := struct {
-		Post domain.Post
+		Post domain.ThreadPost
 	}{
 		Post: post,
 	}
@@ -527,10 +527,10 @@ func (mock *ThreadRepoMock) SavePost(post domain.Post) (int, error) {
 //
 //	len(mockedThreadRepo.SavePostCalls())
 func (mock *ThreadRepoMock) SavePostCalls() []struct {
-	Post domain.Post
+	Post domain.ThreadPost
 } {
 	var calls []struct {
-		Post domain.Post
+		Post domain.ThreadPost
 	}
 	mock.lockSavePost.RLock()
 	calls = mock.calls.SavePost

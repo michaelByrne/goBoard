@@ -92,9 +92,9 @@ func TestNewThreadRepo(t *testing.T) {
 
 		require.Len(t, posts, 2)
 		assert.Equal(t, 2, posts[1].ID)
-		assert.Equal(t, "Attn. Roxy", posts[0].Text)
+		assert.Equal(t, "Attn. Roxy", posts[0].Body)
 		assert.Equal(t, 1, posts[0].ID)
-		assert.Equal(t, "WCFRP", posts[1].Text)
+		assert.Equal(t, "WCFRP", posts[1].Body)
 	})
 
 	t.Run("successfully gets threads by cursor forward", func(t *testing.T) {

@@ -67,7 +67,7 @@ function uncollapser(type, media, count) {
         });
 };
 
-const loadPosts = (type, ob, pid) => {
+const loadThreadPosts = (type, ob, pid) => {
     if (ob) {
         if (!ob.save) ob.save = ob.innerHTML;
         ob.innerHTML = "loading...";
@@ -76,7 +76,7 @@ const loadPosts = (type, ob, pid) => {
     let id = data[1];
     let lastPosition = parseInt(data[data.length - 1]);
 
-    fetch('/post/' + pid + '/' + lastPosition, {
+    fetch('/thread/post/' + pid + '/' + lastPosition, {
         method: 'GET',
         cache: 'no-cache',
     }).then((res) => {
@@ -85,21 +85,50 @@ const loadPosts = (type, ob, pid) => {
         }
         return res.text()
     }).then(html => {
-        $('#view_' + id).append(html);
-        $('.post:last').attr('id', 'view_' + id + '_' + pid + '_' + (lastPosition + 1));
-        $('.post:last').find('.count').text('#' + (lastPosition + 1));
-        $('textarea').val('')
+        updateDOMWithNewPost(html, pid, id, lastPosition)
         if (ob) ob.innerHTML = ob.save;
     }).catch((error) => {
         $('#response_form').html('<div class="error">Error: ' + error + '</div>');
     })
 };
 
-const showPreview = (post) => {
+const loadMessagePosts = (type, ob, pid) => {
+    if (ob) {
+        if (!ob.save) ob.save = ob.innerHTML;
+        ob.innerHTML = "loading...";
+    }
+    let data = $('.post:last')[0].id.split('_');
+    let id = data[1];
+    let lastPosition = parseInt(data[data.length - 1]);
+
+    fetch('/message/post/' + pid + '/' + lastPosition, {
+        method: 'GET',
+        cache: 'no-cache',
+    }).then((res) => {
+        if (!res.ok) {
+            throw new Error(`Network response was not ok ${res.status}`);
+        }
+        return res.text()
+    }).then(html => {
+        updateDOMWithNewPost(html, pid,id, lastPosition)
+        if (ob) ob.innerHTML = ob.save;
+    }).catch((error) => {
+        $('#response_form').html('<div class="error">Error: ' + error + '</div>');
+    })
+};
+
+const updateDOMWithNewPost = (html, pid, id, lastPosition) => {
+    $('#view_' + id).append(html);
+    $('.post:last').attr('id', 'view_' + id + '_' + pid + '_' + (lastPosition + 1));
+    $('.post:last').find('.count').text('#' + (lastPosition + 1));
+    $('textarea').val('')
+}
+
+const showPreview = (post, type) => {
     let data = $('.post:last')[0].id.split('_');
     let lastPosition = parseInt(data[data.length - 1]);
 
-    fetch('/thread/previewpost/' + lastPosition, {
+    fetch('/' + type + '/previewpost/' + lastPosition, {
         method: 'POST',
         body: post
     }).then((res) => {
@@ -112,7 +141,7 @@ const showPreview = (post) => {
     })
 }
 
-const captureSubmit = (event) => {
+const captureNewThreadPostSubmit = (event) => {
     event.preventDefault();
     fetch(event.target.action, {
         method: 'POST',
@@ -124,9 +153,47 @@ const captureSubmit = (event) => {
         return response.json(); // or response.text() or whatever the server sends
     }).then(({post_id}) => {
         $('#response_form').html('');
-        loadPosts('thread', false, post_id)
+        loadThreadPosts('thread', false, post_id)
         $('.submit').attr('disabled', false);
     }).catch((error) => {
+        // TODO handle error
+    });
+}
+
+const captureNewMessagePostSubmit = (event) => {
+    event.preventDefault();
+    fetch(event.target.action, {
+        method: 'POST',
+        body: new URLSearchParams(new FormData(event.target)) // event.target is the form
+    }).then((response) => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json(); // or response.text() or whatever the server sends
+    }).then(({post_id}) => {
+        $('#response_form').html('');
+        loadMessagePosts('message', false, post_id)
+        $('.submit').attr('disabled', false);
+    }).catch((error) => {
+        // TODO handle error
+    });
+}
+
+const captureNewMessageSubmit = (event) => {
+    event.preventDefault();
+    fetch(event.target.action, {
+        method: 'POST',
+        body: new URLSearchParams(new FormData(event.target)) // event.target is the form
+    }).then((response) => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json(); // or response.text() or whatever the server sends
+    }).then(({id}) => {
+        window.location.href = '/message/list/1';
+        $('.submit').attr('disabled', false);
+    }).catch((error) => {
+        console.log(error)
         // TODO handle error
     });
 }
@@ -215,25 +282,28 @@ function check_member() {
 
     members = $('#_recipients').val();
     $('#_recipients').val('');
-    $.post("/message/addmember/", {names: members}, function (data) {
-        data = jQuery.trim(data);
-        if (data) {
-            data = data.split(',');
-            for (i = 0; i < data.length; i = i + 2) add_member(data[i], data[i + 1]);
-        }
+    $.post("/message/addmember", {names: members}, function (data) {
+        // data = jQuery.trim(data);
+        // if (data) {
+        //     data = data.split(',');
+        //     for (i = 0; i < data.length; i = i + 2) add_member(data[i], data[i + 1]);
+        // }
+        data.members.forEach(({id, name}) => {
+            add_member(id, name)
+        })
         $('#add').val('Add');
     });
 }
 
 function add_member(id, name) {
     var mm = $('#message_members').val();
-    if (!mm) mm = new Array();
+    if (!mm) mm = [];
     else
         mm = mm.split(',');
-    if (jQuery.inArray(id, mm) == -1) {
+    if (jQuery.inArray(id, mm) === -1) {
         members = $('#message_members').val();
         if ($('#m').html() == '-') $('#m').empty();
-        $('#m').append('<span id="m' + id + '"><sup><a href="javascript:;" onclick="remove_member(\'' + id + '\')">x</a></sup>&nbsp;' + name + '&nbsp;&nbsp;&nbsp;</span> ');
+        $('#m').append('<span id="m' + id + '"><sup><a style="color: white" href="javascript:;" onclick="remove_member(\'' + id + '\')">x</a></sup>&nbsp;' + name + '&nbsp;&nbsp;&nbsp;</span> ');
         $('#message_members').val((members ? members + ',' : '') + id);
     }
 }

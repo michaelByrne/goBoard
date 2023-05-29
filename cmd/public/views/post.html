@@ -1,5 +1,5 @@
 {{ define "post" }}
-  <div class="post" id="view_{{ .ThreadID }}_{{ .ID }}_{{ .ThreadPosition }}">
+  <div class="post" id="view_{{ .ParentID }}_{{ .ID }}_{{ .Position }}">
     <ul class="view">
       <li class="info even posthead">
         <script>
@@ -17,11 +17,11 @@
           <a href="javascript:" id="{{ .ID }}_quote" >quote</a>
         </div>
         <div class="count">
-          #{{ .ThreadPosition }}
+          #{{ .Position }}
         </div>
       </li>
       <li id="post_body_{{ .ID }}" class="postbody odd">
-        {{ .Text }}
+        {{ .Body }}
       </li>
     </ul>
   </div>

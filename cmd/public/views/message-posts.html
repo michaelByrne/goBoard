@@ -1,4 +1,4 @@
-{{ define "posts" }}
+{{ define "message"}}
     <head>
         <link rel="stylesheet" href="/static/css/core.css">
         <script type="text/javascript" src="/static/js/core.js"></script>
@@ -8,7 +8,8 @@
     <div id="content">
         <div class="pad">
             <div class="clear">
-                <h3>{{ .Subject }}</h3>
+                <h3>{{- /*gotype: goBoard/internal/core/domain.Message*/ -}}
+                    {{ .Subject }}</h3>
                 {{template "top-nav"}}
                 <div id="view_{{ .ID }}">
                     <div id="uncollapse" class="postbody odd collapse" hidden></div>
@@ -19,8 +20,8 @@
                 <ul class="nav bottom clear shiftup"></ul>
                 <div class="clear"></div>
                 <div id="response_form"></div>
-                <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
-                    <input type="hidden" name="thread_id" value="{{ .ID }}">
+                <form method="post" name="form" id="form" class="coreform" action="/message/reply">
+                    <input type="hidden" name="message_id" value="{{ .ID }}">
                     <fieldset>
                         <legend>reply</legend>
                         <ol>
@@ -40,12 +41,12 @@
                 </form>
                 <script type="text/javascript">
                     document.getElementById('preview').addEventListener('click', (event) => {
-                        showPreview(new URLSearchParams(new FormData(event.target.form)), 'thread')
+                        showPreview(new URLSearchParams(new FormData(event.target.form)), 'message')
                     })
-                    document.forms['form'].addEventListener('submit', captureNewThreadPostSubmit);
+                    document.forms['form'].addEventListener('submit', captureNewMessagePostSubmit);
                 </script>
             </div>
         </div>
     </div>
     </body>
-{{ end }}
+{{end}}

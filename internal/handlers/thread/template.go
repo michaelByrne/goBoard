@@ -27,7 +27,7 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/", h.ListFirstPageThreads)
 	e.GET("/thread/list", h.ListThreads)
 	e.GET("/thread/view/:id", h.ListPostsForThread)
-	e.GET("/post/:id/:position", h.Post)
+	e.GET("/thread/post/:id/:position", h.Post)
 	e.GET("/ping", h.Ping)
 	//e.POST("/thread/reply", h.ThreadReply)
 	e.POST("/thread/create", h.CreateThread)
@@ -201,12 +201,12 @@ func (h *TemplateHandler) PreviewPost(c echo.Context) error {
 
 	now := time.Now()
 
-	post := domain.Post{
-		Text:           body,
-		MemberName:     author,
-		ThreadID:       threadIDAsInt,
-		Timestamp:      &now,
-		ThreadPosition: positionAsInt + 1,
+	post := domain.ThreadPost{
+		Body:       body,
+		MemberName: author,
+		ParentID:   threadIDAsInt,
+		Timestamp:  &now,
+		Position:   positionAsInt + 1,
 	}
 
 	return c.Render(200, "post", post)

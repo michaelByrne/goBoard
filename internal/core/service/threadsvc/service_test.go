@@ -30,11 +30,11 @@ func TestNewThreadService(t *testing.T) {
 					Subject: "Hello, BCO",
 				}, nil
 			},
-			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.Post, error) {
-				return []domain.Post{
+			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.ThreadPost, error) {
+				return []domain.ThreadPost{
 					{
 						ID:   2,
-						Text: "It's been a while",
+						Body: "It's been a while",
 					},
 				}, nil
 			},
@@ -47,11 +47,11 @@ func TestNewThreadService(t *testing.T) {
 		expectedThread := domain.Thread{
 			ID:      1,
 			Subject: "Hello, BCO",
-			Posts: []domain.Post{
+			Posts: []domain.ThreadPost{
 				{
-					ID:             2,
-					Text:           "It's been a while",
-					ThreadPosition: 1,
+					ID:       2,
+					Body:     "It's been a while",
+					Position: 1,
 				},
 			},
 		}
@@ -68,7 +68,7 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("should bail if thread posts call returns an error", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.Post, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.ThreadPost, error) {
 				return nil, assert.AnError
 			},
 		}
@@ -89,7 +89,7 @@ func TestNewThreadService(t *testing.T) {
 			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
 				return nil, assert.AnError
 			},
-			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.Post, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.ThreadPost, error) {
 				return nil, nil
 			},
 		}
@@ -106,14 +106,14 @@ func TestNewThreadService(t *testing.T) {
 	})
 
 	t.Run("successfully saves a new post", func(t *testing.T) {
-		expectedPostArg := domain.Post{
-			Text:     "Hello, BCO",
-			ThreadID: 1,
+		expectedPostArg := domain.ThreadPost{
+			Body:     "Hello, BCO",
+			ParentID: 1,
 			MemberID: 1,
 			MemberIP: "127.0.0.1",
 		}
 
-		var actualPostArg domain.Post
+		var actualPostArg domain.ThreadPost
 
 		mockMemberRepo := &mocks.MemberRepoMock{
 			GetMemberIDByUsernameFunc: func(username string) (int, error) {
@@ -122,7 +122,7 @@ func TestNewThreadService(t *testing.T) {
 		}
 
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			SavePostFunc: func(post domain.Post) (int, error) {
+			SavePostFunc: func(post domain.ThreadPost) (int, error) {
 				actualPostArg = post
 				return 1, nil
 			},
@@ -180,7 +180,7 @@ func TestNewThreadService(t *testing.T) {
 					{
 						ID:             2,
 						DateLastPosted: &mayFirst,
-						Subject:        "Post a picture of yourself thread",
+						Subject:        "ThreadPost a picture of yourself thread",
 					},
 					{
 						ID:             3,
@@ -205,7 +205,7 @@ func TestNewThreadService(t *testing.T) {
 		assert.Equal(t, 1, site.ThreadPage.Threads[0].ID)
 		assert.Equal(t, 2, site.ThreadPage.Threads[1].ID)
 		assert.Equal(t, "Hello, BCO", site.ThreadPage.Threads[0].Subject)
-		assert.Equal(t, "Post a picture of yourself thread", site.ThreadPage.Threads[1].Subject)
+		assert.Equal(t, "ThreadPost a picture of yourself thread", site.ThreadPage.Threads[1].Subject)
 		assert.Equal(t, &maySecond, site.ThreadPage.Threads[0].DateLastPosted)
 		assert.Equal(t, &mayFirst, site.ThreadPage.Threads[1].DateLastPosted)
 		assert.Equal(t, false, site.ThreadPage.HasPrevPage)
@@ -225,7 +225,7 @@ func TestNewThreadService(t *testing.T) {
 					{
 						ID:             2,
 						DateLastPosted: &maySixth,
-						Subject:        "Post a picture of yourself thread",
+						Subject:        "ThreadPost a picture of yourself thread",
 					},
 					{
 						ID:             3,

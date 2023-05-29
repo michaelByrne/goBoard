@@ -75,23 +75,23 @@ func (t *Thread) FromDomain(thread domain.Thread) {
 	}
 }
 
-func (p *Post) FromDomain(post domain.Post) {
+func (p *Post) FromDomain(post domain.ThreadPost) {
 	p.ID = post.ID
 	p.Timestamp = post.Timestamp
 	p.MemberID = post.MemberID
 	p.MemberIP = post.MemberIP
-	p.ThreadID = post.ThreadID
-	p.Text = post.Text
+	p.ThreadID = post.ParentID
+	p.Text = post.Body
 }
 
-func (p *Post) ToDomain() domain.Post {
-	var post domain.Post
+func (p *Post) ToDomain() domain.ThreadPost {
+	var post domain.ThreadPost
 	post.ID = p.ID
 	post.Timestamp = p.Timestamp
 	post.MemberID = p.MemberID
 	post.MemberIP = p.MemberIP
-	post.ThreadID = p.ThreadID
-	post.Text = p.Text
+	post.ParentID = p.ThreadID
+	post.Body = p.Text
 	return post
 }
 
@@ -116,13 +116,13 @@ func (t *Thread) ToDomain() domain.Thread {
 	thread.MemberIP = t.MemberIP
 
 	for _, p := range t.Posts {
-		var post domain.Post
+		var post domain.ThreadPost
 		post.ID = p.ID
 		post.Timestamp = p.Timestamp
 		post.MemberID = p.MemberID
 		post.MemberIP = p.MemberIP
-		post.ThreadID = p.ThreadID
-		post.Text = p.Text
+		post.ParentID = p.ThreadID
+		post.Body = p.Text
 		thread.Posts = append(thread.Posts, post)
 	}
 

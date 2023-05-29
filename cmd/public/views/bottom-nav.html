@@ -1,4 +1,5 @@
 {{ define "bottom-nav" }}
+    {{- /*gotype: goBoard/internal/core/domain.SiteContext*/ -}}
     {{if eq .PageName "main"}}
         {{template "thread-list-nav" .}}
     {{else if eq .PageName "member"}}

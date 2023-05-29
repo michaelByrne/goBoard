@@ -9,14 +9,19 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"goBoard/internal/core/service/membersvc"
+	"goBoard/internal/core/service/messagesvc"
 	"goBoard/internal/core/service/threadsvc"
 	"goBoard/internal/handlers/member"
+	"goBoard/internal/handlers/message"
 	"goBoard/internal/handlers/thread"
 	"goBoard/internal/repos/memberrepo"
+	"goBoard/internal/repos/messagerepo"
 	"goBoard/internal/repos/threadrepo"
 	"html/template"
 	"io"
 	"log"
+	"os"
+	"strconv"
 )
 
 //go:embed public/views/*.html
@@ -38,6 +43,16 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 func main() {
+	maxThreadLimit := os.Getenv("MAX_THREAD_LIMIT")
+	if maxThreadLimit == "" {
+		maxThreadLimit = "30"
+	}
+
+	maxThreadLimitAsInt, err := strconv.Atoi(maxThreadLimit)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	l, err := zap.NewProduction()
 	if err != nil {
 		log.Fatal(err)
@@ -54,13 +69,20 @@ func main() {
 
 	memberRepo := memberrepo.NewMemberRepo(pool)
 	memberService := membersvc.NewMemberService(memberRepo, sugar)
-	threadRepo := threadrepo.NewThreadRepo(pool, 5)
-	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, 5)
+
+	threadRepo := threadrepo.NewThreadRepo(pool, maxThreadLimitAsInt)
+	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, maxThreadLimitAsInt)
+
+	messageRepo := messagerepo.NewMessageRepo(pool)
+	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar)
 
 	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
-	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, 5)
+	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
+	messageTemplateHandler := message.NewTemplateHandler(messageService)
 
 	threadHTTPHandler := thread.NewHandler(threadService)
+	memberHTTPHandler := member.NewHandler(memberService)
+	messageHTTPHandler := message.NewHandler(memberService, messageService)
 
 	t := &Template{
 		templates: template.Must(template.New("t").Funcs(template.FuncMap{
@@ -79,10 +101,14 @@ func main() {
 	e.Debug = true
 
 	e.Use(middleware.CORS())
+	//e.Use(middleware.Logger())
 
 	threadTemplateHandler.Register(e)
 	memberTemplateHandler.Register(e)
+	messageTemplateHandler.Register(e)
 	threadHTTPHandler.Register(e)
+	memberHTTPHandler.Register(e)
+	messageHTTPHandler.Register(e)
 
 	e.Static("/static", "public")
 
