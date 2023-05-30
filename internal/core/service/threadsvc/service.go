@@ -234,11 +234,14 @@ func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.H
 	for _, tag := range supportedMediaAndFilterTags {
 		mediaTagRegexes[tag] = regexp.MustCompile(`(\[` + tag + `\](.[^\[]*)\[\/` + tag + `\])`)
 	}
+
 	// convert img tags
 	convertedPostBody = mediaTagRegexes["img"].ReplaceAllString(convertedPostBody, `<img src="$2" ondblclick="window.open(this.src);">`)
-	// convert soundcloud tags TODO: remove this? soundcloud embeds are now handled by the soundcloud embed script (or so copilot says)
+
+	// convert soundcloud tags
 	soundcloudElmtHtml := `<object height="81" width="100%"><param name="wmode" value="opaque"><param name="movie" value="$2"><param name="allowscriptaccess" value="always"><embed allowscriptaccess="always" height="81" src="$2" type="video/mp4" width="100%"></object>`
 	convertedPostBody = mediaTagRegexes["soundcloud"].ReplaceAllString(convertedPostBody, soundcloudElmtHtml)
+
 	// convert youtube tags
 	youtubeElmtHtml := `<object width="425" height="355"><param name="movie" value="$2"><param name="wmode" value="transparent"><embed src="$2" type="video/mp4" wmode="transparent" width="425" height="355"></object>`
 	convertedPostBody = mediaTagRegexes["youtube"].ReplaceAllString(convertedPostBody, youtubeElmtHtml)
