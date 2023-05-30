@@ -95,13 +95,21 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	posts, err := h.threadService.GetThreadByID(100, 0, idAsInt)
+	thread, err := h.threadService.GetThreadByID(100, 0, idAsInt)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
 
-	return c.Render(200, "posts", posts)
+	for idx, post := range thread.Posts {
+		thread.Posts[idx].HtmlBody, err = h.threadService.ConvertPostBodyBbcodeToHtml(post.Body)
+		if err != nil {
+			c.String(500, err.Error())
+			return err
+		}
+	}
+
+	return c.Render(200, "posts", thread)
 }
 
 func (h *TemplateHandler) Post(c echo.Context) error {

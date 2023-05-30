@@ -2,6 +2,7 @@ package ports
 
 import (
 	"goBoard/internal/core/domain"
+	"html/template"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type ThreadService interface {
 	NewThread(memberName, memberIP, body, subject string) (int, error)
 	GetThreadsWithCursorForward(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error)
 	GetThreadsWithCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error)
+	ConvertPostBodyBbcodeToHtml(body string) (*template.HTML, error)
 }
 
 type MemberService interface {
