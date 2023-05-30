@@ -17,36 +17,7 @@
                     {{ end }}
                 </div>
                 <ul class="nav bottom clear shiftup"></ul>
-                <div class="clear"></div>
-                <div id="response_form"></div>
-                <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
-                    <input type="hidden" name="thread_id" value="{{ .ID }}">
-                    <fieldset>
-                        <legend>reply</legend>
-                        <ol>
-                            <li>
-                                <label id="label_body" for="body">Body: </label>
-                                <textarea id="body" name="body"
-                                          style="float: left; height: 100px; width: 500px;"></textarea>
-                                <label for="member_name">Member Name:</label>
-                                <textarea id="member_name" name="member_name"
-                                          style="float: left; height: 20px; width: 200px;"></textarea>
-                                <div class="clear"></div>
-                            </li>
-                        </ol>
-                    </fieldset>
-                    <input type="submit" class="submit" value="say that shit" id="submit">
-                    <input type="button" name="preview" id="preview" value="preview">
-                    <sup>
-                        <a href="javascript:;" onclick="$('#bbcode').slideToggle()">[help]</a>
-                    </sup>
-                </form>
-                <script type="text/javascript">
-                    document.getElementById('preview').addEventListener('click', (event) => {
-                        showPreview(new URLSearchParams(new FormData(event.target.form)), 'thread')
-                    })
-                    document.forms['form'].addEventListener('submit', captureNewThreadPostSubmit);
-                </script>
+                {{ template "response-form" . }}
             </div>
         </div>
     </div>
