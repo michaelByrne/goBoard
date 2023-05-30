@@ -79,7 +79,7 @@ func main() {
 	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
 	messageTemplateHandler := message.NewTemplateHandler(messageService)
 
-	threadHTTPHandler := thread.NewHandler(threadService)
+	threadHTTPHandler := thread.NewHandler(threadService, maxThreadLimitAsInt)
 	memberHTTPHandler := member.NewHandler(memberService)
 	messageHTTPHandler := message.NewHandler(memberService, messageService)
 
@@ -100,7 +100,10 @@ func main() {
 	e.Debug = true
 
 	e.Use(middleware.CORS())
-	//e.Use(middleware.Logger())
+	//e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
+	//	sugar.Info("request body: ", string(reqBody))
+	//	sugar.Info("response body: ", string(resBody))
+	//}))
 
 	threadTemplateHandler.Register(e)
 	memberTemplateHandler.Register(e)

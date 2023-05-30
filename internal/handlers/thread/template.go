@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"github.com/labstack/gommon/log"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
@@ -24,63 +25,101 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 }
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
-	e.GET("/", h.ListFirstPageThreads)
+	//e.GET("/", h.ListFirstPageThreads)
+	e.GET("/", h.ListThreads)
 	e.GET("/thread/list", h.ListThreads)
 	e.GET("/thread/view/:id", h.ListPostsForThread)
+	e.POST("/thread/list/nav", h.ThreadListNav)
 	e.GET("/thread/post/:id/:position", h.Post)
+	e.POST("/threads", h.Threads)
+	e.POST("/thread", h.Thread)
 	e.GET("/ping", h.Ping)
 	//e.POST("/thread/reply", h.ThreadReply)
-	e.POST("/thread/create", h.CreateThread)
+	//e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
-	e.POST("/thread/previewpost/:position", h.PreviewPost)
-}
-
-func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
-	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, true, nil)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-	siteContext.ThreadPage.PageNum = 0
-	siteContext.PageName = "main"
-	return c.Render(200, "main", siteContext)
+	//e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	cursor := c.QueryParams().Get("cursor")
-	cursorAsTime, err := time.Parse(time.RFC3339, cursor)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	reverse := c.QueryParams().Get("reverse")
-	reverseAsBool, err := strconv.ParseBool(reverse)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	if reverseAsBool {
-		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime)
+	var cursorAsTime time.Time
+	var err error
+	if cursor == "" {
+		cursorAsTime = time.Date(9999, 1, 1, 1, 1, 1, 1, time.UTC)
+	} else {
+		cursorAsTime, err = time.Parse(time.RFC3339, cursor)
 		if err != nil {
 			c.String(500, err.Error())
 			return err
 		}
-
-		siteContext.PageName = "main"
-		return c.Render(200, "main", siteContext)
 	}
 
-	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, false, &cursorAsTime)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
+	reverse := c.QueryParams().Get("reverse")
+	var reverseAsBool bool
+	if reverse == "" {
+		reverseAsBool = false
+	} else {
+		reverseAsBool, err = strconv.ParseBool(reverse)
+		if err != nil {
+			c.String(500, err.Error())
+			return err
+		}
 	}
 
-	siteContext.PageName = "main"
-	return c.Render(200, "main", siteContext)
+	args := ThreadsPassThroughArgs{
+		Cursor:  &cursorAsTime,
+		Reverse: reverseAsBool,
+	}
+
+	return c.Render(200, "main", args)
 }
+
+//func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
+//	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, true, nil)
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//	siteContext.ThreadPage.PageNum = 0
+//	siteContext.PageName = "main"
+//	return c.Render(200, "main", siteContext)
+//}
+//
+//func (h *TemplateHandler) ListThreads(c echo.Context) error {
+//	cursor := c.QueryParams().Get("cursor")
+//	cursorAsTime, err := time.Parse(time.RFC3339, cursor)
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//
+//	reverse := c.QueryParams().Get("reverse")
+//	reverseAsBool, err := strconv.ParseBool(reverse)
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//
+//	if reverseAsBool {
+//		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime)
+//		if err != nil {
+//			c.String(500, err.Error())
+//			return err
+//		}
+//
+//		siteContext.PageName = "main"
+//		return c.Render(200, "main", siteContext)
+//	}
+//
+//	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, false, &cursorAsTime)
+//	if err != nil {
+//		c.String(500, err.Error())
+//		return err
+//	}
+//
+//	siteContext.PageName = "main"
+//	return c.Render(200, "main", siteContext)
+//}
 
 func (h *TemplateHandler) Ping(c echo.Context) error {
 	return c.Render(200, "ping", nil)
@@ -127,6 +166,18 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 	}
 
 	return c.Render(200, "post", post)
+}
+
+func (h *TemplateHandler) Thread(c echo.Context) error {
+	var thread domain.Thread
+	err := c.Bind(&thread)
+	if err != nil {
+		log.Error()
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.Render(200, "thread", thread)
 }
 
 //func (h *TemplateHandler) ThreadReply(c echo.Context) error {
@@ -220,6 +271,43 @@ func (h *TemplateHandler) PreviewPost(c echo.Context) error {
 	return c.Render(200, "post", post)
 }
 
+func (h *TemplateHandler) Threads(c echo.Context) error {
+	var threads []domain.Thread
+	err := c.Bind(&threads)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.Render(200, "threads", threads)
+}
+
+func (h *TemplateHandler) ThreadListNav(c echo.Context) error {
+	var listNavRequest ListNavRequest
+	err := c.Bind(&listNavRequest)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	log.Printf("listNavRequest: %+v", listNavRequest)
+
+	return c.Render(200, "thread-list-nav", listNavRequest)
+}
+
 type GenericResponse struct {
 	Message string `json:"message"`
+}
+
+type ListNavRequest struct {
+	Reverse        bool       `json:"reverse"`
+	HasNextPage    bool       `json:"hasNextPage"`
+	HasPrevPage    bool       `json:"hasPrevPage"`
+	PageCursor     *time.Time `json:"pageCursor"`
+	PrevPageCursor *time.Time `json:"prevPageCursor"`
+}
+
+type ThreadsPassThroughArgs struct {
+	Reverse bool
+	Cursor  *time.Time
 }

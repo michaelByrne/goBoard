@@ -110,7 +110,7 @@ const loadMessagePosts = (type, ob, pid) => {
         }
         return res.text()
     }).then(html => {
-        updateDOMWithNewPost(html, pid,id, lastPosition)
+        updateDOMWithNewPost(html, pid, id, lastPosition)
         if (ob) ob.innerHTML = ob.save;
     }).catch((error) => {
         $('#response_form').html('<div class="error">Error: ' + error + '</div>');
@@ -316,4 +316,59 @@ function remove_member(id) {
         $('#m' + id).remove();
         if (!mm.length) $('#m').html('-');
     }
+}
+
+const injectThreads = (threads, reverse) => {
+    fetch('/threads',
+        {method: 'POST', body: JSON.stringify(threads), headers: {'Content-Type': 'application/json'}}
+    ).then(response => {
+            return response.text()
+        }
+    ).then(html => {
+        document.getElementsByClassName('data')[0].innerHTML = html
+        $('.data div:even').css({'background-color': '#c3dae4', 'color': 'black'});
+        $('.data div:odd').css({'background-color': '#acccdb', 'color': 'black'});
+    })
+}
+
+const injectNav = (site) => {
+    let payload = {
+        'hasNextPage': site.ThreadPage.HasNextPage,
+        'hasPrevPage': site.ThreadPage.HasPrevPage,
+        'pageCursor': site.PageCursor,
+        'prevPageCursor': site.PrevPageCursor,
+    }
+
+    fetch('/thread/list/nav',
+        {method: 'POST', body: JSON.stringify(payload), headers: {'Content-Type': 'application/json'}})
+        .then(response => {
+            return response.text()
+        }).then(html => {
+        document.getElementById('wrap_l56761').insertAdjacentHTML('afterend', html)
+        if (document.getElementById('next')) {
+            document.getElementById('next').addEventListener('click', () => {
+                let el = document.getElementById('nav-bottom')
+                el.remove()
+                threadsFetchHandler(false, site.PageCursor)
+            })
+        }
+        if (document.getElementById('prev')) {
+            document.getElementById('prev').addEventListener('click', () => {
+                let el = document.getElementById('nav-bottom')
+                el.remove()
+                threadsFetchHandler(true, site.PrevPageCursor)
+            })
+        }
+    })
+
+}
+
+const threadsFetchHandler = (reverse, cursor) => {
+
+    fetch('/threads/home?reverse=' + reverse + '&cursor=' + cursor).then(function (response) {
+        return response.json();
+    }).then(function (json) {
+        injectThreads(json.ThreadPage.Threads, true)
+        injectNav(json)
+    });
 }
