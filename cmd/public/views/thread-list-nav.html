@@ -1,14 +1,14 @@
 {{define "thread-list-nav"}}
-    <ul class="nav bottom clear">
+    <ul class="nav bottom clear" id="nav-bottom">
         <li><a href="/">back to the shit</a></li>
         {{if .HasPrevPage}}
-            <li>
-                <a href="/thread/list?reverse=true&cursor={{.PrevPageCursor.Format "2006-01-02T15:04:05Z07:00"}}">prev</a>
+            <li id="prev" style="cursor: pointer">
+                <a id="prev">prev</a>
             </li>
         {{end}}
         {{if .HasNextPage }}
-            <li>
-                <a href="/thread/list?reverse=false&cursor={{.PageCursor.Format "2006-01-02T15:04:05Z07:00"}}">next</a>
+            <li id="next" style="cursor: pointer">
+                <a>next</a>
             </li>
         {{end}}
     </ul>

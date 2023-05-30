@@ -36,7 +36,7 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	e.GET("/ping", h.Ping)
 	//e.POST("/thread/reply", h.ThreadReply)
 	//e.POST("/thread/create", h.CreateThread)
-	//e.GET("/thread/create", h.NewThread)
+	e.GET("/thread/create", h.NewThread)
 	//e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
 

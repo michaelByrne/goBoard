@@ -341,16 +341,31 @@ const injectNav = (site) => {
 
     fetch('/thread/list/nav',
         {method: 'POST', body: JSON.stringify(payload), headers: {'Content-Type': 'application/json'}})
-    .then(response => {
-        return response.text()
-    }).then(html => {
+        .then(response => {
+            return response.text()
+        }).then(html => {
         document.getElementById('wrap_l56761').insertAdjacentHTML('afterend', html)
+        if (document.getElementById('next')) {
+            document.getElementById('next').addEventListener('click', () => {
+                let el = document.getElementById('nav-bottom')
+                el.remove()
+                threadsFetchHandler(false, site.PageCursor)
+            })
+        }
+        if (document.getElementById('prev')) {
+            document.getElementById('prev').addEventListener('click', () => {
+                let el = document.getElementById('nav-bottom')
+                el.remove()
+                threadsFetchHandler(true, site.PrevPageCursor)
+            })
+        }
     })
 
 }
 
 const threadsFetchHandler = (reverse, cursor) => {
-    fetch('/threads/home?reverse=' +reverse+ '&cursor=' +cursor).then(function (response) {
+
+    fetch('/threads/home?reverse=' + reverse + '&cursor=' + cursor).then(function (response) {
         return response.json();
     }).then(function (json) {
         injectThreads(json.ThreadPage.Threads, true)
