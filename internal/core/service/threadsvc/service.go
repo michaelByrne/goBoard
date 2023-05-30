@@ -207,19 +207,33 @@ func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (in
 }
 
 func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.HTML, error) {
+	formattingTags := []string{"b", "i", "u", "strong", "strike", "sub", "sup", "code", "quote"}
+	supportedMediaTags := []string{"img", "youtube", "vimeo", "soundcloud", "tweet", "quote", "spoiler", "trigger"}
+	mediaTagRegexes := map[string]*regexp.Regexp{}
 	convertedPostBody := postBody
-	// standard tag conversions
-	supportedTags := []string{"b", "i", "u", "strong", "strike", "sub", "sup", "code", "quote"}
-	for _, tag := range supportedTags {
+
+	// convert formatting tag
+	for _, tag := range formattingTags {
 		convertedPostBody = strings.Replace(convertedPostBody, "["+tag+"]", "<"+tag+">", -1)
 		convertedPostBody = strings.Replace(convertedPostBody, "[/"+tag+"]", "</"+tag+">", -1)
 	}
 
-	// untagged HTML link conversion conversion
-	hrefRegexp := regexp.MustCompile(`((https?|ftp)://[^\s/$.?#].[^\s]*)`)
-	convertedPostBody = hrefRegexp.ReplaceAllString(convertedPostBody, `<a href="$1" class="link" onclick="window.open(this.href); return false;">$1</a>`)
+	// convert untagged HTML links
+	untaggedHrefRegexp := regexp.MustCompile(`([^=\]](https?|ftp)://[^\s/$.?#].[^\s]*)`)
+	convertedPostBody = untaggedHrefRegexp.ReplaceAllString(convertedPostBody, `<a href="$1" class="link" onclick="window.open(this.href); return false;">$1</a>`)
+
+	// convert text link tags
+	textLinkRegexp := regexp.MustCompile(`(\[url=(.[^\]]*)\](.[^\[]*)\[\/url\])`)
+	convertedPostBody = textLinkRegexp.ReplaceAllString(convertedPostBody, `<a href="$2" class="link" onclick="window.open(this.href); return false;">$3</a>`)
+
+	// generate media tag regex & convert media tags
+	for _, tag := range supportedMediaTags {
+		mediaTagRegexes[tag] = regexp.MustCompile(`(\[` + tag + `\](.[^\[]*)\[\/` + tag + `\])`)
+	}
+
+	convertedPostBody = mediaTagRegexes["img"].ReplaceAllString(convertedPostBody, `<img src="$2" ondblclick="window.open(this.src);">`)
+
+	// recognize the prepared post string as HTML
 	htmlPostBody := template.HTML(convertedPostBody)
 	return &htmlPostBody, nil
-
-	//
 }
