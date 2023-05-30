@@ -319,18 +319,16 @@ function remove_member(id) {
 }
 
 const injectThreads = (threads, reverse) => {
-   threads.forEach((thread, idx) => {
-       fetch('/thread',
-           {method: 'POST', body: JSON.stringify(threads[idx]), headers: {'Content-Type': 'application/json'}}
-       ).then(response => {
-               return response.text()
-           }
-       ).then(html => {
-           document.getElementsByClassName('data')[0].insertAdjacentHTML('beforeend', html)
-           $('.data div:even').css({'background-color': '#c3dae4', 'color': 'black'});
-           $('.data div:odd').css({'background-color': '#acccdb', 'color': 'black'});
-       })
-   })
+    fetch('/threads',
+        {method: 'POST', body: JSON.stringify(threads), headers: {'Content-Type': 'application/json'}}
+    ).then(response => {
+            return response.text()
+        }
+    ).then(html => {
+        document.getElementsByClassName('data')[0].innerHTML = html
+        $('.data div:even').css({'background-color': '#c3dae4', 'color': 'black'});
+        $('.data div:odd').css({'background-color': '#acccdb', 'color': 'black'});
+    })
 }
 
 const injectNav = (site) => {

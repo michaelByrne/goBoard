@@ -44,7 +44,7 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 func main() {
 	maxThreadLimit := os.Getenv("MAX_THREAD_LIMIT")
 	if maxThreadLimit == "" {
-		maxThreadLimit = "10"
+		maxThreadLimit = "30"
 	}
 
 	maxThreadLimitAsInt, err := strconv.Atoi(maxThreadLimit)
@@ -79,7 +79,7 @@ func main() {
 	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
 	messageTemplateHandler := message.NewTemplateHandler(messageService)
 
-	threadHTTPHandler := thread.NewHandler(threadService, 10)
+	threadHTTPHandler := thread.NewHandler(threadService, maxThreadLimitAsInt)
 	memberHTTPHandler := member.NewHandler(memberService)
 	messageHTTPHandler := message.NewHandler(memberService, messageService)
 
