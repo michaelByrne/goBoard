@@ -4,19 +4,22 @@ import (
 	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+	"time"
 )
 
 type MessageService struct {
-	logger      *zap.SugaredLogger
-	messageRepo ports.MessageRepo
-	memberRepo  ports.MemberRepo
+	logger              *zap.SugaredLogger
+	messageRepo         ports.MessageRepo
+	memberRepo          ports.MemberRepo
+	maxMessageViewLimit int
 }
 
-func NewMessageService(messageRepo ports.MessageRepo, memberRepo ports.MemberRepo, logger *zap.SugaredLogger) MessageService {
+func NewMessageService(messageRepo ports.MessageRepo, memberRepo ports.MemberRepo, logger *zap.SugaredLogger, maxMessageViewLimit int) MessageService {
 	return MessageService{
-		logger:      logger,
-		messageRepo: messageRepo,
-		memberRepo:  memberRepo,
+		logger:              logger,
+		messageRepo:         messageRepo,
+		memberRepo:          memberRepo,
+		maxMessageViewLimit: maxMessageViewLimit,
 	}
 }
 
@@ -40,13 +43,57 @@ func (s MessageService) SendMessage(subject, body, memberIP string, memberID int
 	return messageID, nil
 }
 
-func (s MessageService) GetMessagesByMemberID(memberID int) ([]domain.Message, error) {
+func (s MessageService) GetMessagesWithCursor(memberID int, reverse bool, cursor *time.Time) ([]domain.Message, error) {
 	s.logger.Infof("getting messages for member: %d", memberID)
 
-	messages, err := s.messageRepo.GetMessagesByMemberID(memberID)
+	if !reverse {
+		messages, err := s.messageRepo.GetMessagesWithCursorForward(memberID, s.maxMessageViewLimit, cursor)
+		if err != nil {
+			s.logger.Errorf("error getting messages for member: %d", memberID)
+			return nil, err
+		}
+
+		if len(messages) > s.maxMessageViewLimit {
+			messages = messages[:s.maxMessageViewLimit]
+			messages[0].HasNextPage = true
+			messages[0].PageCursor = messages[s.maxMessageViewLimit-1].DateLastPosted
+		}
+
+		hasPrevious, err := s.messageRepo.PeekPrevious(cursor)
+		if err != nil {
+			s.logger.Errorf("error peeking previous: %s", err)
+			return nil, err
+		}
+
+		if hasPrevious {
+			messages[0].HasPrevPage = true
+			messages[0].PrevPageCursor = messages[0].DateLastPosted
+		}
+
+		return messages, nil
+	}
+
+	messages, err := s.messageRepo.GetMessagesWithCursorReverse(memberID, s.maxMessageViewLimit, cursor)
 	if err != nil {
 		s.logger.Errorf("error getting messages for member: %d", memberID)
 		return nil, err
+	}
+
+	if len(messages) > s.maxMessageViewLimit {
+		messages = messages[:s.maxMessageViewLimit]
+		messages[0].HasNextPage = true
+		messages[0].PageCursor = messages[s.maxMessageViewLimit-1].DateLastPosted
+	}
+
+	hasPrevious, err := s.messageRepo.PeekPrevious(messages[0].DateLastPosted)
+	if err != nil {
+		s.logger.Errorf("error peeking previous: %s", err)
+		return nil, err
+	}
+
+	if hasPrevious {
+		messages[0].HasPrevPage = true
+		messages[0].PrevPageCursor = messages[0].DateLastPosted
 	}
 
 	return messages, nil

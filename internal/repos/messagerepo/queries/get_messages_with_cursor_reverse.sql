@@ -1,4 +1,4 @@
-SELECT m.id                                                                                      as message,
+SELECT * FROM (SELECT m.id                                                                                      as message,
        m.date_last_posted                                                                        as date_last_posted,
        mem.id,
        mem.name,
@@ -14,18 +14,22 @@ FROM message_member mm
          LEFT JOIN
      message m
      ON
-         m.id = mm.message_id
+             m.id = mm.message_id
          LEFT JOIN
      member mem
      ON
-         mem.id = m.member_id
+             mem.id = m.member_id
          LEFT JOIN
      member l
      ON
-         l.id = m.last_member_id
+             l.id = m.last_member_id
          LEFT JOIN
      message_post mp
      ON
-         mp.id = m.first_post_id
+             mp.id = m.first_post_id
 WHERE mm.member_id = $1
+  AND m.date_last_posted >= $2
   AND mm.deleted IS false
+ORDER BY m.date_last_posted
+LIMIT $3+1) AS pagination
+ORDER BY date_last_posted DESC

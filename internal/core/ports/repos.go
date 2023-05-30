@@ -30,10 +30,14 @@ type MemberRepo interface {
 	GetMemberByUsername(username string) (*domain.SiteContext, error)
 }
 
+//go:generate moq -pkg mocks -out ../service/mocks/message_repo_moq.go . MessageRepo
+
 type MessageRepo interface {
 	SaveMessage(message domain.Message) (int, error)
-	GetMessagesByMemberID(memberID int) ([]domain.Message, error)
+	GetMessagesWithCursorForward(memberID, limit int, cursor *time.Time) ([]domain.Message, error)
+	GetMessagesWithCursorReverse(memberID, limit int, cursor *time.Time) ([]domain.Message, error)
 	GetMessagePostsByID(memberID, messageID, limit int) ([]domain.MessagePost, error)
 	SavePost(post domain.MessagePost) (int, error)
 	GetMessagePostByID(id int) (*domain.MessagePost, error)
+	PeekPrevious(timestamp *time.Time) (bool, error)
 }

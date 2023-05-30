@@ -33,12 +33,32 @@ func (h *TemplateHandler) CreateMessage(c echo.Context) error {
 func (h *TemplateHandler) ListMessages(c echo.Context) error {
 	memberID := c.Param("memberID")
 
+	cursor := c.QueryParams().Get("cursor")
+	var cursorAsTime time.Time
+	var err error
+	if cursor == "" {
+		cursorAsTime = time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		cursorAsTime, err = time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			c.String(500, err.Error())
+			return err
+		}
+	}
+
+	reverse := c.QueryParams().Get("reverse")
+	reverseAsBool, err := strconv.ParseBool(reverse)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
 	memberIDAsInt, err := strconv.Atoi(memberID)
 	if err != nil {
 		return c.String(500, err.Error())
 	}
 
-	messages, err := h.messageService.GetMessagesByMemberID(memberIDAsInt)
+	messages, err := h.messageService.GetMessagesWithCursor(memberIDAsInt, reverseAsBool, &cursorAsTime)
 	if err != nil {
 		return c.String(500, err.Error())
 	}

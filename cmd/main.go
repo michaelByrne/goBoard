@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -24,8 +23,8 @@ import (
 	"strconv"
 )
 
-//go:embed public/views/*.html
-var templateFiles embed.FS
+////go:embed public/views/*.html
+//var templateFiles embed.FS
 
 //
 ////go:embed public/css/*.css
@@ -74,7 +73,7 @@ func main() {
 	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, maxThreadLimitAsInt)
 
 	messageRepo := messagerepo.NewMessageRepo(pool)
-	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar)
+	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar, maxThreadLimitAsInt)
 
 	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
 	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
@@ -92,7 +91,7 @@ func main() {
 			"sub": func(a, b int) int {
 				return a - b
 			},
-		}).ParseFS(templateFiles, "public/views/*.html")),
+		}).ParseGlob("public/views/*.html")),
 	}
 
 	e := echo.New()

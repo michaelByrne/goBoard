@@ -190,7 +190,7 @@ const captureNewMessageSubmit = (event) => {
         }
         return response.json(); // or response.text() or whatever the server sends
     }).then(({id}) => {
-        window.location.href = '/message/list/1';
+        window.location.href = '/message/list/1?reverse=false';
         $('.submit').attr('disabled', false);
     }).catch((error) => {
         console.log(error)

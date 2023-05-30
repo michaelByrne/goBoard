@@ -160,7 +160,7 @@ type ThreadRepoMock struct {
 		}
 		// SavePost holds details about calls to the SavePost method.
 		SavePost []struct {
-			// ThreadPost is the post argument value.
+			// Post is the post argument value.
 			Post domain.ThreadPost
 		}
 		// SaveThread holds details about calls to the SaveThread method.

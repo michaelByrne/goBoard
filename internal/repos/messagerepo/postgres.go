@@ -7,13 +7,17 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"goBoard/internal/core/domain"
+	"time"
 )
 
-//go:embed queries/get_messages_for_member_id.sql
-var getMessagesForMemberID string
+//go:embed queries/get_messages_with_cursor_forward.sql
+var getMessagesWithCursorForward string
 
 //go:embed queries/list_message_posts_cursor_forward.sql
 var listMessagePostsCursorForward string
+
+//go:embed queries/get_messages_with_cursor_reverse.sql
+var getMessagesWithCursorReverse string
 
 //go:embed queries/get_message_post_by_id.sql
 var getMessagePostByID string
@@ -68,8 +72,8 @@ func (r MessageRepo) SaveMessage(message domain.Message) (int, error) {
 	return messageID, nil
 }
 
-func (r MessageRepo) GetMessagesByMemberID(memberID int) ([]domain.Message, error) {
-	rows, err := r.connPool.Query(context.Background(), getMessagesForMemberID, memberID)
+func (r MessageRepo) GetMessagesWithCursorForward(memberID, limit int, cursor *time.Time) ([]domain.Message, error) {
+	rows, err := r.connPool.Query(context.Background(), getMessagesWithCursorForward, memberID, cursor, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +101,47 @@ func (r MessageRepo) GetMessagesByMemberID(memberID int) ([]domain.Message, erro
 	}
 
 	return messages, nil
+}
+
+func (r MessageRepo) GetMessagesWithCursorReverse(memberID, limit int, cursor *time.Time) ([]domain.Message, error) {
+	rows, err := r.connPool.Query(context.Background(), getMessagesWithCursorReverse, memberID, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var messages []domain.Message
+	for rows.Next() {
+		var message domain.Message
+		err = rows.Scan(
+			&message.ID,
+			&message.DateLastPosted,
+			&message.MemberID,
+			&message.MemberName,
+			&message.LastPosterID,
+			&message.LastPosterName,
+			&message.Subject,
+			&message.NumPosts,
+			&message.Views,
+			&message.Body,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		messages = append(messages, message)
+	}
+
+	return messages, nil
+}
+
+func (r MessageRepo) PeekPrevious(timestamp *time.Time) (bool, error) {
+	var exists bool
+	err := r.connPool.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM message WHERE date_last_posted > $1)", timestamp).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 func (r MessageRepo) GetMessagePostsByID(memberID, messageID, limit int) ([]domain.MessagePost, error) {

@@ -25,7 +25,7 @@ type MemberService interface {
 
 type MessageService interface {
 	SendMessage(subject, body, memberIP string, memberID int, recipientIDs []int) (int, error)
-	GetMessagesByMemberID(memberID int) ([]domain.Message, error)
+	GetMessagesWithCursor(memberID int, reverse bool, cursor *time.Time) ([]domain.Message, error)
 	GetMessageByID(messageID, memberID int) (*domain.Message, error)
 	NewPost(body, ip, memberName string, messageID int) (int, error)
 	GetMessagePostByID(id int) (*domain.MessagePost, error)
