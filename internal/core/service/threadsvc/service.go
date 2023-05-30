@@ -210,7 +210,7 @@ func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (in
 }
 
 func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.HTML, error) {
-	formattingTags := []string{"b", "i", "u", "strong", "strike", "sub", "sup", "code", "quote"}
+	formattingTags := []string{"b", "i", "u", "strong", "strike", "sub", "sup", "code"}
 	supportedMediaAndFilterTags := []string{"img", "youtube", "vimeo", "soundcloud", "quote", "spoiler", "trigger"}
 
 	mediaTagRegexes := map[string]*regexp.Regexp{}
@@ -259,6 +259,14 @@ func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.H
 		tweetElmtHtml := fmt.Sprintf("<span id=\"tt-%s\"></span>%s", spanId, tweetScript)
 		convertedPostBody = tweetTagRegexp.ReplaceAllString(convertedPostBody, tweetElmtHtml)
 	}
+
+	// convert quote tags: this doesn't appear to make any actual formatting changes...
+	// does it need some css to actually work?
+	convertedPostBody = mediaTagRegexes["quote"].ReplaceAllString(convertedPostBody, `<blockquote>$2</blockquote>`)
+
+	// convert spoiler & trigger tags
+	convertedPostBody = mediaTagRegexes["spoiler"].ReplaceAllString(convertedPostBody, `<span class="spoiler" onclick="$(this).next().show();$(this).remove()">show spoiler</span><span style="display:none">$2</span>`)
+	convertedPostBody = mediaTagRegexes["trigger"].ReplaceAllString(convertedPostBody, `<span class="trigger" onclick="$(this).next().show();$(this).remove()">show trigger</span><span style="display:none">$2</span>`)
 
 	// recognize the prepared post string as HTML
 	htmlPostBody := template.HTML(convertedPostBody)
