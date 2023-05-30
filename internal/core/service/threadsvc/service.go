@@ -4,6 +4,7 @@ import (
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"html/template"
+	"strings"
 	"time"
 
 	"regexp"
@@ -206,8 +207,19 @@ func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (in
 }
 
 func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.HTML, error) {
+	convertedPostBody := postBody
+	// standard tag conversions
+	supportedTags := []string{"b", "i", "u", "strong", "strike", "sub", "sup", "code", "quote"}
+	for _, tag := range supportedTags {
+		convertedPostBody = strings.Replace(convertedPostBody, "["+tag+"]", "<"+tag+">", -1)
+		convertedPostBody = strings.Replace(convertedPostBody, "[/"+tag+"]", "</"+tag+">", -1)
+	}
+
+	// untagged HTML link conversion conversion
 	hrefRegexp := regexp.MustCompile(`((https?|ftp)://[^\s/$.?#].[^\s]*)`)
-	convertedPostBody := hrefRegexp.ReplaceAllString(postBody, `<a href="$1" class="link" onclick="window.open(this.href); return false;">$1</a>`)
+	convertedPostBody = hrefRegexp.ReplaceAllString(convertedPostBody, `<a href="$1" class="link" onclick="window.open(this.href); return false;">$1</a>`)
 	htmlPostBody := template.HTML(convertedPostBody)
 	return &htmlPostBody, nil
+
+	//
 }
