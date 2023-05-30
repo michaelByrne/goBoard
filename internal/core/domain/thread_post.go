@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"html/template"
+	"time"
+)
 
 type ThreadPost struct {
 	ID            int
@@ -9,6 +12,7 @@ type ThreadPost struct {
 	MemberIP      string
 	ParentID      int
 	Body          string
+	HtmlBody      *template.HTML
 	ParentSubject string
 	IsAdmin       bool
 	MemberName    string

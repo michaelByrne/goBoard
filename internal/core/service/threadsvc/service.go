@@ -3,7 +3,10 @@ package threadsvc
 import (
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+	"html/template"
 	"time"
+
+	"regexp"
 
 	"go.uber.org/zap"
 )
@@ -200,4 +203,11 @@ func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (in
 	}
 
 	return threadID, nil
+}
+
+func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.HTML, error) {
+	hrefRegexp := regexp.MustCompile(`((https?|ftp)://[^\s/$.?#].[^\s]*)`)
+	convertedPostBody := hrefRegexp.ReplaceAllString(postBody, `<a href="$1" class="link" onclick="window.open(this.href); return false;">$1</a>`)
+	htmlPostBody := template.HTML(convertedPostBody)
+	return &htmlPostBody, nil
 }
