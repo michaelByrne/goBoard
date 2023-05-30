@@ -210,9 +210,9 @@ func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (in
 }
 
 func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.HTML, error) {
+	// set up tag lists & utility vars
 	formattingTags := []string{"b", "i", "u", "strong", "strike", "sub", "sup", "code"}
 	supportedMediaAndFilterTags := []string{"img", "youtube", "vimeo", "soundcloud", "quote", "spoiler", "trigger"}
-
 	mediaTagRegexes := map[string]*regexp.Regexp{}
 	convertedPostBody := postBody
 
