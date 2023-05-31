@@ -1,11 +1,12 @@
 package thread
 
 import (
-	"github.com/labstack/gommon/log"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
 	"time"
+
+	"github.com/labstack/gommon/log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -37,7 +38,7 @@ func (h *TemplateHandler) Register(e *echo.Echo) {
 	//e.POST("/thread/reply", h.ThreadReply)
 	//e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
-	//e.POST("/thread/previewpost/:position", h.PreviewPost)
+	e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
@@ -249,6 +250,11 @@ func (h *TemplateHandler) PreviewPost(c echo.Context) error {
 	}
 
 	body := values.Get("body")
+	htmlBody, err := h.threadService.ConvertPostBodyBbcodeToHtml(body)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
 	threadID := values.Get("thread_id")
 	author := values.Get("member_name")
 
@@ -261,6 +267,7 @@ func (h *TemplateHandler) PreviewPost(c echo.Context) error {
 	now := time.Now()
 
 	post := domain.ThreadPost{
+		HtmlBody:   htmlBody,
 		Body:       body,
 		MemberName: author,
 		ParentID:   threadIDAsInt,
