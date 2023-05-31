@@ -251,7 +251,7 @@ func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.H
 	convertedPostBody = mediaTagRegexes["vimeo"].ReplaceAllString(convertedPostBody, vimeoElmtHtml)
 
 	// convert tweet tags
-	seed := rand.NewSource(time.Now().Unix())
+	seed := rand.NewSource(time.Now().UnixNano())
 	rando := rand.New(seed)
 	spanId := strconv.Itoa(rando.Intn(99999999-1000000+1) + 1000000)
 	tweetTagRegexp := regexp.MustCompile(`\[tweet\].*\/status\/(\d+)\[\/tweet\]`)
