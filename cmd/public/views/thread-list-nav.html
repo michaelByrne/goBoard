@@ -1,9 +1,9 @@
 {{define "thread-list-nav"}}
     <ul class="nav bottom clear" id="nav-bottom">
-        <li><a href="/">back to the shit</a></li>
+        <li id="home" style="cursor: pointer"><a>back to the shit</a></li>
         {{if .HasPrevPage}}
             <li id="prev" style="cursor: pointer">
-                <a id="prev">prev</a>
+                <a>prev</a>
             </li>
         {{end}}
         {{if .HasNextPage }}

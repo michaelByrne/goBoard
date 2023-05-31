@@ -344,19 +344,27 @@ const injectNav = (site) => {
         .then(response => {
             return response.text()
         }).then(html => {
+        if (document.getElementById('nav-bottom')) {
+            let el = document.getElementById('nav-bottom')
+            el.remove()
+        }
         document.getElementById('wrap_l56761').insertAdjacentHTML('afterend', html)
         if (document.getElementById('next')) {
             document.getElementById('next').addEventListener('click', () => {
-                let el = document.getElementById('nav-bottom')
-                el.remove()
+
                 threadsFetchHandler(false, site.PageCursor)
             })
         }
         if (document.getElementById('prev')) {
             document.getElementById('prev').addEventListener('click', () => {
-                let el = document.getElementById('nav-bottom')
-                el.remove()
+
                 threadsFetchHandler(true, site.PrevPageCursor)
+            })
+        }
+        if (document.getElementById('home')) {
+            document.getElementById('home').addEventListener('click', () => {
+
+                threadsFetchHandler(false, null)
             })
         }
     })
@@ -364,7 +372,6 @@ const injectNav = (site) => {
 }
 
 const threadsFetchHandler = (reverse, cursor) => {
-
     fetch('/threads/home?reverse=' + reverse + '&cursor=' + cursor).then(function (response) {
         return response.json();
     }).then(function (json) {

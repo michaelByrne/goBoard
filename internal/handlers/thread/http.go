@@ -196,7 +196,7 @@ func (h *Handler) ListThreads(c echo.Context) error {
 	cursor := c.QueryParams().Get("cursor")
 	var cursorAsTime time.Time
 	var err error
-	if cursor == "" {
+	if cursor == "" || cursor == "null" {
 		cursorAsTime = time.Date(9999, 1, 1, 1, 1, 1, 1, time.UTC)
 	} else {
 		cursorAsTime, err = time.Parse(time.RFC3339, cursor)
