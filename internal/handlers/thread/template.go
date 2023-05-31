@@ -165,6 +165,12 @@ func (h *TemplateHandler) Post(c echo.Context) error {
 		c.String(500, err.Error())
 		return err
 	}
+	htmlBody, err := h.threadService.ConvertPostBodyBbcodeToHtml(post.Body)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+	post.HtmlBody = htmlBody
 
 	return c.Render(200, "post", post)
 }
