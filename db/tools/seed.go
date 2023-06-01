@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 var DATA = [30]string{"Lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "Mauris", "faucibus", "lectus", "eget", "cursus", "tempus", "ligula", "orci", "mattis", "massa", "nec", "eleifend", "lorem", "ipsum", "congue", "erat", "Pellentesque", "suscipit", "semper", "sapien", "sed", "luctus"}
@@ -30,14 +31,12 @@ func main() {
 	b.Queue("INSERT INTO member (id, name, pass, postalcode, email_signup, secret, ip) VALUES ($1, $2, $3, $4, $5, $6, $7)", 2, "elliott", "test2", "97217", "admin@admin.net", "admin", "172.0.0.1")
 
 	for i := 1; i < 100; i++ {
-		b.Queue("INSERT INTO thread (id, subject, member_id, last_member_id) VALUES ($1, $2, $3, $4)", i, DATA[i%30], 1, 1)
-
-		b.Queue("INSERT INTO thread (id, subject, member_id, last_member_id) VALUES ($1, $2, $3, $4)", i*100, DATA[i%30], 2, 2)
+		b.Queue("INSERT INTO thread (subject, member_id, last_member_id) VALUES ($1, $2, $3)", DATA[i%30], 1, 1)
 	}
 
 	for i := 1; i < 100; i++ {
-		b.Queue("INSERT INTO board.public.thread_post (id, member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4, $5)", i, 1, i%100, DATA[i%30], "172.0.0.1")
-		b.Queue("INSERT INTO board.public.thread_post (id, member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4, $5)", i*100, 2, i*100, DATA[i%30], "172.0.0.1")
+		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 1, i, DATA[i%30], "172.0.0.1")
+		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 2, i, DATA[i%30], "172.0.0.1")
 		randDay := rand.Intn(28) + 1
 		randMonth := rand.Intn(12) + 1
 		randYear := rand.Intn(20) + 2000
