@@ -3,7 +3,7 @@ package message
 import (
 	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/ports"
-	"goBoard/internal/handlers/member"
+	"goBoard/internal/transport/handlers/member"
 	"strconv"
 	"strings"
 )

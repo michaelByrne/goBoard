@@ -41,3 +41,9 @@ type MessageRepo interface {
 	GetMessagePostByID(id int) (*domain.MessagePost, error)
 	PeekPrevious(timestamp *time.Time) (bool, error)
 }
+
+//go:generate moq -pkg mocks -out ../service/mocks/authentication_repo_moq.go . AuthenticationRepo
+
+type AuthenticationRepo interface {
+	Authenticate(username, password string) (int, error)
+}
