@@ -303,8 +303,6 @@ func (h *TemplateHandler) ThreadListNav(c echo.Context) error {
 		return err
 	}
 
-	log.Printf("listNavRequest: %+v", listNavRequest)
-
 	return c.Render(200, "thread-list-nav", listNavRequest)
 }
 

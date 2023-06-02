@@ -2,20 +2,25 @@ package main
 
 import (
 	"context"
+	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
+	"goBoard/internal/core/service/authenticationsvc"
 	"goBoard/internal/core/service/membersvc"
 	"goBoard/internal/core/service/messagesvc"
 	"goBoard/internal/core/service/threadsvc"
-	"goBoard/internal/handlers/member"
-	"goBoard/internal/handlers/message"
-	"goBoard/internal/handlers/thread"
+	"goBoard/internal/repos/authenticationrepo"
 	"goBoard/internal/repos/memberrepo"
 	"goBoard/internal/repos/messagerepo"
 	"goBoard/internal/repos/threadrepo"
+	"goBoard/internal/transport/handlers/authentication"
+	member2 "goBoard/internal/transport/handlers/member"
+	message2 "goBoard/internal/transport/handlers/message"
+	thread2 "goBoard/internal/transport/handlers/thread"
+	"goBoard/internal/transport/middlewares/session"
 	"html/template"
 	"io"
 	"log"
@@ -75,13 +80,18 @@ func main() {
 	messageRepo := messagerepo.NewMessageRepo(pool)
 	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar, maxThreadLimitAsInt)
 
-	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
-	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
-	messageTemplateHandler := message.NewTemplateHandler(messageService)
+	authenticationRepo := authenticationrepo.NewAuthenticationRepo(pool)
+	authenticationService := authenticationsvc.NewAuthenticationService(authenticationRepo, sugar)
 
-	threadHTTPHandler := thread.NewHandler(threadService, maxThreadLimitAsInt)
-	memberHTTPHandler := member.NewHandler(memberService)
-	messageHTTPHandler := message.NewHandler(memberService, messageService)
+	memberTemplateHandler := member2.NewTemplateHandler(threadService, memberService)
+	threadTemplateHandler := thread2.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
+	messageTemplateHandler := message2.NewTemplateHandler(messageService)
+	authenticationTemplateHandler := authentication.NewTemplateHandler(authenticationService)
+
+	threadHTTPHandler := thread2.NewHandler(threadService, maxThreadLimitAsInt)
+	memberHTTPHandler := member2.NewHandler(memberService)
+	messageHTTPHandler := message2.NewHandler(memberService, messageService)
+	authenticationHTTPHandler := authentication.NewHTTPHandler(authenticationService)
 
 	t := &Template{
 		templates: template.Must(template.New("t").Funcs(template.FuncMap{
@@ -104,13 +114,17 @@ func main() {
 	//	sugar.Info("request body: ", string(reqBody))
 	//	sugar.Info("response body: ", string(resBody))
 	//}))
+	store := sessions.NewCookieStore([]byte("secret"))
+	e.Use(session.Middleware(store))
 
 	threadTemplateHandler.Register(e)
 	memberTemplateHandler.Register(e)
 	messageTemplateHandler.Register(e)
+	authenticationTemplateHandler.Register(e)
 	threadHTTPHandler.Register(e)
 	memberHTTPHandler.Register(e)
 	messageHTTPHandler.Register(e)
+	authenticationHTTPHandler.Register(e)
 
 	e.Static("/static", "public")
 

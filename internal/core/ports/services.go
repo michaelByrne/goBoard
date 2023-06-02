@@ -1,6 +1,7 @@
 package ports
 
 import (
+	"context"
 	"goBoard/internal/core/domain"
 	"html/template"
 	"time"
@@ -31,4 +32,8 @@ type MessageService interface {
 	GetMessageByID(messageID, memberID int) (*domain.Message, error)
 	NewPost(body, ip, memberName string, messageID int) (int, error)
 	GetMessagePostByID(id int) (*domain.MessagePost, error)
+}
+
+type AuthenticationService interface {
+	Authenticate(ctx context.Context, username, password string) (int, error)
 }
