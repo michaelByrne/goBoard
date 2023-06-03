@@ -22,7 +22,7 @@ type MemberService interface {
 	Save(member domain.Member) (int, error)
 	GetMemberByID(id int) (*domain.Member, error)
 	GetMemberIDByUsername(username string) (int, error)
-	GetMemberByUsername(username string) (*domain.SiteContext, error)
+	GetMemberByUsername(username string) (*domain.Member, error)
 	ValidateMembers(names []string) ([]domain.Member, error)
 }
 
@@ -35,5 +35,5 @@ type MessageService interface {
 }
 
 type AuthenticationService interface {
-	Authenticate(ctx context.Context, username, password string) (int, error)
+	Authenticate(ctx context.Context, username, password string) (*domain.Member, error)
 }

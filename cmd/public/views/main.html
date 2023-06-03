@@ -1,0 +1,35 @@
+{{ define "main" }}
+    {{- /*gotype: goBoard/internal/transport/handlers/thread.ThreadsPassThroughArgs*/ -}}
+    {{ template "head" . }}
+    <body>
+    <div id="content">
+        <div class="pad">
+            <div class="clear" id="wrap_l56761">
+                <h3 class="title">elitism. secrecy. tradition.</h3>
+                <div id="auth">
+                    Logged in as
+                    <h4 style="display: inline">
+                        <a href="/member/edit" style="color: white">{{ .Username }}</a>
+                    </h4>
+                    <br>
+                    <a href="/logout/{{ .Username }}" style="color: white">logout</a>
+                </div>
+                <div class="clear"></div>
+                {{template "top-nav"}}
+                <div class="data">
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+
+    <script>
+        $(document).ready(function () {
+            $('.data div:even').css({'background-color': '#c3dae4', 'color': 'black'});
+            $('.data div:odd').css({'background-color': '#acccdb', 'color': 'black'});
+        });
+
+        threadsFetchHandler({{.Reverse}}, {{.Cursor.Format "2006-01-02T15:04:05Z07:00"}})
+    </script>
+
+{{ end }}

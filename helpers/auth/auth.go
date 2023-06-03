@@ -29,8 +29,8 @@ func GetJWTClaims(c echo.Context) v5claims.Claims {
 }
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func GenerateTokensAndSetCookies(member *domain.Member, c echo.Context) error {
-	accessToken, exp, err := generateAccessToken(member)
+func GenerateTokensAndSetCookies(member *domain.Member, c echo.Context, timeout time.Duration) error {
+	accessToken, exp, err := generateAccessToken(member, timeout)
 	if err != nil {
 		return err
 	}
@@ -41,9 +41,9 @@ func GenerateTokensAndSetCookies(member *domain.Member, c echo.Context) error {
 	return nil
 }
 
-func generateAccessToken(member *domain.Member) (string, time.Time, error) {
+func generateAccessToken(member *domain.Member, timeout time.Duration) (string, time.Time, error) {
 	// Declare the expiration time of the token (1h).
-	expirationTime := time.Now().Add(1 * time.Hour)
+	expirationTime := time.Now().Add(1 * timeout)
 
 	return generateToken(member, expirationTime, []byte(GetJWTSecret()))
 }

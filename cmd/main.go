@@ -17,9 +17,9 @@ import (
 	"goBoard/internal/repos/messagerepo"
 	"goBoard/internal/repos/threadrepo"
 	"goBoard/internal/transport/handlers/authentication"
-	member2 "goBoard/internal/transport/handlers/member"
-	message2 "goBoard/internal/transport/handlers/message"
-	thread2 "goBoard/internal/transport/handlers/thread"
+	"goBoard/internal/transport/handlers/member"
+	"goBoard/internal/transport/handlers/message"
+	"goBoard/internal/transport/handlers/thread"
 	"goBoard/internal/transport/middlewares/session"
 	"html/template"
 	"io"
@@ -81,16 +81,16 @@ func main() {
 	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar, maxThreadLimitAsInt)
 
 	authenticationRepo := authenticationrepo.NewAuthenticationRepo(pool)
-	authenticationService := authenticationsvc.NewAuthenticationService(authenticationRepo, sugar)
+	authenticationService := authenticationsvc.NewAuthenticationService(authenticationRepo, memberRepo, sugar)
 
-	memberTemplateHandler := member2.NewTemplateHandler(threadService, memberService)
-	threadTemplateHandler := thread2.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
-	messageTemplateHandler := message2.NewTemplateHandler(messageService)
+	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
+	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
+	messageTemplateHandler := message.NewTemplateHandler(messageService)
 	authenticationTemplateHandler := authentication.NewTemplateHandler(authenticationService)
 
-	threadHTTPHandler := thread2.NewHandler(threadService, maxThreadLimitAsInt)
-	memberHTTPHandler := member2.NewHandler(memberService)
-	messageHTTPHandler := message2.NewHandler(memberService, messageService)
+	threadHTTPHandler := thread.NewHandler(threadService, maxThreadLimitAsInt)
+	memberHTTPHandler := member.NewHandler(memberService)
+	messageHTTPHandler := message.NewHandler(memberService, messageService)
 	authenticationHTTPHandler := authentication.NewHTTPHandler(authenticationService)
 
 	t := &Template{
@@ -121,6 +121,7 @@ func main() {
 	memberTemplateHandler.Register(e)
 	messageTemplateHandler.Register(e)
 	authenticationTemplateHandler.Register(e)
+
 	threadHTTPHandler.Register(e)
 	memberHTTPHandler.Register(e)
 	messageHTTPHandler.Register(e)

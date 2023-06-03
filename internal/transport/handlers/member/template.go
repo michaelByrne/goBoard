@@ -35,13 +35,13 @@ func (h *TemplateHandler) Register(echo *echo.Echo) {
 
 func (h *TemplateHandler) GetMemberByUsername(c echo.Context) error {
 	username := c.Param("username")
-	siteContext, err := h.memberService.GetMemberByUsername(username)
+	member, err := h.memberService.GetMemberByUsername(username)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
 	}
-	siteContext.PageName = "member"
-	return c.Render(200, "member", siteContext)
+
+	return c.Render(200, "member", member)
 }
 
 type GenericResponse struct {
