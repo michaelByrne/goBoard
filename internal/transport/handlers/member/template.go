@@ -1,6 +1,8 @@
 package member
 
 import (
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"goBoard/helpers/auth"
 	"goBoard/internal/core/ports"
 
 	"github.com/labstack/echo/v4"
@@ -18,8 +20,17 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 	}
 }
 
-func (h *TemplateHandler) Register(e *echo.Echo) {
-	e.GET("/member/view/:username", h.GetMemberByUsername)
+func (h *TemplateHandler) Register(echo *echo.Echo) {
+	e := echo.Group("/member")
+
+	e.Use(echojwt.WithConfig(echojwt.Config{
+		//NewClaimsFunc: auth.GetJWTClaims,
+		SigningKey:   []byte(auth.GetJWTSecret()),
+		TokenLookup:  "cookie:access-token", // "<source>:<name>"
+		ErrorHandler: auth.JWTErrorChecker,
+	}))
+
+	e.GET("/view/:username", h.GetMemberByUsername)
 }
 
 func (h *TemplateHandler) GetMemberByUsername(c echo.Context) error {

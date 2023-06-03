@@ -1,7 +1,9 @@
 package message
 
 import (
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
+	"goBoard/helpers/auth"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
@@ -18,12 +20,21 @@ func NewTemplateHandler(messageService ports.MessageService) *TemplateHandler {
 	}
 }
 
-func (h *TemplateHandler) Register(e *echo.Echo) {
-	e.GET("/message/create", h.CreateMessage)
-	e.GET("/message/list/:memberID", h.ListMessages)
-	e.GET("/message/view/:id", h.ViewMessage)
-	e.POST("/message/previewpost/:position", h.PreviewPost)
-	e.GET("/message/post/:id/:position", h.Post)
+func (h *TemplateHandler) Register(echo *echo.Echo) {
+	e := echo.Group("/message")
+
+	e.Use(echojwt.WithConfig(echojwt.Config{
+		//NewClaimsFunc: auth.GetJWTClaims,
+		SigningKey:   []byte(auth.GetJWTSecret()),
+		TokenLookup:  "cookie:access-token", // "<source>:<name>"
+		ErrorHandler: auth.JWTErrorChecker,
+	}))
+
+	e.GET("/create", h.CreateMessage)
+	e.GET("/list/:memberID", h.ListMessages)
+	e.GET("/view/:id", h.ViewMessage)
+	e.POST("/previewpost/:position", h.PreviewPost)
+	e.GET("/post/:id/:position", h.Post)
 }
 
 func (h *TemplateHandler) CreateMessage(c echo.Context) error {

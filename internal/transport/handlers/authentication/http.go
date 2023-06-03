@@ -2,6 +2,8 @@ package authentication
 
 import (
 	"github.com/labstack/echo/v4"
+	"goBoard/helpers/auth"
+	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 )
 
@@ -33,6 +35,16 @@ func (h *HTTPHandler) Login(c echo.Context) error {
 	if memberID == 0 {
 		c.String(401, "Unauthorized")
 		return nil
+	}
+
+	err = auth.GenerateTokensAndSetCookies(&domain.Member{
+		ID:   memberID,
+		Name: username,
+		Pass: password,
+	}, c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
 	}
 
 	return c.Redirect(302, "/")
