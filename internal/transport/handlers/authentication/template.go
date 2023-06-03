@@ -16,7 +16,7 @@ func NewTemplateHandler(authenticationService ports.AuthenticationService) *Temp
 }
 
 func (h *TemplateHandler) Register(e *echo.Echo) {
-	e.GET("/login", h.Login)
+	e.GET("/login", h.Login).Name = "login"
 	//e.POST("/logout", h.Logout)
 }
 
