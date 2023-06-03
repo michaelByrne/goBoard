@@ -28,6 +28,9 @@ var _ ports.MemberRepo = &MemberRepoMock{}
 //			GetMemberIDByUsernameFunc: func(username string) (int, error) {
 //				panic("mock out the GetMemberIDByUsername method")
 //			},
+//			GetMemberPrefsFunc: func(memberID int) (*domain.MemberPrefs, error) {
+//				panic("mock out the GetMemberPrefs method")
+//			},
 //			SaveMemberFunc: func(member domain.Member) (int, error) {
 //				panic("mock out the SaveMember method")
 //			},
@@ -46,6 +49,9 @@ type MemberRepoMock struct {
 
 	// GetMemberIDByUsernameFunc mocks the GetMemberIDByUsername method.
 	GetMemberIDByUsernameFunc func(username string) (int, error)
+
+	// GetMemberPrefsFunc mocks the GetMemberPrefs method.
+	GetMemberPrefsFunc func(memberID int) (*domain.MemberPrefs, error)
 
 	// SaveMemberFunc mocks the SaveMember method.
 	SaveMemberFunc func(member domain.Member) (int, error)
@@ -67,6 +73,11 @@ type MemberRepoMock struct {
 			// Username is the username argument value.
 			Username string
 		}
+		// GetMemberPrefs holds details about calls to the GetMemberPrefs method.
+		GetMemberPrefs []struct {
+			// MemberID is the memberID argument value.
+			MemberID int
+		}
 		// SaveMember holds details about calls to the SaveMember method.
 		SaveMember []struct {
 			// Member is the member argument value.
@@ -76,6 +87,7 @@ type MemberRepoMock struct {
 	lockGetMemberByID         sync.RWMutex
 	lockGetMemberByUsername   sync.RWMutex
 	lockGetMemberIDByUsername sync.RWMutex
+	lockGetMemberPrefs        sync.RWMutex
 	lockSaveMember            sync.RWMutex
 }
 
@@ -172,6 +184,38 @@ func (mock *MemberRepoMock) GetMemberIDByUsernameCalls() []struct {
 	mock.lockGetMemberIDByUsername.RLock()
 	calls = mock.calls.GetMemberIDByUsername
 	mock.lockGetMemberIDByUsername.RUnlock()
+	return calls
+}
+
+// GetMemberPrefs calls GetMemberPrefsFunc.
+func (mock *MemberRepoMock) GetMemberPrefs(memberID int) (*domain.MemberPrefs, error) {
+	if mock.GetMemberPrefsFunc == nil {
+		panic("MemberRepoMock.GetMemberPrefsFunc: method is nil but MemberRepo.GetMemberPrefs was just called")
+	}
+	callInfo := struct {
+		MemberID int
+	}{
+		MemberID: memberID,
+	}
+	mock.lockGetMemberPrefs.Lock()
+	mock.calls.GetMemberPrefs = append(mock.calls.GetMemberPrefs, callInfo)
+	mock.lockGetMemberPrefs.Unlock()
+	return mock.GetMemberPrefsFunc(memberID)
+}
+
+// GetMemberPrefsCalls gets all the calls that were made to GetMemberPrefs.
+// Check the length with:
+//
+//	len(mockedMemberRepo.GetMemberPrefsCalls())
+func (mock *MemberRepoMock) GetMemberPrefsCalls() []struct {
+	MemberID int
+} {
+	var calls []struct {
+		MemberID int
+	}
+	mock.lockGetMemberPrefs.RLock()
+	calls = mock.calls.GetMemberPrefs
+	mock.lockGetMemberPrefs.RUnlock()
 	return calls
 }
 

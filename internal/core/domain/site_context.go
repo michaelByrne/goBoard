@@ -1,6 +1,8 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
 type SiteContext struct {
 	ThreadPage     ThreadPage
@@ -9,4 +11,5 @@ type SiteContext struct {
 	PageName       string
 	PageCursor     *time.Time
 	PrevPageCursor *time.Time
+	//Session        *sessions.Session
 }

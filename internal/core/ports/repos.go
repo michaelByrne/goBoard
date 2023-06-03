@@ -27,7 +27,8 @@ type MemberRepo interface {
 	SaveMember(member domain.Member) (int, error)
 	GetMemberByID(id int) (*domain.Member, error)
 	GetMemberIDByUsername(username string) (int, error)
-	GetMemberByUsername(username string) (*domain.SiteContext, error)
+	GetMemberByUsername(username string) (*domain.Member, error)
+	GetMemberPrefs(memberID int) (*domain.MemberPrefs, error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/message_repo_moq.go . MessageRepo

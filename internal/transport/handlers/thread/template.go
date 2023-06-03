@@ -5,6 +5,7 @@ import (
 	"goBoard/helpers/auth"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+	"goBoard/internal/transport/middlewares/session"
 	"strconv"
 	"time"
 
@@ -53,9 +54,19 @@ func (h *TemplateHandler) Register(echo *echo.Echo) {
 }
 
 func (h *TemplateHandler) ListThreads(c echo.Context) error {
+	var err error
+
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	user := sess.Values["name"].(string)
+	admin := sess.Values["admin"].(bool)
+
 	cursor := c.QueryParams().Get("cursor")
 	var cursorAsTime time.Time
-	var err error
 	if cursor == "" {
 		cursorAsTime = time.Date(9999, 1, 1, 1, 1, 1, 1, time.UTC)
 	} else {
@@ -79,8 +90,10 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	}
 
 	args := ThreadsPassThroughArgs{
-		Cursor:  &cursorAsTime,
-		Reverse: reverseAsBool,
+		Cursor:   &cursorAsTime,
+		Reverse:  reverseAsBool,
+		Username: user,
+		IsAdmin:  admin,
 	}
 
 	return c.Render(200, "main", args)
@@ -330,6 +343,8 @@ type ListNavRequest struct {
 }
 
 type ThreadsPassThroughArgs struct {
-	Reverse bool
-	Cursor  *time.Time
+	Reverse  bool
+	Cursor   *time.Time
+	Username string
+	IsAdmin  bool
 }
