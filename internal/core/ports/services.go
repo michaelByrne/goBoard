@@ -27,6 +27,7 @@ type MemberService interface {
 	GetAllPrefs(ctx context.Context) ([]domain.Pref, error)
 	GetMergedPrefs(ctx context.Context, memberID int) ([]domain.Pref, error)
 	UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error
+	UpdateMember(ctx context.Context, member domain.Member) error
 }
 
 type MessageService interface {

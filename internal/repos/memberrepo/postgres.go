@@ -3,6 +3,7 @@ package memberrepo
 import (
 	"context"
 	_ "embed"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -154,6 +155,22 @@ func (m MemberRepo) UpdatePrefs(ctx context.Context, memberID int, updatedPrefs 
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (m MemberRepo) UpdateMember(ctx context.Context, member domain.Member) error {
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+	sql, args, err := psql.Update("member").Set("pass", member.Pass).Set("secret", member.Secret).Set("email_signup", member.Email).Set("postalcode", member.PostalCode).Set("ip", member.IP).Where(sq.Eq{"id": member.ID}).ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = m.connPool.Exec(ctx, sql, args...)
+	if err != nil {
+		return err
 	}
 
 	return nil

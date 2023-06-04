@@ -104,6 +104,28 @@ func (h *Handler) EditMember(c echo.Context) error {
 			continue
 		}
 
+		if k == "username" {
+			continue
+		}
+
+		if k == "postal" {
+			member, err := h.memberService.GetMemberByID(memberID)
+			if err != nil {
+				c.String(500, err.Error())
+				return err
+			}
+
+			member.PostalCode = v[0]
+
+			err = h.memberService.UpdateMember(c.Request().Context(), *member)
+			if err != nil {
+				c.String(500, err.Error())
+				return err
+			}
+
+			continue
+		}
+
 		if v[0] != "" {
 			var value string
 			if len(v) == 2 {
