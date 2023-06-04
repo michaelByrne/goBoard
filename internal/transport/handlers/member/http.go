@@ -3,7 +3,9 @@ package member
 import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"goBoard/helpers/auth"
+	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+	"goBoard/internal/transport/middlewares/session"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -29,6 +31,7 @@ func (h *Handler) Register(echo *echo.Echo) {
 
 	e.POST("/save", h.SaveMember)
 	e.GET("/:id", h.GetMemberByID)
+	e.POST("/edit", h.EditMember)
 	//e.GET("/member/view/:username", h.GetMemberByUsername)
 }
 
@@ -80,6 +83,54 @@ func (h *Handler) GetMemberByUsername(ctx echo.Context) error {
 	return ctx.JSON(200, siteContext)
 }
 
+func (h *Handler) EditMember(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberID := sess.Values["id"].(int)
+
+	values, err := c.FormParams()
+	if err != nil {
+		return err
+	}
+
+	var updatedCount int
+	prefs := make(domain.MemberPrefs)
+	for k, v := range values {
+		if len(v) == 0 {
+			continue
+		}
+
+		if v[0] != "" {
+			var value string
+			if len(v) == 2 {
+				value = v[1]
+			} else {
+				value = v[0]
+			}
+			prefs[k] = domain.MemberPref{
+				Value: value,
+			}
+			updatedCount++
+		}
+	}
+
+	err = h.memberService.UpdatePrefs(c.Request().Context(), memberID, prefs)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.JSON(200, SuccessMessage{Message: "Updated " + strconv.Itoa(updatedCount) + " preferences"})
+}
+
 type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+type SuccessMessage struct {
 	Message string `json:"message"`
 }

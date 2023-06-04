@@ -18,7 +18,7 @@
     <li>
         <label id="label_{{.Name}}" for="{{.Name}}">{{.Display}}</label>
         <input type="hidden" name="{{.Name}}" value="false"/>
-        <input type="checkbox" name="{{.Name}}" value="true" {{if .Value}}checked="checked"{{end}}/>
+        <input type="checkbox" name="{{.Name}}" value="true" id="{{.Name}}"{{if eq .Value "true"}}checked{{end}}/>
         <div class="clear"></div>
     </li>
 {{end}}

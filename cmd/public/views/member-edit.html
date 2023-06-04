@@ -14,7 +14,7 @@
                 <hr/>
             </div>
             <div class="box clear" style="background-color: #acccdb; color: black">
-                <form method="post" name="form" class="coreform" action="/member/edit">
+                <form method="post" name="form" id="form" class="coreform" action="/member/edit">
                     <fieldset>
                         <legend>details</legend>
                         <ol>
@@ -34,5 +34,27 @@
             </div>
         </div>
     </div>
+    <script>
+        document.forms['form'].addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            let searchParams = new URLSearchParams(formData);
+            fetch(e.target.action, {
+                method: 'POST',
+                body: searchParams
+            }).then(function (response) {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                return response.json();
+            }).then(function (data) {
+                window.location = "/member/edit"
+            }).catch(function (error) {
+                console.log(error);
+            })
+
+        })
+    </script>
     </body>
 {{end}}

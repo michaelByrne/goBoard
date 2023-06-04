@@ -3,11 +3,10 @@ package memberrepo
 import (
 	"context"
 	_ "embed"
-	"github.com/jackc/pgx/v4"
-	"goBoard/internal/core/domain"
-
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"goBoard/internal/core/domain"
 )
 
 //go:embed queries/insert_or_update_member_prefs.sql
