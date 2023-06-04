@@ -2,7 +2,6 @@ package thread
 
 import (
 	"goBoard/internal/core/ports"
-	"log"
 	"strconv"
 	"time"
 
@@ -22,14 +21,11 @@ func NewHandler(threadService ports.ThreadService, defaultThreadLimit int) *Hand
 }
 
 func (h *Handler) Register(e *echo.Echo) {
-	//e.GET("/threads/all", h.ListThreads)
 	e.GET("/threads/:id", h.GetThreadByID)
 	e.POST("/thread/create", h.CreateThread)
 	e.POST("/thread/reply", h.ThreadReply)
 	e.GET("/threads/cursor", h.GetThreadsWithCursor)
-	//e.GET("threads/first", h.GetFirstPageThreads)
 	e.GET("/threads/home", h.ListThreads)
-	//e.GET("/thread/list", h.ListThreads)
 
 }
 
@@ -63,28 +59,6 @@ func (h *Handler) ThreadReply(c echo.Context) error {
 	})
 }
 
-//func (h *Handler) ListThreads(ctx echo.Context) error {
-//	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
-//	if err != nil {
-//		ctx.JSON(400, ErrorResponse{Message: err.Error()})
-//		return err
-//	}
-//
-//	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
-//	if err != nil {
-//		ctx.JSON(400, ErrorResponse{Message: err.Error()})
-//		return err
-//	}
-//
-//	threadList, err := h.threadService.ListThreads(limit, offset)
-//	if err != nil {
-//		ctx.JSON(500, ErrorResponse{Message: err.Error()})
-//		return err
-//	}
-//
-//	return ctx.JSON(200, threadList)
-//}
-
 func (h *Handler) GetThreadByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -103,23 +77,6 @@ func (h *Handler) GetThreadByID(ctx echo.Context) error {
 
 	return ctx.JSON(200, threadOut)
 }
-
-//	func (h *Handler) SavePost(ctx echo.Context) error {
-//		post := &Post{}
-//		err := ctx.Bind(post)
-//		if err != nil {
-//			ctx.JSON(400, ErrorResponse{Message: err.Error()})
-//			return err
-//		}
-//
-//		id, err := h.threadService.Save(post.ToDomain())
-//		if err != nil {
-//			ctx.JSON(500, ErrorResponse{Message: err.Error()})
-//			return err
-//		}
-//
-//		return ctx.JSON(200, ID{id})
-//	}
 
 func (h *Handler) CreateThread(c echo.Context) error {
 	body := c.FormValue("body")
@@ -188,7 +145,6 @@ func (h *Handler) ListFirstPageThreads(c echo.Context) error {
 	}
 	siteContext.ThreadPage.PageNum = 0
 	siteContext.PageName = "main"
-	log.Printf("siteContext: %+v", siteContext)
 	return c.JSON(200, siteContext)
 }
 
@@ -238,24 +194,6 @@ func (h *Handler) ListThreads(c echo.Context) error {
 	siteContext.PageName = "main"
 	return c.JSON(200, siteContext)
 }
-
-//
-//func (h *Handler) NewThread(c echo.Context) error {
-//	thread := &Thread{}
-//	err := c.Bind(thread)
-//	if err != nil {
-//		c.JSON(400, ErrorResponse{Message: err.Error()})
-//		return err
-//	}
-//
-//	id, err := h.threadService.NewThread(strconv.Itoa(thread.MemberID), thread.MemberIP, thread.FirstPostText, thread.Subject)
-//	if err != nil {
-//		c.JSON(500, ErrorResponse{Message: err.Error()})
-//		return err
-//	}
-//
-//	return c.JSON(200, ID{ID: id})
-//}
 
 type ErrorResponse struct {
 	Message string `json:"message"`

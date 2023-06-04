@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"github.com/gorilla/sessions"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"goBoard/helpers/auth"
 	"goBoard/internal/core/domain"
@@ -8,8 +9,6 @@ import (
 	"goBoard/internal/transport/middlewares/session"
 	"strconv"
 	"time"
-
-	"github.com/labstack/gommon/log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -47,8 +46,6 @@ func (h *TemplateHandler) Register(echo *echo.Echo) {
 	e.POST("/threads", h.Threads)
 	e.POST("/thread", h.Thread)
 	e.GET("/ping", h.Ping)
-	//e.POST("/thread/reply", h.ThreadReply)
-	//e.POST("/thread/create", h.CreateThread)
 	e.GET("/thread/create", h.NewThread)
 	e.POST("/thread/previewpost/:position", h.PreviewPost)
 }
@@ -62,8 +59,18 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 		return err
 	}
 
-	user := sess.Values["name"].(string)
-	admin := sess.Values["admin"].(bool)
+	user, ok := sess.Values["name"]
+	if !ok {
+		user = ""
+	}
+
+	admin, ok := sess.Values["admin"]
+	if !ok {
+		admin = false
+	}
+
+	userAsStr := user.(string)
+	adminAsBool := admin.(bool)
 
 	cursor := c.QueryParams().Get("cursor")
 	var cursorAsTime time.Time
@@ -92,59 +99,13 @@ func (h *TemplateHandler) ListThreads(c echo.Context) error {
 	args := ThreadsPassThroughArgs{
 		Cursor:   &cursorAsTime,
 		Reverse:  reverseAsBool,
-		Username: user,
-		IsAdmin:  admin,
+		Username: userAsStr,
+		IsAdmin:  adminAsBool,
+		Session:  sess,
 	}
 
 	return c.Render(200, "main", args)
 }
-
-//func (h *TemplateHandler) ListFirstPageThreads(c echo.Context) error {
-//	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, true, nil)
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//	siteContext.ThreadPage.PageNum = 0
-//	siteContext.PageName = "main"
-//	return c.Render(200, "main", siteContext)
-//}
-//
-//func (h *TemplateHandler) ListThreads(c echo.Context) error {
-//	cursor := c.QueryParams().Get("cursor")
-//	cursorAsTime, err := time.Parse(time.RFC3339, cursor)
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//
-//	reverse := c.QueryParams().Get("reverse")
-//	reverseAsBool, err := strconv.ParseBool(reverse)
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//
-//	if reverseAsBool {
-//		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime)
-//		if err != nil {
-//			c.String(500, err.Error())
-//			return err
-//		}
-//
-//		siteContext.PageName = "main"
-//		return c.Render(200, "main", siteContext)
-//	}
-//
-//	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, false, &cursorAsTime)
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//
-//	siteContext.PageName = "main"
-//	return c.Render(200, "main", siteContext)
-//}
 
 func (h *TemplateHandler) Ping(c echo.Context) error {
 	return c.Render(200, "ping", nil)
@@ -203,61 +164,11 @@ func (h *TemplateHandler) Thread(c echo.Context) error {
 	var thread domain.Thread
 	err := c.Bind(&thread)
 	if err != nil {
-		log.Error()
 		c.String(500, err.Error())
 		return err
 	}
 
 	return c.Render(200, "thread", thread)
-}
-
-//func (h *TemplateHandler) ThreadReply(c echo.Context) error {
-//	values, err := c.FormParams()
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//
-//	threadID := values.Get("thread_id")
-//	threadIDAsInt, err := strconv.Atoi(threadID)
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//
-//	author := values.Get("member_name")
-//	body := values.Get("body")
-//
-//	ip := c.RealIP()
-//
-//	postID, err := h.threadService.NewPost(body, ip, author, threadIDAsInt)
-//	if err != nil {
-//		c.String(500, err.Error())
-//		return err
-//	}
-//
-//	return c.JSON(200, NewPostResponse{
-//		PostID: postID,
-//	})
-//}
-
-func (h *TemplateHandler) CreateThread(c echo.Context) error {
-	body := c.FormValue("body")
-	subject := c.FormValue("subject")
-
-	ip := c.RealIP()
-
-	author := c.FormValue("member")
-
-	threadID, err := h.threadService.NewThread(author, ip, body, subject)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return c.JSON(200, NewThreadResponse{
-		ThreadID: threadID,
-	})
 }
 
 func (h *TemplateHandler) NewThread(c echo.Context) error {
@@ -347,4 +258,5 @@ type ThreadsPassThroughArgs struct {
 	Cursor   *time.Time
 	Username string
 	IsAdmin  bool
+	Session  *sessions.Session
 }

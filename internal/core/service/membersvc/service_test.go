@@ -1,7 +1,9 @@
 package membersvc
 
 import (
+	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
@@ -103,5 +105,117 @@ func TestMemberService_ValidateMembers(t *testing.T) {
 
 		require.Len(t, members, 1)
 		require.Equal(t, "tester1", members[0].Name)
+	})
+}
+
+func TestMemberService_GetMergedPrefs(t *testing.T) {
+	l := zap.NewNop().Sugar()
+
+	t.Run("when everything goes right and merged prefs are returned", func(t *testing.T) {
+		fakeMemberPrefs := &domain.MemberPrefs{
+			"theme": domain.MemberPref{
+				Value: "dark",
+				Type:  "checkbox",
+			},
+			"location": domain.MemberPref{
+				Value: "US",
+				Type:  "text",
+			},
+		}
+
+		fakeAllPrefs := []domain.Pref{
+			{
+				Name:    "theme",
+				Display: "visual theme",
+				Type:    "checkbox",
+			},
+			{
+				Name:    "location",
+				Display: "location",
+				Type:    "text",
+			},
+			{
+				Name:    "timezone",
+				Display: "timezone",
+				Type:    "text",
+			},
+		}
+
+		mockMemberRepo := &mocks.MemberRepoMock{
+			GetMemberPrefsFunc: func(id int) (*domain.MemberPrefs, error) {
+				return fakeMemberPrefs, nil
+			},
+			GetAllPrefsFunc: func(ctx context.Context) ([]domain.Pref, error) {
+				return fakeAllPrefs, nil
+			},
+		}
+
+		expectedPrefs := []domain.Pref{
+			{
+				Name:    "theme",
+				Display: "visual theme",
+				Type:    "checkbox",
+				Value:   "dark",
+			},
+			{
+				Name:    "location",
+				Display: "location",
+				Type:    "text",
+				Value:   "US",
+			},
+			{
+				Name:    "timezone",
+				Display: "timezone",
+				Type:    "text",
+				Value:   "",
+			},
+		}
+
+		memberService := NewMemberService(mockMemberRepo, l)
+
+		mergedPrefs, err := memberService.GetMergedPrefs(context.Background(), 1)
+		require.NoError(t, err)
+
+		require.Len(t, mergedPrefs, 3)
+		assert.Equal(t, expectedPrefs, mergedPrefs)
+	})
+
+	t.Run("when a user doesn't have any prefs yet", func(t *testing.T) {
+		fakeAllPrefs := []domain.Pref{
+			{
+				Name:    "theme",
+				Display: "visual theme",
+				Type:    "checkbox",
+			},
+			{
+				Name:    "location",
+				Display: "location",
+				Type:    "text",
+			},
+			{
+				Name:    "timezone",
+				Display: "timezone",
+				Type:    "text",
+			},
+		}
+
+		emptyPrefs := make(domain.MemberPrefs)
+
+		mockMemberRepo := &mocks.MemberRepoMock{
+			GetMemberPrefsFunc: func(id int) (*domain.MemberPrefs, error) {
+				return &emptyPrefs, nil
+			},
+			GetAllPrefsFunc: func(ctx context.Context) ([]domain.Pref, error) {
+				return fakeAllPrefs, nil
+			},
+		}
+
+		memberService := NewMemberService(mockMemberRepo, l)
+
+		mergedPrefs, err := memberService.GetMergedPrefs(context.Background(), 1)
+		require.NoError(t, err)
+
+		require.Len(t, mergedPrefs, 3)
+		assert.Equal(t, fakeAllPrefs, mergedPrefs)
 	})
 }

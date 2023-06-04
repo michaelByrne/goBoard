@@ -21,4 +21,10 @@ type Member struct {
 	IsAdmin          bool
 }
 
-type MemberPrefs map[string]string
+type MemberPref struct {
+	ID    int
+	Value string
+	Type  string
+}
+
+type MemberPrefs map[string]MemberPref

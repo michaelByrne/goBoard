@@ -1,6 +1,7 @@
 package ports
 
 import (
+	"context"
 	"goBoard/internal/core/domain"
 	"time"
 )
@@ -29,6 +30,8 @@ type MemberRepo interface {
 	GetMemberIDByUsername(username string) (int, error)
 	GetMemberByUsername(username string) (*domain.Member, error)
 	GetMemberPrefs(memberID int) (*domain.MemberPrefs, error)
+	GetAllPrefs(ctx context.Context) ([]domain.Pref, error)
+	UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/message_repo_moq.go . MessageRepo

@@ -2,10 +2,11 @@ package member
 
 import (
 	echojwt "github.com/labstack/echo-jwt/v4"
-	"goBoard/helpers/auth"
-	"goBoard/internal/core/ports"
-
 	"github.com/labstack/echo/v4"
+	"goBoard/helpers/auth"
+	"goBoard/internal/core/domain"
+	"goBoard/internal/core/ports"
+	"goBoard/internal/transport/middlewares/session"
 )
 
 type TemplateHandler struct {
@@ -31,9 +32,20 @@ func (h *TemplateHandler) Register(echo *echo.Echo) {
 	}))
 
 	e.GET("/view/:username", h.GetMemberByUsername)
+	e.GET("/edit", h.EditMember)
 }
 
 func (h *TemplateHandler) GetMemberByUsername(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	siteContext := domain.SiteContext{
+		Session: sess,
+	}
+
 	username := c.Param("username")
 	member, err := h.memberService.GetMemberByUsername(username)
 	if err != nil {
@@ -41,7 +53,35 @@ func (h *TemplateHandler) GetMemberByUsername(c echo.Context) error {
 		return err
 	}
 
-	return c.Render(200, "member", member)
+	siteContext.Member = *member
+
+	return c.Render(200, "member", siteContext)
+}
+
+func (h *TemplateHandler) EditMember(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberID := sess.Values["id"].(int)
+	memberName := sess.Values["name"].(string)
+
+	siteContext := domain.SiteContext{
+		Session:  sess,
+		Username: memberName,
+	}
+
+	prefs, err := h.memberService.GetMergedPrefs(c.Request().Context(), memberID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	siteContext.Prefs = prefs
+
+	return c.Render(200, "member-edit", siteContext)
 }
 
 type GenericResponse struct {

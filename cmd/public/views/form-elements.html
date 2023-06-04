@@ -1,0 +1,24 @@
+{{define "textarea"}}
+    <li>
+        <label id="label_{{.Name}}" for="{{.Name}}">{{.Display}}</label>
+        <textarea name="{{.Name}}" id="{{.Name}}" style="float: left; width: {{.Width}}">{{.Value}}</textarea>
+        <div class="clear"></div>
+    </li>
+{{end}}
+
+{{define "text"}}
+    <li>
+        <label id="label_{{.Name}}" for="{{.Name}}">{{.Display}}</label>
+        <input type="text" name="{{.Name}}" id="{{.Name}}" value="{{.Value}}" style="width: {{.Width}}"/>
+        <div class="clear"></div>
+    </li>
+{{end}}
+
+{{define "checkbox"}}
+    <li>
+        <label id="label_{{.Name}}" for="{{.Name}}">{{.Display}}</label>
+        <input type="hidden" name="{{.Name}}" value="false"/>
+        <input type="checkbox" name="{{.Name}}" value="true" {{if .Value}}checked="checked"{{end}}/>
+        <div class="clear"></div>
+    </li>
+{{end}}

@@ -4,6 +4,7 @@
 package mocks
 
 import (
+	"context"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"sync"
@@ -19,10 +20,13 @@ var _ ports.MemberRepo = &MemberRepoMock{}
 //
 //		// make and configure a mocked ports.MemberRepo
 //		mockedMemberRepo := &MemberRepoMock{
+//			GetAllPrefsFunc: func(ctx context.Context) ([]domain.Pref, error) {
+//				panic("mock out the GetAllPrefs method")
+//			},
 //			GetMemberByIDFunc: func(id int) (*domain.Member, error) {
 //				panic("mock out the GetMemberByID method")
 //			},
-//			GetMemberByUsernameFunc: func(username string) (*domain.SiteContext, error) {
+//			GetMemberByUsernameFunc: func(username string) (*domain.Member, error) {
 //				panic("mock out the GetMemberByUsername method")
 //			},
 //			GetMemberIDByUsernameFunc: func(username string) (int, error) {
@@ -41,11 +45,14 @@ var _ ports.MemberRepo = &MemberRepoMock{}
 //
 //	}
 type MemberRepoMock struct {
+	// GetAllPrefsFunc mocks the GetAllPrefs method.
+	GetAllPrefsFunc func(ctx context.Context) ([]domain.Pref, error)
+
 	// GetMemberByIDFunc mocks the GetMemberByID method.
 	GetMemberByIDFunc func(id int) (*domain.Member, error)
 
 	// GetMemberByUsernameFunc mocks the GetMemberByUsername method.
-	GetMemberByUsernameFunc func(username string) (*domain.SiteContext, error)
+	GetMemberByUsernameFunc func(username string) (*domain.Member, error)
 
 	// GetMemberIDByUsernameFunc mocks the GetMemberIDByUsername method.
 	GetMemberIDByUsernameFunc func(username string) (int, error)
@@ -58,6 +65,11 @@ type MemberRepoMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetAllPrefs holds details about calls to the GetAllPrefs method.
+		GetAllPrefs []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// GetMemberByID holds details about calls to the GetMemberByID method.
 		GetMemberByID []struct {
 			// ID is the id argument value.
@@ -84,11 +96,44 @@ type MemberRepoMock struct {
 			Member domain.Member
 		}
 	}
+	lockGetAllPrefs           sync.RWMutex
 	lockGetMemberByID         sync.RWMutex
 	lockGetMemberByUsername   sync.RWMutex
 	lockGetMemberIDByUsername sync.RWMutex
 	lockGetMemberPrefs        sync.RWMutex
 	lockSaveMember            sync.RWMutex
+}
+
+// GetAllPrefs calls GetAllPrefsFunc.
+func (mock *MemberRepoMock) GetAllPrefs(ctx context.Context) ([]domain.Pref, error) {
+	if mock.GetAllPrefsFunc == nil {
+		panic("MemberRepoMock.GetAllPrefsFunc: method is nil but MemberRepo.GetAllPrefs was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetAllPrefs.Lock()
+	mock.calls.GetAllPrefs = append(mock.calls.GetAllPrefs, callInfo)
+	mock.lockGetAllPrefs.Unlock()
+	return mock.GetAllPrefsFunc(ctx)
+}
+
+// GetAllPrefsCalls gets all the calls that were made to GetAllPrefs.
+// Check the length with:
+//
+//	len(mockedMemberRepo.GetAllPrefsCalls())
+func (mock *MemberRepoMock) GetAllPrefsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetAllPrefs.RLock()
+	calls = mock.calls.GetAllPrefs
+	mock.lockGetAllPrefs.RUnlock()
+	return calls
 }
 
 // GetMemberByID calls GetMemberByIDFunc.
@@ -124,7 +169,7 @@ func (mock *MemberRepoMock) GetMemberByIDCalls() []struct {
 }
 
 // GetMemberByUsername calls GetMemberByUsernameFunc.
-func (mock *MemberRepoMock) GetMemberByUsername(username string) (*domain.SiteContext, error) {
+func (mock *MemberRepoMock) GetMemberByUsername(username string) (*domain.Member, error) {
 	if mock.GetMemberByUsernameFunc == nil {
 		panic("MemberRepoMock.GetMemberByUsernameFunc: method is nil but MemberRepo.GetMemberByUsername was just called")
 	}

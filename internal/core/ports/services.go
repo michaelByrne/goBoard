@@ -24,6 +24,9 @@ type MemberService interface {
 	GetMemberIDByUsername(username string) (int, error)
 	GetMemberByUsername(username string) (*domain.Member, error)
 	ValidateMembers(names []string) ([]domain.Member, error)
+	GetAllPrefs(ctx context.Context) ([]domain.Pref, error)
+	GetMergedPrefs(ctx context.Context, memberID int) ([]domain.Pref, error)
+	UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error
 }
 
 type MessageService interface {
