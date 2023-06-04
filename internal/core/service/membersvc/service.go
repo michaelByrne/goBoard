@@ -1,6 +1,7 @@
 package membersvc
 
 import (
+	"context"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 
@@ -59,4 +60,56 @@ func (s MemberService) ValidateMembers(names []string) ([]domain.Member, error) 
 	}
 
 	return validMembers, nil
+}
+
+func (s MemberService) GetAllPrefs(ctx context.Context) ([]domain.Pref, error) {
+	return s.memberRepo.GetAllPrefs(ctx)
+}
+
+func (s MemberService) UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error {
+	return s.memberRepo.UpdatePrefs(ctx, memberID, updatedPrefs)
+}
+
+func (s MemberService) GetMergedPrefs(ctx context.Context, memberID int) ([]domain.Pref, error) {
+	memberPrefs, err := s.memberRepo.GetMemberPrefs(memberID)
+	if err != nil {
+		s.logger.Errorf("error getting member prefs: %v", err)
+		return nil, err
+	}
+
+	allPrefs, err := s.memberRepo.GetAllPrefs(ctx)
+	if err != nil {
+		s.logger.Errorf("error getting all prefs: %v", err)
+		return nil, err
+	}
+
+	mergedPrefs := mergePrefs(*memberPrefs, allPrefs)
+
+	return mergedPrefs, nil
+}
+
+func mergePrefs(memberPrefs domain.MemberPrefs, prefs []domain.Pref) []domain.Pref {
+	var prefsOut []domain.Pref
+
+	for _, pref := range prefs {
+		if value, ok := memberPrefs[pref.Name]; ok {
+			prefsOut = append(prefsOut, domain.Pref{
+				Name:    pref.Name,
+				Value:   value.Value,
+				Width:   pref.Width,
+				Display: pref.Display,
+				Type:    pref.Type,
+			})
+		} else {
+			prefsOut = append(prefsOut, domain.Pref{
+				Name:    pref.Name,
+				Value:   pref.Value,
+				Width:   pref.Width,
+				Display: pref.Display,
+				Type:    pref.Type,
+			})
+		}
+	}
+
+	return prefsOut
 }

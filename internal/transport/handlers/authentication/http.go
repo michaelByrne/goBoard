@@ -61,7 +61,7 @@ func (h *HTTPHandler) Login(c echo.Context) error {
 	sess.Values["admin"] = member.IsAdmin
 
 	for key, pref := range member.Prefs {
-		sess.Values[key] = pref
+		sess.Values[key] = pref.Value
 	}
 
 	err = sess.Save(c.Request(), c.Response())

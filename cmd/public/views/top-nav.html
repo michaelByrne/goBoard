@@ -7,7 +7,8 @@
             <li><a href="/message/create" title="send a message to another member">new message</a></li>
             <li><a href="/search/" title="search the board">search</a></li>
             <li><a href="/chat/" title="chat in realtime">chat</a></li>
-            <li><a href="/member/view/" title="view my profile">profile</a></li>
+            <li><a href="/member/view/{{- /*gotype: goBoard/internal/transport/handlers/thread.ThreadsPassThroughArgs*/ -}}
+            {{ .Username }}" title="view my profile">profile</a></li>
             <li><a href="/donate/" title="donate!">donate</a></li>
             <li><a href="http://webchat.freenode.net/?channels=#bco" title="irc">irc</a></li>
         </div>

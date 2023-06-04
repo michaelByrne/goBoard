@@ -2,15 +2,21 @@ package memberrepo
 
 import (
 	"context"
+	_ "embed"
+	"github.com/jackc/pgx/v4"
 	"goBoard/internal/core/domain"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+//go:embed queries/insert_or_update_member_prefs.sql
+var insertOrUpdateMemberPrefsQuery string
+
 const (
 	saveMemberQuery = "INSERT INTO member (name, pass, secret, email_signup, postalcode, ip) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
 	getMemberPrefs  = "SELECT p.name, mp.value FROM member_pref mp JOIN pref p ON mp.pref_id = p.id WHERE mp.member_id = $1"
+	getAllPrefs     = "SELECT p.display, p.name as field, pt.name as type, COALESCE(p.width, 50) FROM pref p LEFT JOIN pref_type pt ON pt.id = p.pref_type_id WHERE p.editable IS true ORDER BY p.ordering"
 )
 
 type MemberRepo struct {
@@ -101,8 +107,55 @@ func (m MemberRepo) GetMemberPrefs(memberID int) (*domain.MemberPrefs, error) {
 			return nil, err
 		}
 
-		prefs[name] = value
+		prefs[name] = domain.MemberPref{
+			Value: value,
+		}
 	}
 
 	return &prefs, nil
+}
+
+func (m MemberRepo) GetAllPrefs(ctx context.Context) ([]domain.Pref, error) {
+	rows, err := m.connPool.Query(ctx, getAllPrefs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var prefs []domain.Pref
+	for rows.Next() {
+		var pref domain.Pref
+		err := rows.Scan(&pref.Display, &pref.Name, &pref.Type, &pref.Width)
+		if err != nil {
+			return nil, err
+		}
+
+		prefs = append(prefs, pref)
+	}
+
+	return prefs, nil
+}
+
+func (m MemberRepo) UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error {
+	tx, err := m.connPool.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(context.TODO())
+		} else {
+			tx.Commit(context.TODO())
+		}
+	}()
+
+	for k, v := range updatedPrefs {
+		_, err = tx.Exec(ctx, insertOrUpdateMemberPrefsQuery, k, memberID, v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

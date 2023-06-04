@@ -1,0 +1,38 @@
+{{define "member-edit"}}
+    {{ template "head" }}
+    {{- /*gotype: goBoard/internal/core/domain.SiteContext*/ -}}
+
+    <body>
+    <div id="content">
+        <div class="pad">
+            <div class="clear" id="wrap_l56761">
+                <h3 class="title">Account management: {{ .Username }}</h3>
+            </div>
+            <div class="clear"></div>
+            {{template "top-nav" .}}
+            <div class="hr">
+                <hr/>
+            </div>
+            <div class="box clear" style="background-color: #acccdb; color: black">
+                <form method="post" name="form" class="coreform" action="/member/edit">
+                    <fieldset>
+                        <legend>details</legend>
+                        <ol>
+                            {{range .Prefs}}
+                                {{if eq .Type "checkbox"}}
+                                    {{template "checkbox" .}}
+                                {{else if eq .Type "input"}}
+                                    {{template "text" .}}
+                                {{else if eq .Type "textarea"}}
+                                    {{template "textarea" .}}
+                                {{end}}
+                            {{end}}
+                            <input type="submit" class="submit" value="Save Changes">
+                        </ol>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+    </div>
+    </body>
+{{end}}

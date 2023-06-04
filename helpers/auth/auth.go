@@ -3,6 +3,7 @@ package auth
 import (
 	v5claims "github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"goBoard/internal/core/domain"
 	"net/http"
 	"time"
@@ -95,6 +96,7 @@ func setUserCookie(member *domain.Member, expiration time.Time, c echo.Context) 
 
 // JWTErrorChecker will be executed when user try to access a protected path.
 func JWTErrorChecker(c echo.Context, err error) error {
+	log.Error(err)
 	// Redirects to the signIn form.
 	return c.Redirect(http.StatusMovedPermanently, c.Echo().Reverse("login"))
 }

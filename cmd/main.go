@@ -28,16 +28,6 @@ import (
 	"strconv"
 )
 
-////go:embed public/views/*.html
-//var templateFiles embed.FS
-
-//
-////go:embed public/css/*.css
-//var cssFiles embed.FS
-//
-////go:embed public/js/*.js
-//var jsFiles embed.FS
-
 type Template struct {
 	templates *template.Template
 }

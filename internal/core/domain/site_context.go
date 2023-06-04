@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/gorilla/sessions"
 	"time"
 )
 
@@ -11,5 +12,7 @@ type SiteContext struct {
 	PageName       string
 	PageCursor     *time.Time
 	PrevPageCursor *time.Time
-	//Session        *sessions.Session
+	Session        *sessions.Session
+	Prefs          []Pref
+	Username       string
 }
