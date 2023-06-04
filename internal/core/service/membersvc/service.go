@@ -88,6 +88,10 @@ func (s MemberService) GetMergedPrefs(ctx context.Context, memberID int) ([]doma
 	return mergedPrefs, nil
 }
 
+func (s MemberService) UpdateMember(ctx context.Context, member domain.Member) error {
+	return s.memberRepo.UpdateMember(ctx, member)
+}
+
 func mergePrefs(memberPrefs domain.MemberPrefs, prefs []domain.Pref) []domain.Pref {
 	var prefsOut []domain.Pref
 

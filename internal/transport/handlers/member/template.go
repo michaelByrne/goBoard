@@ -81,6 +81,14 @@ func (h *TemplateHandler) EditMember(c echo.Context) error {
 
 	siteContext.Prefs = prefs
 
+	member, err := h.memberService.GetMemberByID(memberID)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	siteContext.Member = *member
+
 	return c.Render(200, "member-edit", siteContext)
 }
 

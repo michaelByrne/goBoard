@@ -14,9 +14,25 @@
                 <hr/>
             </div>
             <div class="box clear" style="background-color: #acccdb; color: black">
+                <div id="response_form"></div>
                 <form method="post" name="form" id="form" class="coreform" action="/member/edit">
                     <fieldset>
-                        <legend>details</legend>
+                        <legend>Account Management</legend>
+                        <ol>
+                            <li>
+                                <label id="label_username" for="username">Name</label>
+                                <input type="text" name="username" id="username" value="{{.Username}}" style="width: 150px"/>
+                                <div class="clear"></div>
+                            </li>
+                            <li>
+                                <label id="label_postal" for="postal">Postal Code</label>
+                                <input type="text" name="postal" id="postal" value="{{.Member.PostalCode}}" style="width: 150px"/>
+                                <div class="clear"></div>
+                            </li>
+                        </ol>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Details</legend>
                         <ol>
                             {{range .Prefs}}
                                 {{if eq .Type "checkbox"}}
@@ -51,7 +67,7 @@
             }).then(function (data) {
                 window.location = "/member/edit"
             }).catch(function (error) {
-                console.log(error);
+                document.getElementById("response_form").innerHTML = error.toString();
             })
 
         })
