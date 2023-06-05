@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v4/pgxpool"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
+	"goBoard/helpers/auth"
 	"goBoard/internal/core/service/authenticationsvc"
 	"goBoard/internal/core/service/membersvc"
 	"goBoard/internal/core/service/messagesvc"
@@ -100,12 +102,22 @@ func main() {
 	e.Debug = true
 
 	e.Use(middleware.CORS())
-	//e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
-	//	sugar.Info("request body: ", string(reqBody))
-	//	sugar.Info("response body: ", string(resBody))
-	//}))
+
 	store := sessions.NewCookieStore([]byte("secret"))
 	e.Use(session.Middleware(store))
+
+	e.Use(echojwt.WithConfig(echojwt.Config{
+		//NewClaimsFunc: auth.GetJWTClaims,
+		SigningKey:   []byte(auth.GetJWTSecret()),
+		TokenLookup:  "cookie:access-token", // "<source>:<name>"
+		ErrorHandler: auth.JWTErrorChecker,
+		Skipper: func(c echo.Context) bool {
+			if c.Request().URL.Path == "/login" {
+				return true
+			}
+			return false
+		},
+	}))
 
 	threadTemplateHandler.Register(e)
 	memberTemplateHandler.Register(e)

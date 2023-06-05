@@ -1,9 +1,7 @@
 package message
 
 import (
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
-	"goBoard/helpers/auth"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"strconv"
@@ -22,13 +20,6 @@ func NewTemplateHandler(messageService ports.MessageService) *TemplateHandler {
 
 func (h *TemplateHandler) Register(echo *echo.Echo) {
 	e := echo.Group("/message")
-
-	e.Use(echojwt.WithConfig(echojwt.Config{
-		//NewClaimsFunc: auth.GetJWTClaims,
-		SigningKey:   []byte(auth.GetJWTSecret()),
-		TokenLookup:  "cookie:access-token", // "<source>:<name>"
-		ErrorHandler: auth.JWTErrorChecker,
-	}))
 
 	e.GET("/create", h.CreateMessage)
 	e.GET("/list/:memberID", h.ListMessages)
