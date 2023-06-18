@@ -1,11 +1,12 @@
 {{define "thread"}}
     <div>
         <ul class="list read" id="list_l56761">
-            <li class="readbar" onclick="testClick()">&nbsp;</li>
+            <li class="readbar">&nbsp;</li>
             <li class="member">
                 <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a>
             </li>
             <li class="subject">
+                <div class="extra">{{if .Dotted}}•&nbsp;{{end}}</div>
                 <a href="/thread/view/{{ .ID }}">{{ .Subject }}</a>
             </li>
             <li class="posts">

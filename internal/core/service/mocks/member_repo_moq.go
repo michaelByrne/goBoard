@@ -38,6 +38,12 @@ var _ ports.MemberRepo = &MemberRepoMock{}
 //			SaveMemberFunc: func(member domain.Member) (int, error) {
 //				panic("mock out the SaveMember method")
 //			},
+//			UpdateMemberFunc: func(ctx context.Context, member domain.Member) error {
+//				panic("mock out the UpdateMember method")
+//			},
+//			UpdatePrefsFunc: func(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error {
+//				panic("mock out the UpdatePrefs method")
+//			},
 //		}
 //
 //		// use mockedMemberRepo in code that requires ports.MemberRepo
@@ -62,6 +68,12 @@ type MemberRepoMock struct {
 
 	// SaveMemberFunc mocks the SaveMember method.
 	SaveMemberFunc func(member domain.Member) (int, error)
+
+	// UpdateMemberFunc mocks the UpdateMember method.
+	UpdateMemberFunc func(ctx context.Context, member domain.Member) error
+
+	// UpdatePrefsFunc mocks the UpdatePrefs method.
+	UpdatePrefsFunc func(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -95,6 +107,22 @@ type MemberRepoMock struct {
 			// Member is the member argument value.
 			Member domain.Member
 		}
+		// UpdateMember holds details about calls to the UpdateMember method.
+		UpdateMember []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Member is the member argument value.
+			Member domain.Member
+		}
+		// UpdatePrefs holds details about calls to the UpdatePrefs method.
+		UpdatePrefs []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// MemberID is the memberID argument value.
+			MemberID int
+			// UpdatedPrefs is the updatedPrefs argument value.
+			UpdatedPrefs domain.MemberPrefs
+		}
 	}
 	lockGetAllPrefs           sync.RWMutex
 	lockGetMemberByID         sync.RWMutex
@@ -102,6 +130,8 @@ type MemberRepoMock struct {
 	lockGetMemberIDByUsername sync.RWMutex
 	lockGetMemberPrefs        sync.RWMutex
 	lockSaveMember            sync.RWMutex
+	lockUpdateMember          sync.RWMutex
+	lockUpdatePrefs           sync.RWMutex
 }
 
 // GetAllPrefs calls GetAllPrefsFunc.
@@ -293,5 +323,81 @@ func (mock *MemberRepoMock) SaveMemberCalls() []struct {
 	mock.lockSaveMember.RLock()
 	calls = mock.calls.SaveMember
 	mock.lockSaveMember.RUnlock()
+	return calls
+}
+
+// UpdateMember calls UpdateMemberFunc.
+func (mock *MemberRepoMock) UpdateMember(ctx context.Context, member domain.Member) error {
+	if mock.UpdateMemberFunc == nil {
+		panic("MemberRepoMock.UpdateMemberFunc: method is nil but MemberRepo.UpdateMember was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Member domain.Member
+	}{
+		Ctx:    ctx,
+		Member: member,
+	}
+	mock.lockUpdateMember.Lock()
+	mock.calls.UpdateMember = append(mock.calls.UpdateMember, callInfo)
+	mock.lockUpdateMember.Unlock()
+	return mock.UpdateMemberFunc(ctx, member)
+}
+
+// UpdateMemberCalls gets all the calls that were made to UpdateMember.
+// Check the length with:
+//
+//	len(mockedMemberRepo.UpdateMemberCalls())
+func (mock *MemberRepoMock) UpdateMemberCalls() []struct {
+	Ctx    context.Context
+	Member domain.Member
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Member domain.Member
+	}
+	mock.lockUpdateMember.RLock()
+	calls = mock.calls.UpdateMember
+	mock.lockUpdateMember.RUnlock()
+	return calls
+}
+
+// UpdatePrefs calls UpdatePrefsFunc.
+func (mock *MemberRepoMock) UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error {
+	if mock.UpdatePrefsFunc == nil {
+		panic("MemberRepoMock.UpdatePrefsFunc: method is nil but MemberRepo.UpdatePrefs was just called")
+	}
+	callInfo := struct {
+		Ctx          context.Context
+		MemberID     int
+		UpdatedPrefs domain.MemberPrefs
+	}{
+		Ctx:          ctx,
+		MemberID:     memberID,
+		UpdatedPrefs: updatedPrefs,
+	}
+	mock.lockUpdatePrefs.Lock()
+	mock.calls.UpdatePrefs = append(mock.calls.UpdatePrefs, callInfo)
+	mock.lockUpdatePrefs.Unlock()
+	return mock.UpdatePrefsFunc(ctx, memberID, updatedPrefs)
+}
+
+// UpdatePrefsCalls gets all the calls that were made to UpdatePrefs.
+// Check the length with:
+//
+//	len(mockedMemberRepo.UpdatePrefsCalls())
+func (mock *MemberRepoMock) UpdatePrefsCalls() []struct {
+	Ctx          context.Context
+	MemberID     int
+	UpdatedPrefs domain.MemberPrefs
+} {
+	var calls []struct {
+		Ctx          context.Context
+		MemberID     int
+		UpdatedPrefs domain.MemberPrefs
+	}
+	mock.lockUpdatePrefs.RLock()
+	calls = mock.calls.UpdatePrefs
+	mock.lockUpdatePrefs.RUnlock()
 	return calls
 }

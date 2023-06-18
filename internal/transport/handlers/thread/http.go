@@ -1,7 +1,9 @@
 package thread
 
 import (
+	"errors"
 	"goBoard/internal/core/ports"
+	"goBoard/internal/transport/middlewares/session"
 	"strconv"
 	"time"
 
@@ -24,8 +26,10 @@ func (h *Handler) Register(e *echo.Echo) {
 	e.GET("/threads/:id", h.GetThreadByID)
 	e.POST("/thread/create", h.CreateThread)
 	e.POST("/thread/reply", h.ThreadReply)
-	e.GET("/threads/cursor", h.GetThreadsWithCursor)
+	//e.GET("/threads/cursor", h.GetThreadsWithCursor)
 	e.GET("/threads/home", h.ListThreads)
+	e.POST("thread/undot/:id", h.UndotThread)
+	e.POST("thread/ignore", h.ToggleIgnore)
 
 }
 
@@ -60,13 +64,31 @@ func (h *Handler) ThreadReply(c echo.Context) error {
 }
 
 func (h *Handler) GetThreadByID(ctx echo.Context) error {
+	sess, err := session.Get("member", ctx)
+	if err != nil {
+		ctx.String(500, err.Error())
+		return err
+	}
+
+	memberID, ok := sess.Values["id"]
+	if !ok {
+		ctx.String(500, "member id not found in session")
+		return errors.New("member id not found in session")
+	}
+
+	memberIDAsInt, ok := memberID.(int)
+	if !ok {
+		ctx.String(500, "member id not an int")
+		return errors.New("member id not an int")
+	}
+
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(400, ErrorResponse{Message: err.Error()})
 		return err
 	}
 
-	thread, err := h.threadService.GetThreadByID(100, 100, id)
+	thread, err := h.threadService.GetThreadByID(100, 100, id, memberIDAsInt)
 	if err != nil {
 		ctx.JSON(500, ErrorResponse{Message: err.Error()})
 		return err
@@ -97,61 +119,27 @@ func (h *Handler) CreateThread(c echo.Context) error {
 	})
 }
 
-func (h *Handler) GetThreadsWithCursor(c echo.Context) error {
-	cursor := c.QueryParams().Get("cursor")
-	limit, err := strconv.Atoi(c.QueryParams().Get("limit"))
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	cursorAsTime, err := time.Parse(time.RFC3339Nano, cursor)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	threads, err := h.threadService.GetThreadsWithCursorForward(limit, false, &cursorAsTime)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return c.JSON(200, threads)
-}
-
-func (h *Handler) GetFirstPageThreads(c echo.Context) error {
-	limit := c.QueryParams().Get("limit")
-	limitAsInt, err := strconv.Atoi(limit)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	threads, err := h.threadService.GetThreadsWithCursorForward(limitAsInt, true, nil)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-
-	return c.JSON(200, threads)
-}
-
-func (h *Handler) ListFirstPageThreads(c echo.Context) error {
-	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, true, nil)
-	if err != nil {
-		c.String(500, err.Error())
-		return err
-	}
-	siteContext.ThreadPage.PageNum = 0
-	siteContext.PageName = "main"
-	return c.JSON(200, siteContext)
-}
-
 func (h *Handler) ListThreads(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberID, ok := sess.Values["id"]
+	if !ok {
+		c.String(500, "member id not found")
+		return err
+	}
+
+	memberIDAsInt, ok := memberID.(int)
+	if !ok {
+		c.String(500, "member id not int")
+		return err
+	}
+
 	cursor := c.QueryParams().Get("cursor")
 	var cursorAsTime time.Time
-	var err error
 	if cursor == "" || cursor == "null" {
 		cursorAsTime = time.Date(9999, 1, 1, 1, 1, 1, 1, time.UTC)
 	} else {
@@ -175,7 +163,7 @@ func (h *Handler) ListThreads(c echo.Context) error {
 	}
 
 	if reverseAsBool {
-		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime)
+		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime, memberIDAsInt)
 		if err != nil {
 			c.String(500, err.Error())
 			return err
@@ -185,7 +173,7 @@ func (h *Handler) ListThreads(c echo.Context) error {
 		return c.JSON(200, siteContext)
 	}
 
-	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, false, &cursorAsTime)
+	siteContext, err := h.threadService.GetThreadsWithCursorForward(h.defaultThreadLimit, false, &cursorAsTime, memberIDAsInt)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
@@ -193,6 +181,80 @@ func (h *Handler) ListThreads(c echo.Context) error {
 
 	siteContext.PageName = "main"
 	return c.JSON(200, siteContext)
+}
+
+func (h *Handler) UndotThread(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberID, ok := sess.Values["id"]
+	if !ok {
+		c.String(500, "member id not found")
+		return err
+	}
+
+	memberIDAsInt, ok := memberID.(int)
+	if !ok {
+		c.String(500, "member id not int")
+		return err
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	err = h.threadService.UndotThread(c.Request().Context(), memberIDAsInt, id)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.String(200, "success")
+}
+
+func (h *Handler) ToggleIgnore(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberID, ok := sess.Values["id"]
+	if !ok {
+		c.String(500, "member id not found")
+		return err
+	}
+
+	memberIDAsInt, ok := memberID.(int)
+	if !ok {
+		c.String(500, "member id not int")
+		return err
+	}
+
+	var ignoreRequest IgnoreRequest
+	err = c.Bind(&ignoreRequest)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	err = h.threadService.ToggleIgnore(c.Request().Context(), memberIDAsInt, ignoreRequest.ThreadID, ignoreRequest.Ignore)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	return c.String(200, "success")
+}
+
+type IgnoreRequest struct {
+	ThreadID int  `json:"id"`
+	Ignore   bool `json:"ignore"`
 }
 
 type ErrorResponse struct {

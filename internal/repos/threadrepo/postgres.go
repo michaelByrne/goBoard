@@ -29,6 +29,9 @@ var listThreadsCursorForwardQuery string
 //go:embed queries/list_threads_cursor_reverse.sql
 var listThreadsCursorReverseQuery string
 
+//go:embed queries/get_thread_by_id.sql
+var getThreadByIDQuery string
+
 type ThreadRepo struct {
 	connPool              *pgxpool.Pool
 	defaultMaxThreadLimit int
@@ -72,9 +75,9 @@ func (r ThreadRepo) GetPostByID(id int) (*domain.ThreadPost, error) {
 	return &post, nil
 }
 
-func (r ThreadRepo) GetThreadByID(id int) (*domain.Thread, error) {
+func (r ThreadRepo) GetThreadByID(id, memberID int) (*domain.Thread, error) {
 	var thread domain.Thread
-	err := r.connPool.QueryRow(context.Background(), "SELECT id, subject, date_posted, member_id, views FROM thread WHERE id = $1", id).Scan(&thread.ID, &thread.Subject, &thread.Timestamp, &thread.MemberID, &thread.Views)
+	err := r.connPool.QueryRow(context.Background(), getThreadByIDQuery, id, memberID).Scan(&thread.ID, &thread.Subject, &thread.Timestamp, &thread.MemberID, &thread.Views, &thread.Dotted, &thread.Ignored)
 	if err != nil {
 		return nil, err
 	}
@@ -202,10 +205,10 @@ func (r ThreadRepo) DeleteThread(id int) error {
 	return nil
 }
 
-func (r ThreadRepo) ListPostsForThread(limit, offset, id int) ([]domain.ThreadPost, error) {
+func (r ThreadRepo) ListPostsForThread(limit, offset, id, memberID int) ([]domain.ThreadPost, error) {
 	var posts []domain.ThreadPost
 	var cidr pgtype.CIDR
-	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, offset, id)
+	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, offset, id, memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -248,9 +251,9 @@ func (r ThreadRepo) ListPostsForThreadByCursor(limit, id int, cursor *time.Time)
 	return posts, nil
 }
 
-func (r ThreadRepo) ListThreadsByCursorForward(limit int, cursor *time.Time) ([]domain.Thread, error) {
+func (r ThreadRepo) ListThreadsByCursorForward(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
 	var threads []domain.Thread
-	rows, err := r.connPool.Query(context.Background(), listThreadsCursorForwardQuery, limit, cursor)
+	rows, err := r.connPool.Query(context.Background(), listThreadsCursorForwardQuery, limit, cursor, memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -272,6 +275,7 @@ func (r ThreadRepo) ListThreadsByCursorForward(limit int, cursor *time.Time) ([]
 			&thread.Sticky,
 			&thread.Locked,
 			&thread.Legendary,
+			&thread.Dotted,
 		)
 		if err != nil {
 			return nil, err
@@ -283,9 +287,9 @@ func (r ThreadRepo) ListThreadsByCursorForward(limit int, cursor *time.Time) ([]
 	return threads, nil
 }
 
-func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time) ([]domain.Thread, error) {
+func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
 	var threads []domain.Thread
-	rows, err := r.connPool.Query(context.Background(), listThreadsCursorReverseQuery, cursor, limit)
+	rows, err := r.connPool.Query(context.Background(), listThreadsCursorReverseQuery, cursor, limit, memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -307,6 +311,7 @@ func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time) ([]
 			&thread.Sticky,
 			&thread.Locked,
 			&thread.Legendary,
+			&thread.Dotted,
 		)
 		if err != nil {
 			return nil, err
@@ -327,4 +332,24 @@ func (r ThreadRepo) PeekPrevious(timestamp *time.Time) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+func (r ThreadRepo) UndotThread(ctx context.Context, memberID, threadID int) error {
+	query := "UPDATE thread_member SET undot=true WHERE thread_id=$1 AND member_id=$2"
+	_, err := r.connPool.Exec(ctx, query, threadID, memberID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r ThreadRepo) ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error {
+	query := "UPDATE thread_member SET ignore=$3 WHERE thread_id=$1 AND member_id=$2"
+	_, err := r.connPool.Exec(ctx, query, threadID, memberID, ignore)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

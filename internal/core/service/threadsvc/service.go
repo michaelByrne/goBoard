@@ -1,6 +1,7 @@
 package threadsvc
 
 import (
+	"context"
 	"fmt"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
@@ -56,14 +57,14 @@ func (s ThreadService) GetPostByID(id int) (*domain.ThreadPost, error) {
 	return s.threadRepo.GetPostByID(id)
 }
 
-func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, error) {
-	posts, err := s.threadRepo.ListPostsForThread(limit, offset, id)
+func (s ThreadService) GetThreadByID(limit, offset, id, memberID int) (*domain.Thread, error) {
+	posts, err := s.threadRepo.ListPostsForThread(limit, offset, id, memberID)
 	if err != nil {
 		s.logger.Errorf("error getting posts by thread id: %v", err)
 		return nil, err
 	}
 
-	thread, err := s.threadRepo.GetThreadByID(id)
+	thread, err := s.threadRepo.GetThreadByID(id, memberID)
 	if err != nil {
 		s.logger.Errorf("error getting thread by id: %v", err)
 		return nil, err
@@ -78,10 +79,10 @@ func (s ThreadService) GetThreadByID(limit, offset, id int) (*domain.Thread, err
 	return thread, nil
 }
 
-func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cursor *time.Time) (*domain.SiteContext, error) {
+func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cursor *time.Time, memberID int) (*domain.SiteContext, error) {
 	if firstPage {
 		start := time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC)
-		threads, err := s.threadRepo.ListThreadsByCursorForward(limit, &start)
+		threads, err := s.threadRepo.ListThreadsByCursorForward(limit, &start, memberID)
 		if err != nil {
 			s.logger.Errorf("error getting first page of threads by cursor: %v", err)
 			return nil, err
@@ -116,7 +117,7 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 		return site, nil
 	}
 
-	threads, err := s.threadRepo.ListThreadsByCursorForward(limit, cursor)
+	threads, err := s.threadRepo.ListThreadsByCursorForward(limit, cursor, memberID)
 	if err != nil {
 		s.logger.Errorf("error getting page of threads by cursor: %v", err)
 		return nil, err
@@ -148,8 +149,8 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 	return site, nil
 }
 
-func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time) (*domain.SiteContext, error) {
-	threads, err := s.threadRepo.ListThreadsByCursorReverse(limit, cursor)
+func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time, memberID int) (*domain.SiteContext, error) {
+	threads, err := s.threadRepo.ListThreadsByCursorReverse(limit, cursor, memberID)
 	if err != nil {
 		s.logger.Errorf("error getting page of threads by cursor: %v", err)
 		return nil, err
@@ -274,4 +275,12 @@ func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.H
 	// recognize the prepared post string as HTML
 	htmlPostBody := template.HTML(convertedPostBody)
 	return &htmlPostBody, nil
+}
+
+func (s ThreadService) UndotThread(ctx context.Context, memberID, threadID int) error {
+	return s.threadRepo.UndotThread(ctx, memberID, threadID)
+}
+
+func (s ThreadService) ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error {
+	return s.threadRepo.ToggleIgnore(ctx, memberID, threadID, ignore)
 }

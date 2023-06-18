@@ -5,6 +5,18 @@
         <div class="pad">
             <div class="clear">
                 <h3>{{ .Subject }}</h3>
+                <div class="clear"></div>
+                <div class="subtitle">
+                    <a style="cursor: pointer; color: white">hide images</a>
+                    {{if .Dotted}}
+                        » <a id="undot" style="color: white; cursor: pointer">undot</a>
+                    {{end}}
+                    {{if .Ignored}}
+                        » <a style="color: white; cursor: pointer"><span id="ignorecmd">unignore</span></a>
+                    {{else}}
+                        » <a style="color: white; cursor: pointer"><span id="ignorecmd">ignore</span></a>
+                    {{end}}
+                </div>
                 {{template "top-nav"}}
                 <div id="view_{{ .ID }}">
                     <div id="uncollapse" class="postbody odd collapse" hidden></div>
@@ -17,5 +29,35 @@
             </div>
         </div>
     </div>
+    <script>
+        window.onload = (event) => {
+            if (document.getElementById("undot")) {
+                document.getElementById("undot").addEventListener("click", function () {
+                    document.getElementById("undot").innerText = "undotting..."
+                    fetch("/thread/undot/{{ .ID }}", {
+                        method: "POST",
+                        cache: "no-cache",
+                    }).then(function () {
+                        window.location.reload()
+                    })
+                })
+            }
+            if (document.getElementById("ignorecmd")) {
+                document.getElementById("ignorecmd").addEventListener("click", function () {
+                    document.getElementById("ignorecmd").innerText = "ignoring..."
+                    fetch("/thread/ignore", {
+                        method: "POST",
+                        cache: "no-cache",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({id: {{ .ID }}, ignore: !{{ .Ignored }}})
+                    }).then(function () {
+                        window.location.reload()
+                    })
+                })
+            }
+        }
+    </script>
     </body>
 {{ end }}

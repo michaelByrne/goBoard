@@ -19,7 +19,6 @@ function validate(data,form,options)
   });
   if(window.custom_validate) res = custom_validate();
   if(res) $('#'+id+' input[type=submit]').not('.nodisable').attr('disabled',true);
-  console.log('validate',res)
   return res;
 }
 

@@ -87,7 +87,7 @@ func TestNewThreadRepo(t *testing.T) {
 	})
 
 	t.Run("successfully lists posts by thread id", func(t *testing.T) {
-		posts, err := repo.ListPostsForThread(10, 0, 1)
+		posts, err := repo.ListPostsForThread(10, 0, 1, 1)
 		require.NoError(t, err)
 
 		require.Len(t, posts, 2)
@@ -100,7 +100,7 @@ func TestNewThreadRepo(t *testing.T) {
 	t.Run("successfully gets threads by cursor forward", func(t *testing.T) {
 		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
 		janFirst := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsByCursorForward(2, &cursor)
+		threads, err := repo.ListThreadsByCursorForward(2, &cursor, 1)
 		require.NoError(t, err)
 
 		require.Len(t, threads, 1)
@@ -111,7 +111,7 @@ func TestNewThreadRepo(t *testing.T) {
 		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
 		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
 		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsByCursorReverse(2, &cursor)
+		threads, err := repo.ListThreadsByCursorReverse(2, &cursor, 1)
 		require.NoError(t, err)
 
 		require.Len(t, threads, 2)

@@ -11,15 +11,17 @@ import (
 type ThreadRepo interface {
 	SavePost(post domain.ThreadPost) (int, error)
 	GetPostByID(id int) (*domain.ThreadPost, error)
-	GetThreadByID(id int) (*domain.Thread, error)
+	GetThreadByID(id, memberID int) (*domain.Thread, error)
 	ListThreads(limit, offset int) (*domain.SiteContext, error)
 	ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error)
 	SaveThread(thread domain.Thread) (int, error)
-	ListPostsForThread(limit, offset, id int) ([]domain.ThreadPost, error)
+	ListPostsForThread(limit, offset, id, memberID int) ([]domain.ThreadPost, error)
 	ListPostsForThreadByCursor(limit, id int, cursor *time.Time) ([]domain.ThreadPost, error)
-	ListThreadsByCursorForward(limit int, cursor *time.Time) ([]domain.Thread, error)
-	ListThreadsByCursorReverse(limit int, cursor *time.Time) ([]domain.Thread, error)
+	ListThreadsByCursorForward(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error)
+	ListThreadsByCursorReverse(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error)
 	PeekPrevious(timestamp *time.Time) (bool, error)
+	UndotThread(ctx context.Context, memberID, threadID int) error
+	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo

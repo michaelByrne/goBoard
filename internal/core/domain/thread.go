@@ -22,4 +22,6 @@ type Thread struct {
 	Posts          []ThreadPost
 	Timestamp      *time.Time
 	PageCursor     *time.Time
+	Dotted         bool
+	Ignored        bool
 }

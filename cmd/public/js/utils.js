@@ -193,7 +193,6 @@ const captureNewMessageSubmit = (event) => {
         window.location.href = '/message/list/1?reverse=false';
         $('.submit').attr('disabled', false);
     }).catch((error) => {
-        console.log(error)
         // TODO handle error
     });
 }
@@ -326,8 +325,8 @@ const injectThreads = (threads, reverse) => {
         }
     ).then(html => {
         document.getElementsByClassName('data')[0].innerHTML = html
-        $('.data div:even').css({'background-color': '#c3dae4', 'color': 'black'});
-        $('.data div:odd').css({'background-color': '#acccdb', 'color': 'black'});
+        $(".data div:not(.extra):even").css({'background-color': '#c3dae4', 'color': 'black'});
+        $(".data div:not(.extra):odd").css({'background-color': '#acccdb', 'color': 'black'});
     })
 }
 

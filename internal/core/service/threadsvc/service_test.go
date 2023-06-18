@@ -24,13 +24,13 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("successfully gets a thread by id", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
+			GetThreadByIDFunc: func(id int, memberID int) (*domain.Thread, error) {
 				return &domain.Thread{
 					ID:      1,
 					Subject: "Hello, BCO",
 				}, nil
 			},
-			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.ThreadPost, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID, memberID int) ([]domain.ThreadPost, error) {
 				return []domain.ThreadPost{
 					{
 						ID:   2,
@@ -56,7 +56,7 @@ func TestNewThreadService(t *testing.T) {
 			},
 		}
 
-		thread, err := svc.GetThreadByID(1, 1, 1)
+		thread, err := svc.GetThreadByID(1, 1, 1, 1)
 		require.NoError(t, err)
 
 		assert.Len(t, mockThreadRepo.ListPostsForThreadCalls(), 1)
@@ -68,7 +68,7 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("should bail if thread posts call returns an error", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.ThreadPost, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID, memberID int) ([]domain.ThreadPost, error) {
 				return nil, assert.AnError
 			},
 		}
@@ -77,7 +77,7 @@ func TestNewThreadService(t *testing.T) {
 
 		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
-		thread, err := svc.GetThreadByID(1, 1, 1)
+		thread, err := svc.GetThreadByID(1, 1, 1, 1)
 		require.Error(t, err)
 
 		assert.Nil(t, thread)
@@ -86,10 +86,10 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("should bail if thread call returns an error", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			GetThreadByIDFunc: func(id int) (*domain.Thread, error) {
+			GetThreadByIDFunc: func(id int, memberID int) (*domain.Thread, error) {
 				return nil, assert.AnError
 			},
-			ListPostsForThreadFunc: func(limit, offset, threadID int) ([]domain.ThreadPost, error) {
+			ListPostsForThreadFunc: func(limit, offset, threadID, memberID int) ([]domain.ThreadPost, error) {
 				return nil, nil
 			},
 		}
@@ -98,7 +98,7 @@ func TestNewThreadService(t *testing.T) {
 
 		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 5)
 
-		thread, err := svc.GetThreadByID(1, 1, 1)
+		thread, err := svc.GetThreadByID(1, 1, 1, 1)
 		require.Error(t, err)
 
 		assert.Nil(t, thread)
@@ -170,7 +170,7 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("successfully gets a list of threads by page forward", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorForwardFunc: func(limit int, cursor *time.Time) ([]domain.Thread, error) {
+			ListThreadsByCursorForwardFunc: func(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
 				return []domain.Thread{
 					{
 						ID:             1,
@@ -198,7 +198,7 @@ func TestNewThreadService(t *testing.T) {
 
 		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
 
-		site, err := svc.GetThreadsWithCursorForward(2, false, &mayThird)
+		site, err := svc.GetThreadsWithCursorForward(2, false, &mayThird, 1)
 		require.NoError(t, err)
 
 		assert.Len(t, site.ThreadPage.Threads, 2)
@@ -215,7 +215,7 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("successfully gets a list of threads by page reverse", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorReverseFunc: func(limit int, cursor *time.Time) ([]domain.Thread, error) {
+			ListThreadsByCursorReverseFunc: func(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
 				return []domain.Thread{
 					{
 						ID:             1,
@@ -263,7 +263,7 @@ func TestNewThreadService(t *testing.T) {
 
 		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
 
-		site, err := svc.GetThreadsWithCursorReverse(3, &mayFourth)
+		site, err := svc.GetThreadsWithCursorReverse(3, &mayFourth, 1)
 		require.NoError(t, err)
 
 		assert.Len(t, site.ThreadPage.Threads, 2)

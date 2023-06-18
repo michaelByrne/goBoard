@@ -103,6 +103,24 @@ func (h *TemplateHandler) Ping(c echo.Context) error {
 }
 
 func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberID, ok := sess.Values["id"]
+	if !ok {
+		c.String(500, "Member not logged in")
+		return err
+	}
+
+	memberIDAsInt, ok := memberID.(int)
+	if !ok {
+		c.String(500, "Member not logged in")
+		return err
+	}
+
 	threadID := c.Param("id")
 
 	idAsInt, err := strconv.Atoi(threadID)
@@ -111,7 +129,7 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		return err
 	}
 
-	thread, err := h.threadService.GetThreadByID(100, 0, idAsInt)
+	thread, err := h.threadService.GetThreadByID(100, 0, idAsInt, memberIDAsInt)
 	if err != nil {
 		c.String(500, err.Error())
 		return err
