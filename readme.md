@@ -1,3 +1,5 @@
+goBoard is a lightweight messageboard mostly written in Go and Postgres
+
 1) install Docker for Desktop 
 2) install Golang Migrate (https://github.com/golang-migrate/migrate)
 3) run `docker compose up --build`
