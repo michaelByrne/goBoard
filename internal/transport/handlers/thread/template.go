@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"errors"
 	"github.com/gorilla/sessions"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
@@ -26,7 +27,6 @@ func NewTemplateHandler(threadService ports.ThreadService, memberService ports.M
 }
 
 func (h *TemplateHandler) Register(echo *echo.Echo) {
-	//e.GET("/", h.ListFirstPageThreads)
 	e := echo.Group("")
 
 	e.GET("/", h.ListThreads)
@@ -117,7 +117,19 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 
 	memberIDAsInt, ok := memberID.(int)
 	if !ok {
+		c.String(500, "Member id not int for some reason")
+		return err
+	}
+
+	memberName, ok := sess.Values["name"]
+	if !ok {
 		c.String(500, "Member not logged in")
+		return err
+	}
+
+	memberNameAsStr, ok := memberName.(string)
+	if !ok {
+		c.String(500, "Member name not string for some reason")
 		return err
 	}
 
@@ -143,7 +155,12 @@ func (h *TemplateHandler) ListPostsForThread(c echo.Context) error {
 		}
 	}
 
-	return c.Render(200, "posts", thread)
+	siteContext := domain.SiteContext{
+		Thread:   *thread,
+		Username: memberNameAsStr,
+	}
+
+	return c.Render(200, "posts", siteContext)
 }
 
 func (h *TemplateHandler) Post(c echo.Context) error {
@@ -181,7 +198,29 @@ func (h *TemplateHandler) Thread(c echo.Context) error {
 }
 
 func (h *TemplateHandler) NewThread(c echo.Context) error {
-	return c.Render(200, "newthread", nil)
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberName, ok := sess.Values["name"]
+	if !ok {
+		c.String(500, "Member not logged in")
+		return errors.New("member not logged in")
+	}
+
+	memberNameAsStr, ok := memberName.(string)
+	if !ok {
+		c.String(500, "Member name not string for some reason")
+		return errors.New("member name not string for some reason")
+	}
+
+	siteContext := domain.SiteContext{
+		Username: memberNameAsStr,
+	}
+
+	return c.Render(200, "newthread", siteContext)
 }
 
 func (h *TemplateHandler) PreviewPost(c echo.Context) error {

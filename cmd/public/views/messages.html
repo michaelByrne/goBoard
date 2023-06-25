@@ -6,39 +6,40 @@
     </head>
     <body>
     <div id="content">
+        {{ $member := .Username}}
         <div class="pad">
             <div class="clear" id="wrap_l56761">
                 <h3 class="title">elitism. secrecy. tradition.</h3>
                 <div class="clear"></div>
-                {{template "top-nav"}}
+                {{template "top-nav" .}}
                 <div class="hr">
                     <hr/>
                 </div>
                 <div class="data">
-                    {{ range .}}
+                    {{ range $m :=  .Messages}}
                     <div>
                         <ul class="list read" id="list_l56761">
                             <li class="readbar" onclick="testClick()">&nbsp;</li>
                             <li class="member">
-                                <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a>
+                                <a href="/member/view/{{ $member }} }}" class="memberlink">{{ $member }}</a>
                             </li>
                             <li class="subject">
-                                <a href="/message/view/{{ .ID }}">{{ .Subject }}</a>
+                                <a href="/message/view/{{ $m.ID }}">{{ $m.Subject }}</a>
                             </li>
                             <li class="posts">
                                 {{ .NumPosts }}
                             </li>
                             <li class="lastpost">
-                                <a href="/member/view/{{ .LastPosterName }}"
-                                   class="memberlink">{{ .LastPosterName }}</a> on
-                                {{ .DateLastPosted.Format "Jan 02, 2006 15:04:05 UTC" }}
+                                <a href="/member/view/{{ $m.LastPosterName }}"
+                                   class="memberlink">{{ $m.LastPosterName }}</a> on
+                                {{ $m.DateLastPosted.Format "Jan 02, 2006 15:04:05 UTC" }}
                             </li>
                         </ul>
                     </div>
                     {{ end }}
                 </div>
             </div>
-            {{template "message-list-nav" index . 0}}
+            {{template "message-list-nav" index .Messages 0}}
         </div>
     </div>
     </body>

@@ -4,28 +4,28 @@
     <div id="content">
         <div class="pad">
             <div class="clear">
-                <h3>{{ .Subject }}</h3>
+                <h3>{{ .Thread.Subject }}</h3>
                 <div class="clear"></div>
                 <div class="subtitle">
                     <a style="cursor: pointer; color: white">hide images</a>
-                    {{if .Dotted}}
+                    {{if .Thread.Dotted}}
                         » <a id="undot" style="color: white; cursor: pointer">undot</a>
                     {{end}}
-                    {{if .Ignored}}
+                    {{if .Thread.Ignored}}
                         » <a style="color: white; cursor: pointer"><span id="ignorecmd">unignore</span></a>
                     {{else}}
                         » <a style="color: white; cursor: pointer"><span id="ignorecmd">ignore</span></a>
                     {{end}}
                 </div>
-                {{template "top-nav"}}
-                <div id="view_{{ .ID }}">
+                {{template "top-nav" .}}
+                <div id="view_{{ .Thread.ID }}">
                     <div id="uncollapse" class="postbody odd collapse" hidden></div>
-                    {{ range $i, $p := .Posts }}
+                    {{ range $i, $p := .Thread.Posts }}
                         {{ template "post" $p }}
                     {{ end }}
                 </div>
                 <ul class="nav bottom clear shiftup"></ul>
-                {{ template "response-form" . }}
+                {{ template "response-form" .Thread }}
             </div>
         </div>
     </div>
@@ -34,7 +34,7 @@
             if (document.getElementById("undot")) {
                 document.getElementById("undot").addEventListener("click", function () {
                     document.getElementById("undot").innerText = "undotting..."
-                    fetch("/thread/undot/{{ .ID }}", {
+                    fetch("/thread/undot/{{ .Thread.ID }}", {
                         method: "POST",
                         cache: "no-cache",
                     }).then(function () {
@@ -51,7 +51,7 @@
                         headers: {
                             "Content-Type": "application/json"
                         },
-                        body: JSON.stringify({id: {{ .ID }}, ignore: !{{ .Ignored }}})
+                        body: JSON.stringify({id: {{ .Thread.ID }}, ignore: !{{ .Thread.Ignored }}})
                     }).then(function () {
                         window.location.reload()
                     })

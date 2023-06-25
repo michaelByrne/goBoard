@@ -1,9 +1,11 @@
 package message
 
 import (
+	"errors"
 	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
+	"goBoard/internal/transport/middlewares/session"
 	"strconv"
 	"time"
 )
@@ -29,15 +31,54 @@ func (h *TemplateHandler) Register(echo *echo.Echo) {
 }
 
 func (h *TemplateHandler) CreateMessage(c echo.Context) error {
-	return c.Render(200, "new-message", nil)
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberName, ok := sess.Values["name"]
+	if !ok {
+		c.String(500, "no member name in session")
+		return errors.New("no member name in session")
+	}
+
+	memberNameAsStr, ok := memberName.(string)
+	if !ok {
+		c.String(500, "member name not a string")
+		return errors.New("member name not a string")
+	}
+
+	siteContext := domain.SiteContext{
+		Username: memberNameAsStr,
+	}
+
+	return c.Render(200, "new-message", siteContext)
 }
 
 func (h *TemplateHandler) ListMessages(c echo.Context) error {
+	sess, err := session.Get("member", c)
+	if err != nil {
+		c.String(500, err.Error())
+		return err
+	}
+
+	memberName, ok := sess.Values["name"]
+	if !ok {
+		c.String(500, "no member name in session")
+		return err
+	}
+
+	memberNameAsStr, ok := memberName.(string)
+	if !ok {
+		c.String(500, "member name not a string")
+		return err
+	}
+
 	memberID := c.Param("memberID")
 
 	cursor := c.QueryParams().Get("cursor")
 	var cursorAsTime time.Time
-	var err error
 	if cursor == "" {
 		cursorAsTime = time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC)
 	} else {
@@ -65,7 +106,12 @@ func (h *TemplateHandler) ListMessages(c echo.Context) error {
 		return c.String(500, err.Error())
 	}
 
-	return c.Render(200, "messages", messages)
+	siteContext := domain.SiteContext{
+		Messages: messages,
+		Username: memberNameAsStr,
+	}
+
+	return c.Render(200, "messages", siteContext)
 }
 
 func (h *TemplateHandler) ViewMessage(c echo.Context) error {

@@ -1,55 +1,64 @@
 {{ define "new-message" }}
-  <head>
-    <link rel="stylesheet" href="/static/css/core.css">
-    <script type="text/javascript" src="/static/js/core.js"></script>
-    <title>elitism. secrecy. tradition.</title>
-  </head>
-  <body>
-  <div id="content">
-    <div class="pad">
-      <div class="clear" id="wrap_l56761">
-        <h3 class="title">Create New Message</h3>
-        <div class="clear"></div>
-        {{template "top-nav"}}
-        <div class="hr"><hr/></div>
-        <div id="response_form"></div>
-        <form method="post" name="form" id="form" class="coreform" action="/message/create">
-          <input type="hidden" name="member_id" value="1">
-          <fieldset>
-            <legend>Message Details</legend>
-            <ol>
-              <li>
-                <label>Recipients:</label>
-                <div id="m" style="width:500px;float:left;line-height:1.8em;"><span id="notice" class="small">(invalid names will be discarded)</span></div>
-              </li>
-              <li>
-                <label for="recipients">
-                  Add members:
-                </label>
-                <input type="hidden" name="message_members" id="message_members" value="" notnull="Please enter at least one recipient." class="validate_form">
-                <input type="text" name="_recipients" id="_recipients" value="" style="width:200px;" onkeydown="return catch_enter(event)">
-                <input type="button" name="add" id="add" value="Add" onclick="check_member();" tabindex="10">
-                <sup id="names">add multiples with: name, name, name</sup>
-              </li>
-              <li>
-                <label id="label_subject" for="subject">Subject:</label>
-                <input type="text" name="subject" id="subject" value="" style="width:400px;" maxlength="200" notnull="Please enter a subject." class="validate_form">
+    <head>
+        <link rel="stylesheet" href="/static/css/core.css">
+        <script type="text/javascript" src="/static/js/core.js"></script>
+        <title>elitism. secrecy. tradition.</title>
+    </head>
+    <body>
+    <div id="content">
+        <div class="pad">
+            <div class="clear" id="wrap_l56761">
+                <h3 class="title">Create New Message</h3>
                 <div class="clear"></div>
-              </li>
-              <li>
-                <label id="label_body" for="body">Body:</label>
-                <textarea name="body" id="body" style="float:left;height:100px;width:600px;" notnull="Please enter a post body." class="validate_form"></textarea>
-                <div class="clear"></div>
-              </li>
-            </ol>
-          </fieldset>
-          <input type="submit" class="submit" value="say that shit">
-        </form>
-        <script>
-          document.forms['form'].addEventListener('submit', captureNewMessageSubmit);
-        </script>
-      </div>
+                {{template "top-nav" .}}
+                <div class="hr">
+                    <hr/>
+                </div>
+                <div id="response_form"></div>
+                <form method="post" name="form" id="form" class="coreform" action="/message/create">
+                    <input type="hidden" name="member_id" value="1">
+                    <fieldset>
+                        <legend>Message Details</legend>
+                        <ol>
+                            <li>
+                                <label>Recipients:</label>
+                                <div id="m" style="width:500px;float:left;line-height:1.8em;"><span id="notice"
+                                                                                                    class="small">(invalid names will be discarded)</span>
+                                </div>
+                            </li>
+                            <li>
+                                <label for="recipients">
+                                    Add members:
+                                </label>
+                                <input type="hidden" name="message_members" id="message_members" value=""
+                                       notnull="Please enter at least one recipient." class="validate_form">
+                                <input type="text" name="_recipients" id="_recipients" value="" style="width:200px;"
+                                       onkeydown="return catch_enter(event)">
+                                <input type="button" name="add" id="add" value="Add" onclick="check_member();"
+                                       tabindex="10">
+                                <sup id="names">add multiples with: name, name, name</sup>
+                            </li>
+                            <li>
+                                <label id="label_subject" for="subject">Subject:</label>
+                                <input type="text" name="subject" id="subject" value="" style="width:400px;"
+                                       maxlength="200" notnull="Please enter a subject." class="validate_form">
+                                <div class="clear"></div>
+                            </li>
+                            <li>
+                                <label id="label_body" for="body">Body:</label>
+                                <textarea name="body" id="body" style="float:left;height:100px;width:600px;"
+                                          notnull="Please enter a post body." class="validate_form"></textarea>
+                                <div class="clear"></div>
+                            </li>
+                        </ol>
+                    </fieldset>
+                    <input type="submit" class="submit" value="say that shit">
+                </form>
+                <script>
+                    document.forms['form'].addEventListener('submit', captureNewMessageSubmit);
+                </script>
+            </div>
+        </div>
     </div>
-  </div>
-  </body>
+    </body>
 {{ end }}

@@ -19,9 +19,10 @@ type ThreadRepo interface {
 	ListPostsForThreadByCursor(limit, id int, cursor *time.Time) ([]domain.ThreadPost, error)
 	ListThreadsByCursorForward(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error)
 	ListThreadsByCursorReverse(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error)
-	PeekPrevious(timestamp *time.Time) (bool, error)
+	PeekPrevious(timestamp *time.Time, memberID int) (bool, error)
 	UndotThread(ctx context.Context, memberID, threadID int) error
 	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
+	ListThreadsInReverse(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo

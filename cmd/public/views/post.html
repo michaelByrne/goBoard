@@ -1,28 +1,29 @@
 {{ define "post" }}
-  <div class="post" id="view_{{ .ParentID }}_{{ .ID }}_{{ .Position }}">
-    <ul class="view">
-      <li class="info even posthead">
-        <script>
-          $(document).ready(function() {
-            $("#{{ .ID }}_quote").click(function() {
-              quote_post({{ .ID }});
-            });
-          });
-        </script>
-        <div id="post_info_{{ .ID }}" class="postinfo">
-          <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a> posted this on {{ .Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
-        </div>
-        <div class="controls">
-          &nbsp;»
-          <a href="javascript:" id="{{ .ID }}_quote" >quote</a>
-        </div>
-        <div class="count">
-          #{{ .Position }}
-        </div>
-      </li>
-      <li id="post_body_{{ .ID }}" class="postbody odd">
-        {{ .HtmlBody }}
-      </li>
-    </ul>
-  </div>
+    <div class="post" id="view_{{ .ParentID }}_{{ .ID }}_{{ .Position }}">
+        <ul class="view">
+            <li class="info even posthead">
+                <script>
+                    $(document).ready(function () {
+                        $("#{{ .ID }}_quote").click(function () {
+                            quote_post({{ .ID }});
+                        });
+                    });
+                </script>
+                <div id="post_info_{{ .ID }}" class="postinfo">
+                    <a href="/member/view/{{ .MemberName }}" class="memberlink">{{ .MemberName }}</a> posted this
+                    on {{ .Timestamp.Format "Jan 02, 2006 15:04:05 UTC"}}
+                </div>
+                <div class="controls">
+                    &nbsp;»
+                    <a href="javascript:" id="{{ .ID }}_quote">quote</a>
+                </div>
+                <div class="count">
+                    #{{ .Position }}
+                </div>
+            </li>
+            <li id="post_body_{{ .ID }}" class="postbody odd">
+                {{ .HtmlBody }}
+            </li>
+        </ul>
+    </div>
 {{ end }}

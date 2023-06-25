@@ -45,7 +45,10 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			ListThreadsByMemberIDFunc: func(memberID int, limit int, offset int) ([]domain.Thread, error) {
 //				panic("mock out the ListThreadsByMemberID method")
 //			},
-//			PeekPreviousFunc: func(timestamp *time.Time) (bool, error) {
+//			ListThreadsInReverseFunc: func(limit int, cursor *time.Time, memberID int, ignored bool, favorited bool, participated bool) ([]domain.Thread, error) {
+//				panic("mock out the ListThreadsInReverse method")
+//			},
+//			PeekPreviousFunc: func(timestamp *time.Time, memberID int) (bool, error) {
 //				panic("mock out the PeekPrevious method")
 //			},
 //			SavePostFunc: func(post domain.ThreadPost) (int, error) {
@@ -53,6 +56,9 @@ var _ ports.ThreadRepo = &ThreadRepoMock{}
 //			},
 //			SaveThreadFunc: func(thread domain.Thread) (int, error) {
 //				panic("mock out the SaveThread method")
+//			},
+//			ToggleIgnoreFunc: func(ctx context.Context, memberID int, threadID int, ignore bool) error {
+//				panic("mock out the ToggleIgnore method")
 //			},
 //			UndotThreadFunc: func(ctx context.Context, memberID int, threadID int) error {
 //				panic("mock out the UndotThread method")
@@ -88,14 +94,20 @@ type ThreadRepoMock struct {
 	// ListThreadsByMemberIDFunc mocks the ListThreadsByMemberID method.
 	ListThreadsByMemberIDFunc func(memberID int, limit int, offset int) ([]domain.Thread, error)
 
+	// ListThreadsInReverseFunc mocks the ListThreadsInReverse method.
+	ListThreadsInReverseFunc func(limit int, cursor *time.Time, memberID int, ignored bool, favorited bool, participated bool) ([]domain.Thread, error)
+
 	// PeekPreviousFunc mocks the PeekPrevious method.
-	PeekPreviousFunc func(timestamp *time.Time) (bool, error)
+	PeekPreviousFunc func(timestamp *time.Time, memberID int) (bool, error)
 
 	// SavePostFunc mocks the SavePost method.
 	SavePostFunc func(post domain.ThreadPost) (int, error)
 
 	// SaveThreadFunc mocks the SaveThread method.
 	SaveThreadFunc func(thread domain.Thread) (int, error)
+
+	// ToggleIgnoreFunc mocks the ToggleIgnore method.
+	ToggleIgnoreFunc func(ctx context.Context, memberID int, threadID int, ignore bool) error
 
 	// UndotThreadFunc mocks the UndotThread method.
 	UndotThreadFunc func(ctx context.Context, memberID int, threadID int) error
@@ -168,10 +180,27 @@ type ThreadRepoMock struct {
 			// Offset is the offset argument value.
 			Offset int
 		}
+		// ListThreadsInReverse holds details about calls to the ListThreadsInReverse method.
+		ListThreadsInReverse []struct {
+			// Limit is the limit argument value.
+			Limit int
+			// Cursor is the cursor argument value.
+			Cursor *time.Time
+			// MemberID is the memberID argument value.
+			MemberID int
+			// Ignored is the ignored argument value.
+			Ignored bool
+			// Favorited is the favorited argument value.
+			Favorited bool
+			// Participated is the participated argument value.
+			Participated bool
+		}
 		// PeekPrevious holds details about calls to the PeekPrevious method.
 		PeekPrevious []struct {
 			// Timestamp is the timestamp argument value.
 			Timestamp *time.Time
+			// MemberID is the memberID argument value.
+			MemberID int
 		}
 		// SavePost holds details about calls to the SavePost method.
 		SavePost []struct {
@@ -182,6 +211,17 @@ type ThreadRepoMock struct {
 		SaveThread []struct {
 			// Thread is the thread argument value.
 			Thread domain.Thread
+		}
+		// ToggleIgnore holds details about calls to the ToggleIgnore method.
+		ToggleIgnore []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// MemberID is the memberID argument value.
+			MemberID int
+			// ThreadID is the threadID argument value.
+			ThreadID int
+			// Ignore is the ignore argument value.
+			Ignore bool
 		}
 		// UndotThread holds details about calls to the UndotThread method.
 		UndotThread []struct {
@@ -201,9 +241,11 @@ type ThreadRepoMock struct {
 	lockListThreadsByCursorForward sync.RWMutex
 	lockListThreadsByCursorReverse sync.RWMutex
 	lockListThreadsByMemberID      sync.RWMutex
+	lockListThreadsInReverse       sync.RWMutex
 	lockPeekPrevious               sync.RWMutex
 	lockSavePost                   sync.RWMutex
 	lockSaveThread                 sync.RWMutex
+	lockToggleIgnore               sync.RWMutex
 	lockUndotThread                sync.RWMutex
 }
 
@@ -515,20 +557,74 @@ func (mock *ThreadRepoMock) ListThreadsByMemberIDCalls() []struct {
 	return calls
 }
 
+// ListThreadsInReverse calls ListThreadsInReverseFunc.
+func (mock *ThreadRepoMock) ListThreadsInReverse(limit int, cursor *time.Time, memberID int, ignored bool, favorited bool, participated bool) ([]domain.Thread, error) {
+	if mock.ListThreadsInReverseFunc == nil {
+		panic("ThreadRepoMock.ListThreadsInReverseFunc: method is nil but ThreadRepo.ListThreadsInReverse was just called")
+	}
+	callInfo := struct {
+		Limit        int
+		Cursor       *time.Time
+		MemberID     int
+		Ignored      bool
+		Favorited    bool
+		Participated bool
+	}{
+		Limit:        limit,
+		Cursor:       cursor,
+		MemberID:     memberID,
+		Ignored:      ignored,
+		Favorited:    favorited,
+		Participated: participated,
+	}
+	mock.lockListThreadsInReverse.Lock()
+	mock.calls.ListThreadsInReverse = append(mock.calls.ListThreadsInReverse, callInfo)
+	mock.lockListThreadsInReverse.Unlock()
+	return mock.ListThreadsInReverseFunc(limit, cursor, memberID, ignored, favorited, participated)
+}
+
+// ListThreadsInReverseCalls gets all the calls that were made to ListThreadsInReverse.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ListThreadsInReverseCalls())
+func (mock *ThreadRepoMock) ListThreadsInReverseCalls() []struct {
+	Limit        int
+	Cursor       *time.Time
+	MemberID     int
+	Ignored      bool
+	Favorited    bool
+	Participated bool
+} {
+	var calls []struct {
+		Limit        int
+		Cursor       *time.Time
+		MemberID     int
+		Ignored      bool
+		Favorited    bool
+		Participated bool
+	}
+	mock.lockListThreadsInReverse.RLock()
+	calls = mock.calls.ListThreadsInReverse
+	mock.lockListThreadsInReverse.RUnlock()
+	return calls
+}
+
 // PeekPrevious calls PeekPreviousFunc.
-func (mock *ThreadRepoMock) PeekPrevious(timestamp *time.Time) (bool, error) {
+func (mock *ThreadRepoMock) PeekPrevious(timestamp *time.Time, memberID int) (bool, error) {
 	if mock.PeekPreviousFunc == nil {
 		panic("ThreadRepoMock.PeekPreviousFunc: method is nil but ThreadRepo.PeekPrevious was just called")
 	}
 	callInfo := struct {
 		Timestamp *time.Time
+		MemberID  int
 	}{
 		Timestamp: timestamp,
+		MemberID:  memberID,
 	}
 	mock.lockPeekPrevious.Lock()
 	mock.calls.PeekPrevious = append(mock.calls.PeekPrevious, callInfo)
 	mock.lockPeekPrevious.Unlock()
-	return mock.PeekPreviousFunc(timestamp)
+	return mock.PeekPreviousFunc(timestamp, memberID)
 }
 
 // PeekPreviousCalls gets all the calls that were made to PeekPrevious.
@@ -537,9 +633,11 @@ func (mock *ThreadRepoMock) PeekPrevious(timestamp *time.Time) (bool, error) {
 //	len(mockedThreadRepo.PeekPreviousCalls())
 func (mock *ThreadRepoMock) PeekPreviousCalls() []struct {
 	Timestamp *time.Time
+	MemberID  int
 } {
 	var calls []struct {
 		Timestamp *time.Time
+		MemberID  int
 	}
 	mock.lockPeekPrevious.RLock()
 	calls = mock.calls.PeekPrevious
@@ -608,6 +706,50 @@ func (mock *ThreadRepoMock) SaveThreadCalls() []struct {
 	mock.lockSaveThread.RLock()
 	calls = mock.calls.SaveThread
 	mock.lockSaveThread.RUnlock()
+	return calls
+}
+
+// ToggleIgnore calls ToggleIgnoreFunc.
+func (mock *ThreadRepoMock) ToggleIgnore(ctx context.Context, memberID int, threadID int, ignore bool) error {
+	if mock.ToggleIgnoreFunc == nil {
+		panic("ThreadRepoMock.ToggleIgnoreFunc: method is nil but ThreadRepo.ToggleIgnore was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		MemberID int
+		ThreadID int
+		Ignore   bool
+	}{
+		Ctx:      ctx,
+		MemberID: memberID,
+		ThreadID: threadID,
+		Ignore:   ignore,
+	}
+	mock.lockToggleIgnore.Lock()
+	mock.calls.ToggleIgnore = append(mock.calls.ToggleIgnore, callInfo)
+	mock.lockToggleIgnore.Unlock()
+	return mock.ToggleIgnoreFunc(ctx, memberID, threadID, ignore)
+}
+
+// ToggleIgnoreCalls gets all the calls that were made to ToggleIgnore.
+// Check the length with:
+//
+//	len(mockedThreadRepo.ToggleIgnoreCalls())
+func (mock *ThreadRepoMock) ToggleIgnoreCalls() []struct {
+	Ctx      context.Context
+	MemberID int
+	ThreadID int
+	Ignore   bool
+} {
+	var calls []struct {
+		Ctx      context.Context
+		MemberID int
+		ThreadID int
+		Ignore   bool
+	}
+	mock.lockToggleIgnore.RLock()
+	calls = mock.calls.ToggleIgnore
+	mock.lockToggleIgnore.RUnlock()
 	return calls
 }
 

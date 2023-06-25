@@ -106,7 +106,7 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 		if len(site.ThreadPage.Threads) != 0 {
 			site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
 			site.PrevPageCursor = nil
-			prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+			prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted, memberID)
 			if err != nil {
 				return nil, err
 			}
@@ -138,7 +138,7 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
 		site.PrevPageCursor = site.ThreadPage.Threads[0].DateLastPosted
 
-		prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+		prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted, memberID)
 		if err != nil {
 			return nil, err
 		}
@@ -149,8 +149,8 @@ func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cu
 	return site, nil
 }
 
-func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time, memberID int) (*domain.SiteContext, error) {
-	threads, err := s.threadRepo.ListThreadsByCursorReverse(limit, cursor, memberID)
+func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time, memberID int, favorited, participated, ignored bool) (*domain.SiteContext, error) {
+	threads, err := s.threadRepo.ListThreadsInReverse(limit, cursor, memberID, ignored, participated, participated)
 	if err != nil {
 		s.logger.Errorf("error getting page of threads by cursor: %v", err)
 		return nil, err
@@ -161,7 +161,7 @@ func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time,
 	site.ThreadPage.Threads = threads[:len(threads)-1]
 	site.PrevPageCursor = threads[0].DateLastPosted
 
-	prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted)
+	prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted, memberID)
 	if err != nil {
 		return nil, err
 	}

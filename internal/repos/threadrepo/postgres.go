@@ -3,6 +3,7 @@ package threadrepo
 import (
 	"context"
 	_ "embed"
+	sq "github.com/Masterminds/squirrel"
 	"goBoard/internal/core/domain"
 	"time"
 
@@ -323,10 +324,92 @@ func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time, mem
 	return threads, nil
 }
 
-func (r ThreadRepo) PeekPrevious(timestamp *time.Time) (bool, error) {
-	query := "SELECT EXISTS(SELECT 1 FROM thread WHERE date_last_posted > $1)"
+func (r ThreadRepo) ListThreadsInReverse(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error) {
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+	dot := sq.Case().When(
+		"tm.date_posted IS NOT NULL AND tm.undot IS FALSE AND tm.member_id IS NOT NULL",
+		"true",
+	).Else("false")
+
+	whereFavorite := psql.Select("f.thread_id").From("favorite f").LeftJoin("thread t ON t.id = f.thread_id").Where("f.member_id = ?", memberID).OrderBy("t.date_last_posted DESC")
+	whereParticipated := psql.Select("tm.thread_id").From("thread_member tm").LeftJoin("thread t ON t.id = tm.thread_id").Where("tm.member_id = ? AND tm.date_posted IS NOT NULL", memberID).OrderBy("t.date_last_posted DESC")
+
+	query := psql.Select(
+		"t.id",
+		"t.date_last_posted",
+		"t.date_posted",
+		"m.id",
+		"m.name",
+		"l.id",
+		"l.name",
+		"t.subject",
+		"t.posts",
+		"t.views",
+		"tp.body",
+		"t.sticky",
+		"t.locked",
+		"t.legendary",
+	).Column(dot).From("thread t").LeftJoin("member m ON m.id = t.member_id").LeftJoin("member l ON l.id = t.last_member_id").LeftJoin("thread_post tp ON tp.id = t.first_post_id").LeftJoin("thread_member tm ON tm.thread_id = t.id AND tm.member_id = ?", memberID)
+
+	where := query.Where("t.date_last_posted > ?", cursor)
+
+	if ignored {
+		where = where.Where("tm.ignore IS TRUE")
+	} else if favorited {
+		where = where.Where(whereFavorite.Prefix("t.id IN (").Suffix(")"))
+	} else if participated {
+		where = where.Where(whereParticipated.Prefix("t.id IN (").Suffix(")"))
+	}
+
+	order := where.OrderBy("t.date_last_posted ASC").Limit(uint64(limit + 1))
+
+	outerStr, args, err := psql.Select("*").FromSelect(order, "inside").OrderBy("date_last_posted DESC").ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.connPool.Query(context.Background(), outerStr, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	var threads []domain.Thread
+	for rows.Next() {
+		var thread domain.Thread
+		var dotted bool
+		err = rows.Scan(
+			&thread.ID,
+			&thread.DateLastPosted,
+			&thread.DatePosted,
+			&thread.MemberID,
+			&thread.MemberName,
+			&thread.LastPosterID,
+			&thread.LastPosterName,
+			&thread.Subject,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPostText,
+			&thread.Sticky,
+			&thread.Locked,
+			&thread.Legendary,
+			&dotted,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		thread.Dotted = dotted
+		threads = append(threads, thread)
+	}
+
+	return threads, nil
+}
+
+func (r ThreadRepo) PeekPrevious(timestamp *time.Time, memberID int) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM thread LEFT JOIN thread_member tm on thread.id = tm.thread_id WHERE date_last_posted > $1 AND tm.ignore = false AND tm.member_id = $2)"
 	var exists bool
-	err := r.connPool.QueryRow(context.Background(), query, timestamp).Scan(&exists)
+	err := r.connPool.QueryRow(context.Background(), query, timestamp, memberID).Scan(&exists)
 	if err != nil {
 		return false, err
 	}

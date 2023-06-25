@@ -189,7 +189,7 @@ func TestNewThreadService(t *testing.T) {
 					},
 				}, nil
 			},
-			PeekPreviousFunc: func(timestamp *time.Time) (bool, error) {
+			PeekPreviousFunc: func(timestamp *time.Time, memberID int) (bool, error) {
 				return false, nil
 			},
 		}
@@ -215,7 +215,7 @@ func TestNewThreadService(t *testing.T) {
 
 	t.Run("successfully gets a list of threads by page reverse", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorReverseFunc: func(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
+			ListThreadsInReverseFunc: func(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error) {
 				return []domain.Thread{
 					{
 						ID:             1,
@@ -254,7 +254,7 @@ func TestNewThreadService(t *testing.T) {
 					},
 				}, nil
 			},
-			PeekPreviousFunc: func(timestamp *time.Time) (bool, error) {
+			PeekPreviousFunc: func(timestamp *time.Time, memberID int) (bool, error) {
 				return true, nil
 			},
 		}
@@ -263,7 +263,7 @@ func TestNewThreadService(t *testing.T) {
 
 		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
 
-		site, err := svc.GetThreadsWithCursorReverse(3, &mayFourth, 1)
+		site, err := svc.GetThreadsWithCursorReverse(3, &mayFourth, 1, false, false, false)
 		require.NoError(t, err)
 
 		assert.Len(t, site.ThreadPage.Threads, 2)

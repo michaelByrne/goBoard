@@ -21,46 +21,6 @@ func TestNewThreadRepo(t *testing.T) {
 
 	repo := NewThreadRepo(connPool, 2)
 
-	//t.Run("successfully lists all threads", func(t *testing.T) {
-	//	siteContext, err := repo.ListThreads(10, 0)
-	//	threads := siteContext.ThreadPage.Threads
-	//	require.NoError(t, err)
-	//
-	//	expectedThreads := []domain.Thread{
-	//		{
-	//			ID:             2,
-	//			Timestamp:      nil,
-	//			MemberID:       2,
-	//			MemberName:     "gofreescout",
-	//			Views:          0,
-	//			LastPosterName: "gofreescout",
-	//			LastPosterID:   2,
-	//			LastPostText:   "I listened to a podcast earlier that had five minutes of ads at the beginning",
-	//			NumPosts:       3,
-	//			Subject:        "It stinks! A new moratorium thread",
-	//		},
-	//		{
-	//			ID:             1,
-	//			Timestamp:      nil,
-	//			MemberID:       1,
-	//			MemberName:     "admin",
-	//			Subject:        "Hello, BCO",
-	//			LastPostText:   "Attn. Roxy",
-	//			LastPosterID:   1,
-	//			LastPosterName: "admin",
-	//			Views:          0,
-	//			NumPosts:       2,
-	//		},
-	//	}
-	//
-	//	threads[0].Timestamp = nil
-	//	threads[0].DateLastPosted = nil
-	//	threads[1].Timestamp = nil
-	//	threads[1].DateLastPosted = nil
-	//
-	//	assert.Equal(t, expectedThreads, threads)
-	//})
-
 	t.Run("successfully lists all threads by member id", func(t *testing.T) {
 		threads, err := repo.ListThreadsByMemberID(1, 10, 0)
 		require.NoError(t, err)
@@ -100,18 +60,58 @@ func TestNewThreadRepo(t *testing.T) {
 	t.Run("successfully gets threads by cursor forward", func(t *testing.T) {
 		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
 		janFirst := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+		janSecond := time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC)
 		threads, err := repo.ListThreadsByCursorForward(2, &cursor, 1)
 		require.NoError(t, err)
 
-		require.Len(t, threads, 1)
-		assert.Equal(t, &janFirst, threads[0].DateLastPosted)
+		require.Len(t, threads, 2)
+		assert.Equal(t, &janSecond, threads[0].DateLastPosted)
+		assert.Equal(t, &janFirst, threads[1].DateLastPosted)
 	})
 
 	t.Run("successfully gets threads by cursor in reverse", func(t *testing.T) {
 		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
 		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
 		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsByCursorReverse(2, &cursor, 1)
+		janSixth := time.Date(2021, 1, 6, 0, 0, 0, 0, time.UTC)
+		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, false, false, false)
+		require.NoError(t, err)
+
+		require.Len(t, threads, 3)
+		assert.Equal(t, &janSixth, threads[0].DateLastPosted)
+		assert.Equal(t, &janFifth, threads[1].DateLastPosted)
+		assert.Equal(t, &janFourth, threads[2].DateLastPosted)
+	})
+
+	t.Run("successfully gets threads participated in by cursor in reverse", func(t *testing.T) {
+		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
+		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
+		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
+		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, false, false, true)
+		require.NoError(t, err)
+
+		require.Len(t, threads, 2)
+		assert.Equal(t, &janFifth, threads[0].DateLastPosted)
+		assert.Equal(t, &janFourth, threads[1].DateLastPosted)
+	})
+
+	t.Run("successfully gets threads favorited by cursor in reverse", func(t *testing.T) {
+		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
+		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
+		janSixth := time.Date(2021, 1, 6, 0, 0, 0, 0, time.UTC)
+		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, false, true, false)
+		require.NoError(t, err)
+
+		require.Len(t, threads, 2)
+		assert.Equal(t, &janSixth, threads[0].DateLastPosted)
+		assert.Equal(t, &janFifth, threads[1].DateLastPosted)
+	})
+
+	t.Run("successfully gets threads ignored by cursor in reverse", func(t *testing.T) {
+		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
+		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
+		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
+		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, true, false, false)
 		require.NoError(t, err)
 
 		require.Len(t, threads, 2)
@@ -140,4 +140,8 @@ func TestNewThreadRepo(t *testing.T) {
 		assert.Equal(t, "Hello, BCO", subject)
 		assert.Equal(t, "It's me Roxy", body)
 	})
+}
+
+func pointerToType[T any](t T) *T {
+	return &t
 }

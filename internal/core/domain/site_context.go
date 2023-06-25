@@ -7,8 +7,9 @@ import (
 
 type SiteContext struct {
 	ThreadPage     ThreadPage
-	MemberPage     Member
+	Messages       []Message
 	Member         Member
+	Thread         Thread
 	PageName       string
 	PageCursor     *time.Time
 	PrevPageCursor *time.Time

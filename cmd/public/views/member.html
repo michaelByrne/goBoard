@@ -8,13 +8,13 @@
     <div id="content">
         <div class="pad">
             <div class="clear">
-                <h3 class="title">{{ .MemberPage.Name}}</h3>
+                <h3 class="title">{{ .Member.Name}}</h3>
                 <div class="clear">
-                    {{ template "top-nav" }}
+                    {{ template "top-nav" . }}
                     <div class="hr">
                         <hr/>
                     </div>
-                    <div class="box clear">
+                    <div class="box clear" style="background-color: #acccdb; color: black">
                         <div class="nophoto"></div>
                         <ul class="memberinfo">
                             <li>
@@ -31,36 +31,36 @@
                             </li>
                             <li style="padding-top:15px">
                                 <div class="pref">date joined:</div>
-                                <div class="prefdata">{{ .MemberPage.DateJoined }}</div>
+                                <div class="prefdata">{{ .Member.DateJoined }}</div>
                             </li>
                             <li>
                                 <div class="pref">last posted:</div>
-                                <div class="prefdata">{{ .MemberPage.LastPosted }}</div>
+                                <div class="prefdata">{{ .Member.LastPosted }}</div>
                             </li>
                             <li>
                                 <div class="pref">last seen:</div>
-                                <div class="prefdata">{{ .MemberPage.LastView }}</div>
+                                <div class="prefdata">{{ .Member.LastView }}</div>
                             </li>
                             <li>
                                 <div class="pref">member:</div>
-                                <div class="prefdata">{{ .MemberPage.ID }}</div>
+                                <div class="prefdata">{{ .Member.ID }}</div>
                             </li>
                             <li style="padding-top:15px">
                                 <div class="pref">total threads:</div>
-                                <div class="prefdata"><strong>{{ .MemberPage.TotalThreads }}</strong>, 0.056% of 393,784</div>
+                                <div class="prefdata"><strong>{{ .Member.TotalThreads }}</strong>, 0.056% of 393,784</div>
                             </li>
                             <li>
                                 <div class="pref">total posts:</div>
-                                <div class="prefdata"><strong> {{ .MemberPage.TotalThreadPosts }} </strong>, 0.153% of 14,050,684
+                                <div class="prefdata"><strong> {{ .Member.TotalThreadPosts }} </strong>, 0.153% of 14,050,684
                                 </div>
                             </li>
                         </ul>
                         <div class="clear"></div>
                     </div>
                 </div>
+                {{template "member-profile-nav" .}}
             </div>
         </div>
-        {{template "bottom-nav" .}}
     </div>
     </body>
 {{ end }}

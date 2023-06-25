@@ -163,7 +163,7 @@ func (h *Handler) ListThreads(c echo.Context) error {
 	}
 
 	if reverseAsBool {
-		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime, memberIDAsInt)
+		siteContext, err := h.threadService.GetThreadsWithCursorReverse(h.defaultThreadLimit, &cursorAsTime, memberIDAsInt, false, false, false)
 		if err != nil {
 			c.String(500, err.Error())
 			return err
