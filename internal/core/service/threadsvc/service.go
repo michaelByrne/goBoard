@@ -272,6 +272,9 @@ func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.H
 	convertedPostBody = mediaTagRegexes["spoiler"].ReplaceAllString(convertedPostBody, `<span class="spoiler" onclick="$(this).next().show();$(this).remove()">show spoiler</span><span style="display:none">$2</span>`)
 	convertedPostBody = mediaTagRegexes["trigger"].ReplaceAllString(convertedPostBody, `<span class="trigger" onclick="$(this).next().show();$(this).remove()">show trigger</span><span style="display:none">$2</span>`)
 
+	// replace newline chars with html breaks (ugh no paragraphs!?)
+	convertedPostBody = strings.Replace(convertedPostBody, "\n", "<br>", -1)
+
 	// recognize the prepared post string as HTML
 	htmlPostBody := template.HTML(convertedPostBody)
 	return &htmlPostBody, nil
