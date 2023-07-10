@@ -2,13 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/sessions"
-	"github.com/jackc/pgx/v4/pgxpool"
-	echojwt "github.com/labstack/echo-jwt/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	_ "github.com/lib/pq"
-	"go.uber.org/zap"
 	"goBoard/helpers/auth"
 	"goBoard/internal/core/service/authenticationsvc"
 	"goBoard/internal/core/service/membersvc"
@@ -28,6 +21,15 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/gorilla/sessions"
+	"github.com/jackc/pgx/v4/pgxpool"
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 type Template struct {
@@ -112,7 +114,10 @@ func main() {
 		TokenLookup:  "cookie:access-token", // "<source>:<name>"
 		ErrorHandler: auth.JWTErrorChecker,
 		Skipper: func(c echo.Context) bool {
-			if c.Request().URL.Path == "/login" {
+			reqPath := c.Request().URL.Path
+			if reqPath == "/login" ||
+				reqPath == "/favicon.ico" ||
+				strings.Contains(reqPath, "/static") {
 				return true
 			}
 			return false
