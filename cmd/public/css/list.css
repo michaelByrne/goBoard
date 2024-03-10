@@ -1,36 +1,61 @@
-.list
-{
+.list {
   list-style: none;
   overflow: hidden;
   clear: both;
   width: 100%;
   cursor: pointer;
 }
-.read { margin-left: -3px; }
-.list li
-{
+
+.thread_row:nth-child(even) {
+  background-color: #c3dae4;
+  color: #000000;
+}
+
+.thread_row:nth-child(odd) {
+  background-color: #acccdb;
+  color: #000000;
+}
+
+.read {
+  margin-left: -3px;
+}
+
+.list li {
   float: left;
   padding: .23em 0em;
 }
-.list li span { display: none; }
-.list li span.dropmenu { display: inline; }
 
-.member { margin-left: .3em; width: 17%; }
-.subject
-{
+.list li span {
+  display: none;
+}
+
+.list li span.dropmenu {
+  display: inline;
+}
+
+.member {
+  margin-left: .3em;
+  width: 17%;
+}
+
+.subject {
   padding-left: 40px;
   width: 48.5%;
   _width: 48%;
 }
-.posts { width: 4%; margin-left: .5em; }
-.lastpost
-{
+
+.posts {
+  width: 4%;
+  margin-left: .5em;
+}
+
+.lastpost {
   width: 28%;
   text-align: right;
   margin-right: .15em;
 }
-.extra
-{
+
+.extra {
   float: left;
   margin-left: -40px;
   width: 40px;
@@ -38,14 +63,29 @@
   _height: 1.25em;
   text-align: right;
 }
-.extra a { font-weight: bold; }
-.firstpost
-{
+
+.extra a {
+  font-weight: bold;
+}
+
+.firstpost {
   display: none;
   padding: 2em;
 }
-.even, .odd { clear: both; }
-#noresults { padding: 2em; }
+
+.even {
+  background-color: #c3dae4;
+  color: #000000;
+}
+
+.even,
+.odd {
+  clear: both;
+}
+
+#noresults {
+  padding: 2em;
+}
 
 #uncollapse {
   cursor: pointer;

@@ -182,8 +182,14 @@ func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time,
 	return site, nil
 }
 
-func (s ThreadService) ListThreads(limit, offset int) (*domain.SiteContext, error) {
-	return s.threadRepo.ListThreads(limit, offset)
+func (s ThreadService) ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error) {
+	threads, cursors, err := s.threadRepo.ListThreads(ctx, cursors, limit)
+	if err != nil {
+		s.logger.Errorf("error getting threads: %v", err)
+		return nil, domain.Cursors{}, err
+	}
+
+	return threads, cursors, nil
 }
 
 func (s ThreadService) NewThread(memberName, memberIP, body, subject string) (int, error) {

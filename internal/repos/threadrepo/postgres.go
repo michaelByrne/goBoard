@@ -3,9 +3,12 @@ package threadrepo
 import (
 	"context"
 	_ "embed"
-	sq "github.com/Masterminds/squirrel"
+	"errors"
+	"fmt"
 	"goBoard/internal/core/domain"
 	"time"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -86,53 +89,53 @@ func (r ThreadRepo) GetThreadByID(id, memberID int) (*domain.Thread, error) {
 	return &thread, nil
 }
 
-func (r ThreadRepo) ListThreads(limit, offset int) (*domain.SiteContext, error) {
-	var threads []domain.Thread
-	threadPage := &domain.ThreadPage{}
-	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
-	if err != nil {
-		return nil, err
-	}
+// func (r ThreadRepo) ListThreads(limit, offset int) (*domain.SiteContext, error) {
+// 	var threads []domain.Thread
+// 	threadPage := &domain.ThreadPage{}
+// 	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	for rows.Next() {
-		var thread domain.Thread
-		err := rows.Scan(
-			&thread.ID,
-			&thread.DateLastPosted,
-			&thread.MemberID,
-			&thread.MemberName,
-			&thread.LastPosterID,
-			&thread.LastPosterName,
-			&thread.Subject,
-			&thread.NumPosts,
-			&thread.Views,
-			&thread.LastPostText,
-			&thread.Sticky,
-			&thread.Locked,
-			&thread.Legendary,
-		)
-		if err != nil {
-			return nil, err
-		}
+// 	for rows.Next() {
+// 		var thread domain.Thread
+// 		err := rows.Scan(
+// 			&thread.ID,
+// 			&thread.DateLastPosted,
+// 			&thread.MemberID,
+// 			&thread.MemberName,
+// 			&thread.LastPosterID,
+// 			&thread.LastPosterName,
+// 			&thread.Subject,
+// 			&thread.NumPosts,
+// 			&thread.Views,
+// 			&thread.LastPostText,
+// 			&thread.Sticky,
+// 			&thread.Locked,
+// 			&thread.Legendary,
+// 		)
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-		threads = append(threads, thread)
-	}
-	threadPage.Threads = threads
+// 		threads = append(threads, thread)
+// 	}
+// 	threadPage.Threads = threads
 
-	var totalThreads int
-	threadCountRows, err := r.connPool.Query(context.Background(), countThreadsQuery)
-	for threadCountRows.Next() {
-		err := threadCountRows.Scan(&totalThreads)
-		if err != nil {
-			return nil, err
-		}
-	}
-	threadPage.TotalPages = totalThreads / limit
+// 	var totalThreads int
+// 	threadCountRows, err := r.connPool.Query(context.Background(), countThreadsQuery)
+// 	for threadCountRows.Next() {
+// 		err := threadCountRows.Scan(&totalThreads)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
+// 	threadPage.TotalPages = totalThreads / limit
 
-	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
+// 	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
 
-	return siteContext, nil
-}
+// 	return siteContext, nil
+// }
 
 func (r ThreadRepo) ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error) {
 	var threads []domain.Thread
@@ -435,4 +438,114 @@ func (r ThreadRepo) ToggleIgnore(ctx context.Context, memberID, threadID int, ig
 	}
 
 	return nil
+}
+
+func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error) {
+	if cursors.Next != "" && cursors.Prev != "" {
+		return nil, domain.Cursors{}, errors.New("two cursors cannot be provided at the same time")
+	}
+
+	values := make([]interface{}, 0, 4)
+	rowsLeftQuery := "SELECT COUNT(*) FROM thread t"
+	pagination := "INNER JOIN member m ON m.id = t.member_id"
+
+	// Going forward
+	if cursors.Next != "" {
+		rowsLeftQuery += " WHERE t.date_last_posted < $1"
+		pagination += " WHERE t.date_last_posted < $1 ORDER BY date_last_posted DESC LIMIT $2"
+		values = append(values, cursors.Next, limit)
+	}
+
+	// Going backward
+	if cursors.Prev != "" {
+		rowsLeftQuery += " WHERE t.date_last_posted > $1"
+		pagination += " WHERE t.date_last_posted > $1 ORDER BY date_last_posted ASC LIMIT $2"
+		values = append(values, cursors.Prev, limit)
+	}
+
+	// No cursors: Going forward from the beginning
+	if cursors.Next == "" && cursors.Prev == "" {
+		pagination += " ORDER BY t.date_last_posted DESC LIMIT $1"
+		values = append(values, limit)
+	}
+
+	stmt := fmt.Sprintf(`
+		WITH t AS (
+			SELECT t.id, m.name, t.date_last_posted, t.subject, t.date_posted, t.posts, t.views FROM thread t %s
+		)
+		SELECT id, name, date_last_posted, subject, 
+	    date_posted, posts, views,
+		(%s) AS rows_left,
+		(SELECT COUNT(*) FROM thread) AS total
+		FROM t
+		ORDER BY date_last_posted DESC
+  `, pagination, rowsLeftQuery)
+
+	rows, err := r.connPool.Query(ctx, stmt, values...)
+	if err != nil {
+		return nil, domain.Cursors{}, err
+	}
+	defer rows.Close()
+
+	var (
+		threads  []domain.Thread
+		rowsLeft int
+		total    int
+	)
+
+	for rows.Next() {
+		var thread domain.Thread
+		err = rows.Scan(
+			&thread.ID,
+			&thread.MemberName,
+			&thread.DateLastPosted,
+			&thread.Subject,
+			&thread.DatePosted,
+			&thread.NumPosts,
+			&thread.Views,
+			&rowsLeft,
+			&total,
+		)
+		if err != nil {
+			return nil, domain.Cursors{}, err
+		}
+
+		threads = append(threads, thread)
+	}
+
+	fmt.Println(rowsLeft, total, len(threads))
+
+	var (
+		prevCursor string // cursor we return when there is a previous page
+		nextCursor string // cursor we return when there is a next page
+	)
+
+	switch {
+
+	// *If there are no results we don't have to compute the cursors
+	case rowsLeft < 0:
+
+	// *On A, direction A->E (going forward), return only next cursor
+	case cursors.Prev == "" && cursors.Next == "":
+		nextCursor = threads[len(threads)-1].DateLastPosted.UTC().Format(time.RFC3339Nano)
+
+	// *On E, direction A->E (going forward), return only prev cursor
+	case cursors.Next != "" && rowsLeft == len(threads):
+		prevCursor = threads[0].DateLastPosted.UTC().Format(time.RFC3339Nano)
+
+	// *On A, direction E->A (going backward), return only next cursor
+	case cursors.Prev != "" && rowsLeft == len(threads):
+		nextCursor = threads[len(threads)-1].DateLastPosted.UTC().Format(time.RFC3339Nano)
+
+	// *On E, direction E->A (going backward), return only prev cursor
+	case cursors.Prev != "" && total == rowsLeft:
+		prevCursor = threads[0].DateLastPosted.UTC().Format(time.RFC3339Nano)
+
+	// *Somewhere in the middle
+	default:
+		nextCursor = threads[len(threads)-1].DateLastPosted.UTC().Format(time.RFC3339Nano)
+		prevCursor = threads[0].DateLastPosted.UTC().Format(time.RFC3339Nano)
+	}
+
+	return threads, domain.Cursors{Next: nextCursor, Prev: prevCursor}, nil
 }

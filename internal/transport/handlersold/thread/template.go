@@ -2,13 +2,13 @@ package thread
 
 import (
 	"errors"
-	"github.com/gorilla/sessions"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"goBoard/internal/transport/middlewares/session"
 	"strconv"
 	"time"
 
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 

@@ -2,14 +2,17 @@ package threadrepo
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"goBoard/db"
 	"goBoard/internal/core/domain"
-	"goBoard/internal/repos/seed"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+const insertMember = `INSERT INTO member (name, pass, ip, email_signup, postalcode, secret) VALUES ($1, $2, $3, $4, $5, $6)`
+const insertThread = `"INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)`
 
 func TestNewThreadRepo(t *testing.T) {
 	dbContainer, connPool, err := db.SetupTestDatabase()
@@ -17,131 +20,96 @@ func TestNewThreadRepo(t *testing.T) {
 
 	defer dbContainer.Terminate(context.Background())
 
-	require.NoError(t, seed.SeedData(t, connPool))
+	//require.NoError(t, seed.SeedData(t, connPool))
+
+	_, err = connPool.Exec(context.Background(), insertMember, "admin", "admin", "127.0.0.1", "mpbyrne@gmail.com", "97217", "topsecret")
+	require.NoError(t, err)
+
+	_, err = connPool.Exec(context.Background(), insertMember, "gofreescout", "test", "127.0.0.2", "gofreescout@yahoo.com", "97217", "topsecret")
+	require.NoError(t, err)
+
+	_, err = connPool.Exec(context.Background(), `
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('Hello, BCO', 1, 1, '2021-01-01T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('It stinks! A new moratorium thread', 2, 1, '2021-01-02T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('THYROID', 2, 1, '2021-01-03T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('2017 politics thread', 2, 1, '2021-01-04T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('2018 politics thread', 2, 1, '2021-01-05T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('2019 politics thread', 2, 1, '2021-01-06T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('2020 politics thread', 2, 1, '2021-01-07T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('2021 politics thread', 2, 1, '2021-01-08T00:00:00Z');
+	INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ('2022 politics thread', 2, 1, '2021-01-09T00:00:00Z');
+`)
+	require.NoError(t, err)
 
 	repo := NewThreadRepo(connPool, 2)
 
-	t.Run("successfully lists all threads by member id", func(t *testing.T) {
-		threads, err := repo.ListThreadsByMemberID(1, 10, 0)
-		require.NoError(t, err)
-
-		expectedThreads := []domain.Thread{
-			{
-				ID:             1,
-				Timestamp:      nil,
-				MemberID:       1,
-				MemberName:     "admin",
-				Subject:        "Hello, BCO",
-				LastPostText:   "Attn. Roxy",
-				LastPosterID:   1,
-				LastPosterName: "admin",
-				Views:          0,
-				NumPosts:       2,
-			},
-		}
-
-		threads[0].Timestamp = nil
-		threads[0].DateLastPosted = nil
-
-		assert.Equal(t, expectedThreads, threads)
-	})
-
-	t.Run("successfully lists posts by thread id", func(t *testing.T) {
-		posts, err := repo.ListPostsForThread(10, 0, 1, 1)
-		require.NoError(t, err)
-
-		require.Len(t, posts, 2)
-		assert.Equal(t, 2, posts[1].ID)
-		assert.Equal(t, "Attn. Roxy", posts[0].Body)
-		assert.Equal(t, 1, posts[0].ID)
-		assert.Equal(t, "WCFRP", posts[1].Body)
-	})
-
-	t.Run("successfully gets threads by cursor forward", func(t *testing.T) {
-		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
-		janFirst := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-		janSecond := time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsByCursorForward(2, &cursor, 1)
-		require.NoError(t, err)
-
-		require.Len(t, threads, 2)
-		assert.Equal(t, &janSecond, threads[0].DateLastPosted)
-		assert.Equal(t, &janFirst, threads[1].DateLastPosted)
-	})
-
-	t.Run("successfully gets threads by cursor in reverse", func(t *testing.T) {
-		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
-		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
-		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
-		janSixth := time.Date(2021, 1, 6, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, false, false, false)
+	t.Run("successfully starts at the beginning with no cursor", func(t *testing.T) {
+		threads, cursorsOut, err := repo.ListThreads(context.Background(), domain.Cursors{}, 3)
 		require.NoError(t, err)
 
 		require.Len(t, threads, 3)
-		assert.Equal(t, &janSixth, threads[0].DateLastPosted)
-		assert.Equal(t, &janFifth, threads[1].DateLastPosted)
-		assert.Equal(t, &janFourth, threads[2].DateLastPosted)
+
+		assert.Equal(t, "2021-01-09T00:00:00Z", threads[0].DateLastPosted.Format(time.RFC3339Nano))
+		assert.Equal(t, "2021-01-07T00:00:00Z", threads[2].DateLastPosted.Format(time.RFC3339Nano))
+
+		assert.Empty(t, cursorsOut.Prev)
+		assert.Equal(t, "2021-01-07T00:00:00Z", cursorsOut.Next)
 	})
 
-	t.Run("successfully gets threads participated in by cursor in reverse", func(t *testing.T) {
-		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
-		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
-		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, false, false, true)
+	t.Run("successfully handles a next curor", func(t *testing.T) {
+		cursorsIn := domain.Cursors{
+			Next: "2021-01-07T00:00:00Z",
+		}
+
+		threads, cursorsOut, err := repo.ListThreads(context.Background(), cursorsIn, 3)
 		require.NoError(t, err)
 
-		require.Len(t, threads, 2)
-		assert.Equal(t, &janFifth, threads[0].DateLastPosted)
-		assert.Equal(t, &janFourth, threads[1].DateLastPosted)
+		require.Len(t, threads, 3)
+
+		assert.Equal(t, "2021-01-04T00:00:00Z", cursorsOut.Next)
+		assert.Equal(t, "2021-01-06T00:00:00Z", cursorsOut.Prev)
 	})
 
-	t.Run("successfully gets threads favorited by cursor in reverse", func(t *testing.T) {
-		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
-		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
-		janSixth := time.Date(2021, 1, 6, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, false, true, false)
+	t.Run("successfully handles forward direction on last page", func(t *testing.T) {
+		cursorsIn := domain.Cursors{
+			Next: "2021-01-04T00:00:00Z",
+		}
+
+		threads, cursorsOut, err := repo.ListThreads(context.Background(), cursorsIn, 3)
 		require.NoError(t, err)
 
-		require.Len(t, threads, 2)
-		assert.Equal(t, &janSixth, threads[0].DateLastPosted)
-		assert.Equal(t, &janFifth, threads[1].DateLastPosted)
+		require.Len(t, threads, 3)
+
+		assert.Empty(t, cursorsOut.Next)
+		assert.Equal(t, "2021-01-03T00:00:00Z", cursorsOut.Prev)
 	})
 
-	t.Run("successfully gets threads ignored by cursor in reverse", func(t *testing.T) {
-		cursor := time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
-		janFifth := time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC)
-		janFourth := time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC)
-		threads, err := repo.ListThreadsInReverse(2, &cursor, 1, true, false, false)
+	t.Run("successfully goes back in the middle", func(t *testing.T) {
+		cursorsIn := domain.Cursors{
+			Prev: "2021-01-02T00:00:00Z",
+		}
+
+		threads, cursorsOut, err := repo.ListThreads(context.Background(), cursorsIn, 3)
 		require.NoError(t, err)
 
-		require.Len(t, threads, 2)
-		assert.Equal(t, &janFifth, threads[0].DateLastPosted)
-		assert.Equal(t, &janFourth, threads[1].DateLastPosted)
+		require.Len(t, threads, 3)
+
+		assert.Equal(t, "2021-01-03T00:00:00Z", cursorsOut.Next)
+		assert.Equal(t, "2021-01-05T00:00:00Z", cursorsOut.Prev)
 	})
 
-	t.Run("successfully saves a thread", func(t *testing.T) {
-		id, err := repo.SaveThread(domain.Thread{
-			MemberID:      1,
-			Subject:       "Hello, BCO",
-			LastPosterID:  1,
-			FirstPostText: "It's me Roxy",
-			MemberIP:      "127.0.0.1",
-		})
+	t.Run("successfully goes back to the beginning", func(t *testing.T) {
+		cursorsIn := domain.Cursors{
+			Prev: "2021-01-06T00:00:00Z",
+		}
+
+		threads, cursorsOut, err := repo.ListThreads(context.Background(), cursorsIn, 3)
 		require.NoError(t, err)
 
-		var subject string
-		err = connPool.QueryRow(context.Background(), "SELECT subject FROM thread WHERE id = $1", id).Scan(&subject)
-		require.NoError(t, err)
+		require.Len(t, threads, 3)
 
-		var body string
-		err = connPool.QueryRow(context.Background(), "SELECT body FROM thread_post WHERE thread_id = $1", id).Scan(&body)
-		require.NoError(t, err)
-
-		assert.Equal(t, "Hello, BCO", subject)
-		assert.Equal(t, "It's me Roxy", body)
+		assert.Empty(t, cursorsOut.Prev)
+		assert.Equal(t, "2021-01-07T00:00:00Z", cursorsOut.Next)
 	})
-}
 
-func pointerToType[T any](t T) *T {
-	return &t
 }

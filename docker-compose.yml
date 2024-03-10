@@ -1,15 +1,15 @@
 version: '0.1'
 services:
-  app:
-    container_name: board_app
-    build: .
-    ports:
-      - "8080:8080"
-    restart: on-failure
-    volumes:
-      - api:/usr/src/app/
-    depends_on:
-      - board-postgres          # Uncomment this when using postgres.
+  # app:
+  #   container_name: board_app
+  #   build: .
+  #   ports:
+  #     - "8080:8080"
+  #   restart: on-failure
+  #   volumes:
+  #     - api:/usr/src/app/
+  #   depends_on:
+  #     - board-postgres          # Uncomment this when using postgres.
 
 
   board-postgres:

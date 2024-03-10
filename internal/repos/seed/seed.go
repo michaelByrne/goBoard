@@ -2,10 +2,11 @@ package seed
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -32,11 +33,11 @@ func SeedData(t *testing.T, pool *pgxpool.Pool) error {
 	_, err = pool.Exec(context.Background(), insertMember, "elliott", "pass", "127.0.0.1", "elliott@test.com", "12345", "topsecret")
 	_, err = pool.Exec(context.Background(), insertThread, 3, 2, 1, "2017 politics thread")
 	_, err = pool.Exec(context.Background(), insertThread, 3, 2, 1, "2018 politics thread")
-	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 1", time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC))
-	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 2", time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
-	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 3", time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC))
-	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 4", time.Date(2021, 1, 6, 0, 0, 0, 0, time.UTC))
-	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 5", time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC))
+	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 1", time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 2", time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC))
+	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 3", time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC))
+	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 4", time.Date(2021, 1, 4, 0, 0, 0, 0, time.UTC))
+	_, err = pool.Exec(context.Background(), "UPDATE thread SET date_last_posted = $1 WHERE id = 5", time.Date(2021, 1, 5, 0, 0, 0, 0, time.UTC))
 	_, err = pool.Exec(context.Background(), insertFavorite, 1, 1)
 	_, err = pool.Exec(context.Background(), insertFavorite, 1, 4)
 	_, err = pool.Exec(context.Background(), updateIgnored, true, 1, 1)

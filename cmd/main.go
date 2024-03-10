@@ -2,134 +2,103 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/sessions"
-	"github.com/jackc/pgx/v4/pgxpool"
-	echojwt "github.com/labstack/echo-jwt/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	_ "github.com/lib/pq"
-	"go.uber.org/zap"
-	"goBoard/helpers/auth"
-	"goBoard/internal/core/service/authenticationsvc"
-	"goBoard/internal/core/service/membersvc"
-	"goBoard/internal/core/service/messagesvc"
+	"errors"
+	"fmt"
 	"goBoard/internal/core/service/threadsvc"
-	"goBoard/internal/repos/authenticationrepo"
 	"goBoard/internal/repos/memberrepo"
-	"goBoard/internal/repos/messagerepo"
 	"goBoard/internal/repos/threadrepo"
-	"goBoard/internal/transport/handlers/authentication"
-	"goBoard/internal/transport/handlers/member"
-	"goBoard/internal/transport/handlers/message"
-	"goBoard/internal/transport/handlers/thread"
-	"goBoard/internal/transport/middlewares/session"
-	"html/template"
+	"goBoard/internal/transport/handlers/threads"
 	"io"
 	"log"
+	"net/http"
 	"os"
-	"strconv"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v4/pgxpool"
+	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
-type Template struct {
-	templates *template.Template
-}
-
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
-}
-
 func main() {
-	maxThreadLimit := os.Getenv("MAX_THREAD_LIMIT")
-	if maxThreadLimit == "" {
-		maxThreadLimit = "30"
-	}
-
-	maxThreadLimitAsInt, err := strconv.Atoi(maxThreadLimit)
+	err := run(context.Background(), os.Getenv, os.Stdin, os.Stdout, os.Stderr)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(
+	ctx context.Context,
+	getenv func(string) string,
+	stdin io.Reader,
+	stdout, stderr io.Writer,
+) error {
+	dbURI := "postgres://boardking:test@localhost:5432/board?sslmode=disable"
+	pool, err := pgxpool.Connect(context.Background(), dbURI)
+	if err != nil {
+		return err
 	}
 
 	l, err := zap.NewProduction()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer l.Sync()
 
 	sugar := l.Sugar()
 
-	dbURI := "postgres://boardking:test@board-postgres:5432/board?sslmode=disable"
-	pool, err := pgxpool.Connect(context.Background(), dbURI)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	threadRepo := threadrepo.NewThreadRepo(pool, 50)
 	memberRepo := memberrepo.NewMemberRepo(pool)
-	memberService := membersvc.NewMemberService(memberRepo, sugar)
 
-	threadRepo := threadrepo.NewThreadRepo(pool, maxThreadLimitAsInt)
-	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, maxThreadLimitAsInt)
+	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, 50)
 
-	messageRepo := messagerepo.NewMessageRepo(pool)
-	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar, maxThreadLimitAsInt)
+	threadsHandler := threads.NewHandler(threadService, sugar)
 
-	authenticationRepo := authenticationrepo.NewAuthenticationRepo(pool)
-	authenticationService := authenticationsvc.NewAuthenticationService(authenticationRepo, memberRepo, sugar)
+	r := chi.NewRouter()
 
-	memberTemplateHandler := member.NewTemplateHandler(threadService, memberService)
-	threadTemplateHandler := thread.NewTemplateHandler(threadService, memberService, maxThreadLimitAsInt)
-	messageTemplateHandler := message.NewTemplateHandler(messageService)
-	authenticationTemplateHandler := authentication.NewTemplateHandler(authenticationService)
+	threadsHandler.Register(r)
 
-	threadHTTPHandler := thread.NewHandler(threadService, maxThreadLimitAsInt)
-	memberHTTPHandler := member.NewHandler(memberService)
-	messageHTTPHandler := message.NewHandler(memberService, messageService)
-	authenticationHTTPHandler := authentication.NewHTTPHandler(authenticationService)
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
 
-	t := &Template{
-		templates: template.Must(template.New("t").Funcs(template.FuncMap{
-			"add": func(a, b int) int {
-				return a + b
-			},
-			"sub": func(a, b int) int {
-				return a - b
-			},
-		}).ParseGlob("public/views/*.html")),
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
 	}
 
-	e := echo.New()
+	serverCtx, serverStopCtx := context.WithCancel(ctx)
 
-	e.Renderer = t
-	e.Debug = true
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	e.Use(middleware.CORS())
+	go func() {
+		<-sig
 
-	store := sessions.NewCookieStore([]byte("secret"))
-	e.Use(session.Middleware(store))
+		shutdownCtx, _ := context.WithTimeout(serverCtx, 30*time.Second)
 
-	e.Use(echojwt.WithConfig(echojwt.Config{
-		//NewClaimsFunc: auth.GetJWTClaims,
-		SigningKey:   []byte(auth.GetJWTSecret()),
-		TokenLookup:  "cookie:access-token", // "<source>:<name>"
-		ErrorHandler: auth.JWTErrorChecker,
-		Skipper: func(c echo.Context) bool {
-			if c.Request().URL.Path == "/login" {
-				return true
+		go func() {
+			<-shutdownCtx.Done()
+			if errors.Is(shutdownCtx.Err(), context.DeadlineExceeded) {
+				log.Fatal("graceful shutdown timed out.. forcing exit.")
 			}
-			return false
-		},
-	}))
+		}()
 
-	threadTemplateHandler.Register(e)
-	memberTemplateHandler.Register(e)
-	messageTemplateHandler.Register(e)
-	authenticationTemplateHandler.Register(e)
+		err := server.Shutdown(shutdownCtx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		serverStopCtx()
+	}()
 
-	threadHTTPHandler.Register(e)
-	memberHTTPHandler.Register(e)
-	messageHTTPHandler.Register(e)
-	authenticationHTTPHandler.Register(e)
+	log.Println("** starting bco on port 8080 **")
+	err = server.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
 
-	e.Static("/static", "public")
+	<-serverCtx.Done()
 
-	e.Logger.Fatal(e.Start(":8080"))
+	return nil
 }

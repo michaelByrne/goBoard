@@ -102,6 +102,9 @@
   display: block;
   padding: .33em 1em;  /* huge pain, do not touch */
 }
+.top li:hover {
+  background-color: #82b3c9;
+}
 .shiftup { margin-top: -1px; }
 .hr
 {

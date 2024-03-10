@@ -12,7 +12,7 @@ type ThreadRepo interface {
 	SavePost(post domain.ThreadPost) (int, error)
 	GetPostByID(id int) (*domain.ThreadPost, error)
 	GetThreadByID(id, memberID int) (*domain.Thread, error)
-	ListThreads(limit, offset int) (*domain.SiteContext, error)
+	//ListThreads(limit, offset int) (*domain.SiteContext, error)
 	ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error)
 	SaveThread(thread domain.Thread) (int, error)
 	ListPostsForThread(limit, offset, id, memberID int) ([]domain.ThreadPost, error)
@@ -23,6 +23,7 @@ type ThreadRepo interface {
 	UndotThread(ctx context.Context, memberID, threadID int) error
 	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
 	ListThreadsInReverse(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error)
+	ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo
