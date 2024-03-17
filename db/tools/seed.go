@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -29,28 +28,20 @@ func main() {
 	//b.Queue("INSERT INTO member (id, name, pass, postalcode, email_signup, secret, ip) VALUES ($1, $2, $3, $4, $5, $6, $7)", 1, "gofreescout", "test", "97217", "mpbyrne@hotmail.com", "fishsticks", "172.0.0.1")
 	//b.Queue("INSERT INTO member (id, name, pass, postalcode, email_signup, secret, ip) VALUES ($1, $2, $3, $4, $5, $6, $7)", 2, "elliott", "test2", "97217", "admin@admin.net", "admin", "172.0.0.1")
 
-	for i := 1; i < 150; i++ {
-		dateLastPosted := time.Date(2021, 1, i, 0, 0, 0, 0, time.UTC)
-		b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 1, 1, dateLastPosted.Format(time.RFC3339Nano))
-	}
+	// for i := 1; i < 150; i++ {
+	// 	dateLastPosted := time.Date(2021, 1, i, 0, 0, 0, 0, time.UTC)
+	// 	b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 1, 1, dateLastPosted.Format(time.RFC3339Nano))
+	// }
 
 	// for i := 1; i < 50; i++ {
 	// 	dateLastPosted := time.Date(2021, 1, i*2, 0, 0, 0, 0, time.UTC)
 	// 	b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 2, 1, dateLastPosted.Format(time.RFC3339Nano))
 	// }
 
-	// for i := 1; i < 10; i++ {
-	// 	b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 1, i, DATA[i%30], "172.0.0.1")
-	// 	b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 2, i, DATA[i%30], "172.0.0.1")
-	// 	randDay := rand.Intn(28) + 1
-	// 	randMonth := rand.Intn(12) + 1
-	// 	randYear := rand.Intn(20) + 2000
-	// 	b.Queue("UPDATE thread SET date_last_posted = $1 WHERE id = $2", time.Date(randYear, time.Month(randMonth), randDay, 0, 0, 0, 0, time.UTC), i)
-	// 	randDay = rand.Intn(28) + 1
-	// 	randMonth = rand.Intn(12) + 1
-	// 	randYear = rand.Intn(20) + 2000
-	// 	b.Queue("UPDATE thread SET date_last_posted = $1 WHERE id = $2", time.Date(randYear, time.Month(randMonth), randDay, 0, 0, 0, 0, time.UTC), i*100)
-	// }
+	for i := 555; i < 565; i++ {
+		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 1, i, DATA[i%30], "172.0.0.1")
+		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 2, i, DATA[i%30], "172.0.0.1")
+	}
 
 	results := begin.SendBatch(context.Background(), b)
 

@@ -57,6 +57,25 @@ func (s ThreadService) GetPostByID(id int) (*domain.ThreadPost, error) {
 	return s.threadRepo.GetPostByID(id)
 }
 
+func (s ThreadService) GetCollapsibleThreadByID(ctx context.Context, viewable, threadID, memberID int) (*domain.Thread, error) {
+	posts, count, err := s.threadRepo.ListPostsCollapsible(ctx, viewable, threadID, memberID)
+	if err != nil {
+		s.logger.Errorf("error getting collapsible posts by thread id: %v", err)
+		return nil, err
+	}
+
+	thread, err := s.threadRepo.GetThreadByID(threadID, memberID)
+	if err != nil {
+		s.logger.Errorf("error getting thread by id: %v", err)
+		return nil, err
+	}
+
+	thread.Posts = posts
+	thread.NumCollapsed = count
+
+	return thread, nil
+}
+
 func (s ThreadService) GetThreadByID(limit, offset, id, memberID int) (*domain.Thread, error) {
 	posts, err := s.threadRepo.ListPostsForThread(limit, offset, id, memberID)
 	if err != nil {
@@ -77,109 +96,6 @@ func (s ThreadService) GetThreadByID(limit, offset, id, memberID int) (*domain.T
 	}
 
 	return thread, nil
-}
-
-func (s ThreadService) GetThreadsWithCursorForward(limit int, firstPage bool, cursor *time.Time, memberID int) (*domain.SiteContext, error) {
-	if firstPage {
-		start := time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC)
-		threads, err := s.threadRepo.ListThreadsByCursorForward(limit, &start, memberID)
-		if err != nil {
-			s.logger.Errorf("error getting first page of threads by cursor: %v", err)
-			return nil, err
-		}
-
-		site := &domain.SiteContext{
-			ThreadPage: domain.ThreadPage{
-				Threads: threads,
-			},
-		}
-
-		if len(threads) > s.defaultMaxThreadLimit {
-			site.ThreadPage.HasNextPage = true
-			threads = threads[:s.defaultMaxThreadLimit]
-		} else {
-			site.ThreadPage.HasNextPage = false
-		}
-
-		site.ThreadPage.Threads = threads
-
-		if len(site.ThreadPage.Threads) != 0 {
-			site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
-			site.PrevPageCursor = nil
-			prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted, memberID)
-			if err != nil {
-				return nil, err
-			}
-
-			site.ThreadPage.HasPrevPage = prevExists
-		}
-
-		return site, nil
-	}
-
-	threads, err := s.threadRepo.ListThreadsByCursorForward(limit, cursor, memberID)
-	if err != nil {
-		s.logger.Errorf("error getting page of threads by cursor: %v", err)
-		return nil, err
-	}
-
-	site := &domain.SiteContext{}
-
-	if len(threads) > s.defaultMaxThreadLimit {
-		site.ThreadPage.HasNextPage = true
-		threads = threads[:s.defaultMaxThreadLimit]
-	} else {
-		site.ThreadPage.HasNextPage = false
-	}
-
-	site.ThreadPage.Threads = threads
-
-	if len(site.ThreadPage.Threads) != 0 {
-		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
-		site.PrevPageCursor = site.ThreadPage.Threads[0].DateLastPosted
-
-		prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted, memberID)
-		if err != nil {
-			return nil, err
-		}
-
-		site.ThreadPage.HasPrevPage = prevExists
-	}
-
-	return site, nil
-}
-
-func (s ThreadService) GetThreadsWithCursorReverse(limit int, cursor *time.Time, memberID int, favorited, participated, ignored bool) (*domain.SiteContext, error) {
-	threads, err := s.threadRepo.ListThreadsInReverse(limit, cursor, memberID, ignored, participated, participated)
-	if err != nil {
-		s.logger.Errorf("error getting page of threads by cursor: %v", err)
-		return nil, err
-	}
-
-	site := &domain.SiteContext{}
-
-	site.ThreadPage.Threads = threads[:len(threads)-1]
-	site.PrevPageCursor = threads[0].DateLastPosted
-
-	prevExists, err := s.threadRepo.PeekPrevious(threads[0].DateLastPosted, memberID)
-	if err != nil {
-		return nil, err
-	}
-
-	site.ThreadPage.HasPrevPage = prevExists
-
-	if len(threads) > s.defaultMaxThreadLimit {
-		site.ThreadPage.HasNextPage = true
-		site.ThreadPage.Threads = site.ThreadPage.Threads[:s.defaultMaxThreadLimit]
-	} else {
-		site.ThreadPage.HasNextPage = false
-	}
-
-	if len(site.ThreadPage.Threads) != 0 {
-		site.PageCursor = site.ThreadPage.Threads[len(site.ThreadPage.Threads)-1].DateLastPosted
-	}
-
-	return site, nil
 }
 
 func (s ThreadService) ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error) {

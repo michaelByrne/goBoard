@@ -1,0 +1,42 @@
+package views
+
+import "goBoard/internal/transport/handlers/threads/views"
+
+templ Login() {
+	@views.Head()
+	<body>
+		<form method="post" name="form" hx-boost="true" class="coreform" id="form" action="/login">
+			<fieldset>
+				<legend>Login</legend>
+				<ol>
+					<li>
+						<label id="label_subject" for="name">Name:</label>
+						<input
+							type="text"
+							name="name"
+							id="name"
+							value=""
+							style="width:400px;"
+							maxlength="200"
+							notnull="Name, please"
+							class="validate_form"
+						/>
+						<div class="clear"></div>
+					</li>
+					<li>
+						<label id="label_subject" for="pass">Password:</label>
+						<input
+							name="pass"
+							id="pass"
+							style="width: 400px"
+							notnull="Password, please"
+							class="validate_form"
+						/>
+						<div class="clear"></div>
+					</li>
+				</ol>
+			</fieldset>
+			<input type="submit" class="submit" value="login"/>
+		</form>
+	</body>
+}

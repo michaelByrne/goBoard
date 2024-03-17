@@ -24,4 +24,5 @@ type Thread struct {
 	PageCursor     *time.Time
 	Dotted         bool
 	Ignored        bool
+	NumCollapsed   int
 }

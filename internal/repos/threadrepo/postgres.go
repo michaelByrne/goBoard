@@ -8,8 +8,6 @@ import (
 	"goBoard/internal/core/domain"
 	"time"
 
-	sq "github.com/Masterminds/squirrel"
-
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -36,6 +34,9 @@ var listThreadsCursorReverseQuery string
 //go:embed queries/get_thread_by_id.sql
 var getThreadByIDQuery string
 
+//go:embed queries/list_posts_collapsible.sql
+var listPostsCollapsibleQuery string
+
 type ThreadRepo struct {
 	connPool              *pgxpool.Pool
 	defaultMaxThreadLimit int
@@ -46,6 +47,33 @@ func NewThreadRepo(pool *pgxpool.Pool, defaultMaxThreadLimit int) ThreadRepo {
 		connPool:              pool,
 		defaultMaxThreadLimit: defaultMaxThreadLimit,
 	}
+}
+
+func (r ThreadRepo) ListPostsCollapsible(ctx context.Context, toShow, threadID, memberID int) (posts []domain.ThreadPost, collapsed int, err error) {
+	if toShow == 0 {
+		err = errors.New("toShow cannot be 0")
+		return
+	}
+
+	rows, err := r.connPool.Query(ctx, listPostsCollapsibleQuery, threadID, memberID, toShow)
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		var post domain.ThreadPost
+		var cidr pgtype.CIDR
+		err = rows.Scan(&post.ID, &post.Timestamp, &post.MemberID, &post.MemberName, &post.Body, &cidr, &post.ParentSubject, &post.ParentID, &post.IsAdmin, &post.RowNumber, &collapsed)
+		if err != nil {
+			return
+		}
+
+		post.MemberIP = cidr.IPNet.String()
+
+		posts = append(posts, post)
+	}
+
+	return
 }
 
 func (r ThreadRepo) SavePost(post domain.ThreadPost) (int, error) {
@@ -255,160 +283,6 @@ func (r ThreadRepo) ListPostsForThreadByCursor(limit, id int, cursor *time.Time)
 	return posts, nil
 }
 
-func (r ThreadRepo) ListThreadsByCursorForward(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
-	var threads []domain.Thread
-	rows, err := r.connPool.Query(context.Background(), listThreadsCursorForwardQuery, limit, cursor, memberID)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var thread domain.Thread
-		err := rows.Scan(
-			&thread.ID,
-			&thread.DateLastPosted,
-			&thread.DatePosted,
-			&thread.MemberID,
-			&thread.MemberName,
-			&thread.LastPosterID,
-			&thread.LastPosterName,
-			&thread.Subject,
-			&thread.NumPosts,
-			&thread.Views,
-			&thread.LastPostText,
-			&thread.Sticky,
-			&thread.Locked,
-			&thread.Legendary,
-			&thread.Dotted,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		threads = append(threads, thread)
-	}
-
-	return threads, nil
-}
-
-func (r ThreadRepo) ListThreadsByCursorReverse(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
-	var threads []domain.Thread
-	rows, err := r.connPool.Query(context.Background(), listThreadsCursorReverseQuery, cursor, limit, memberID)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var thread domain.Thread
-		err := rows.Scan(
-			&thread.ID,
-			&thread.DateLastPosted,
-			&thread.DatePosted,
-			&thread.MemberID,
-			&thread.MemberName,
-			&thread.LastPosterID,
-			&thread.LastPosterName,
-			&thread.Subject,
-			&thread.NumPosts,
-			&thread.Views,
-			&thread.LastPostText,
-			&thread.Sticky,
-			&thread.Locked,
-			&thread.Legendary,
-			&thread.Dotted,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		threads = append(threads, thread)
-	}
-
-	return threads, nil
-}
-
-func (r ThreadRepo) ListThreadsInReverse(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error) {
-	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-
-	dot := sq.Case().When(
-		"tm.date_posted IS NOT NULL AND tm.undot IS FALSE AND tm.member_id IS NOT NULL",
-		"true",
-	).Else("false")
-
-	whereFavorite := psql.Select("f.thread_id").From("favorite f").LeftJoin("thread t ON t.id = f.thread_id").Where("f.member_id = ?", memberID).OrderBy("t.date_last_posted DESC")
-	whereParticipated := psql.Select("tm.thread_id").From("thread_member tm").LeftJoin("thread t ON t.id = tm.thread_id").Where("tm.member_id = ? AND tm.date_posted IS NOT NULL", memberID).OrderBy("t.date_last_posted DESC")
-
-	query := psql.Select(
-		"t.id",
-		"t.date_last_posted",
-		"t.date_posted",
-		"m.id",
-		"m.name",
-		"l.id",
-		"l.name",
-		"t.subject",
-		"t.posts",
-		"t.views",
-		"tp.body",
-		"t.sticky",
-		"t.locked",
-		"t.legendary",
-	).Column(dot).From("thread t").LeftJoin("member m ON m.id = t.member_id").LeftJoin("member l ON l.id = t.last_member_id").LeftJoin("thread_post tp ON tp.id = t.first_post_id").LeftJoin("thread_member tm ON tm.thread_id = t.id AND tm.member_id = ?", memberID)
-
-	where := query.Where("t.date_last_posted > ?", cursor)
-
-	if ignored {
-		where = where.Where("tm.ignore IS TRUE")
-	} else if favorited {
-		where = where.Where(whereFavorite.Prefix("t.id IN (").Suffix(")"))
-	} else if participated {
-		where = where.Where(whereParticipated.Prefix("t.id IN (").Suffix(")"))
-	}
-
-	order := where.OrderBy("t.date_last_posted ASC").Limit(uint64(limit + 1))
-
-	outerStr, args, err := psql.Select("*").FromSelect(order, "inside").OrderBy("date_last_posted DESC").ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := r.connPool.Query(context.Background(), outerStr, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	var threads []domain.Thread
-	for rows.Next() {
-		var thread domain.Thread
-		var dotted bool
-		err = rows.Scan(
-			&thread.ID,
-			&thread.DateLastPosted,
-			&thread.DatePosted,
-			&thread.MemberID,
-			&thread.MemberName,
-			&thread.LastPosterID,
-			&thread.LastPosterName,
-			&thread.Subject,
-			&thread.NumPosts,
-			&thread.Views,
-			&thread.LastPostText,
-			&thread.Sticky,
-			&thread.Locked,
-			&thread.Legendary,
-			&dotted,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		thread.Dotted = dotted
-		threads = append(threads, thread)
-	}
-
-	return threads, nil
-}
-
 func (r ThreadRepo) PeekPrevious(timestamp *time.Time, memberID int) (bool, error) {
 	query := "SELECT EXISTS(SELECT 1 FROM thread LEFT JOIN thread_member tm on thread.id = tm.thread_id WHERE date_last_posted > $1 AND tm.ignore = false AND tm.member_id = $2)"
 	var exists bool
@@ -512,8 +386,6 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 
 		threads = append(threads, thread)
 	}
-
-	fmt.Println(rowsLeft, total, len(threads))
 
 	var (
 		prevCursor string // cursor we return when there is a previous page

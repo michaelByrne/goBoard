@@ -17,4 +17,6 @@ type ThreadPost struct {
 	IsAdmin       bool
 	MemberName    string
 	Position      int
+	Collapsed     int
+	RowNumber     int
 }

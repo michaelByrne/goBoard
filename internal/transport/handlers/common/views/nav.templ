@@ -14,7 +14,7 @@ templ UpperNav() {
 	</ul>
 }
 
-templ LowerNav(cursors domain.Cursors) {
+templ LowerThreadNav(cursors domain.Cursors) {
 	<ul class="nav bottom clear" id="nav-bottom">
 		<li id="home" style="cursor: pointer"><a href="/" hx-boost="true">back to the shit</a></li>
 		if cursors.Prev != "" {
@@ -27,5 +27,14 @@ templ LowerNav(cursors domain.Cursors) {
 				<a hx-get={ fmt.Sprintf("/threads?prev=%s&next=%s&dir=next", cursors.Prev, cursors.Next) } hx-target="#data" hx-push-url="true">next</a>
 			</li>
 		}
+	</ul>
+}
+
+templ LowerPostNav() {
+	<ul class="nav bottom clear shiftup" id="nav-bottom">
+		<li id="style=cursor: pointer"><a href="/" hx-boost="true">back to the shit</a></li>
+		<li style="cursor: pointer">
+			<a href="#">load more posts</a>
+		</li>
 	</ul>
 }

@@ -1,0 +1,9 @@
+package views 
+
+import "fmt"
+
+templ Thread(posts templ.Component, threadID int) {
+	<div id={ fmt.Sprintf("view_%d", threadID) }>
+		@posts
+	</div>
+}

@@ -12,12 +12,11 @@ type ThreadService interface {
 	GetPostByID(id int) (*domain.ThreadPost, error)
 	GetThreadByID(limit, offset, id, memberID int) (*domain.Thread, error)
 	NewThread(memberName, memberIP, body, subject string) (int, error)
-	GetThreadsWithCursorForward(limit int, firstPage bool, cursor *time.Time, memberID int) (*domain.SiteContext, error)
-	GetThreadsWithCursorReverse(limit int, cursor *time.Time, memberID int, favorited, participated, ignored bool) (*domain.SiteContext, error)
 	ConvertPostBodyBbcodeToHtml(body string) (*template.HTML, error)
 	UndotThread(ctx context.Context, memberID, threadID int) error
 	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
 	ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error)
+	GetCollapsibleThreadByID(ctx context.Context, viewable, threadID, memberID int) (*domain.Thread, error)
 }
 
 type MemberService interface {

@@ -2,17 +2,18 @@ package views
 
 import "goBoard/internal/core/domain"
 import "strconv"
+import "fmt"
 
 import common "goBoard/internal/transport/handlers/common/views"
 
-templ Home(content templ.Component) {
+templ Home(content templ.Component, title, username string) {
 	@Head()
 	<body>
 		<div id="content">
 			<div class="pad">
 				<div class="clear" id="wrap_l56761">
-					<h3 class="title">elitism. secrecy. tradition.</h3>
-					<div id="auth"></div>
+					<h3 class="title">{ title }</h3>
+					@Auth(username)
 					<div class="clear"></div>
 					@common.UpperNav()
 					<div id="data">
@@ -29,7 +30,7 @@ templ Threads(threads []domain.Thread, cursors domain.Cursors) {
 		for _, thread := range threads {
 			@ThreadRow(thread)
 		}
-        @common.LowerNav(cursors)
+		@common.LowerThreadNav(cursors)
 	</div>
 }
 
@@ -42,12 +43,23 @@ templ ThreadRow(thread domain.Thread) {
 			</li>
 			<li class="subject">
 				<div class="extra">»&nbsp;</div>
-				<a>{ thread.Subject }</a>
+				<a href={ templ.SafeURL(fmt.Sprintf("/thread/view/%d", thread.ID)) } hx-boost="true">{ thread.Subject }</a>
 			</li>
 			<li class="posts">{ strconv.Itoa(thread.NumPosts) }</li>
 			<li class="lastpost">
 				<a href="/member/view/{{ .LastPosterName }}" class="memberlink">{ thread.LastPosterName }</a> on { thread.DateLastPosted.Format("Mon Jan 2, 2006 03:04 pm") }
 			</li>
 		</ul>
+	</div>
+}
+
+templ Auth(username string) {
+	<div id="auth">
+		logged in as&nbsp;
+		<h4 style="display: inline">
+			<a href="/member/edit" style="color: white">{ username }</a>
+		</h4>
+		<br/>
+		<a href={ templ.SafeURL(fmt.Sprintf("/logout/%s", username)) } style="color: white">logout</a>
 	</div>
 }

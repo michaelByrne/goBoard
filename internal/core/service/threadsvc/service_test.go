@@ -1,26 +1,18 @@
 package threadsvc
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/service/mocks"
 	"testing"
-	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestNewThreadService(t *testing.T) {
 	l := zap.NewNop()
 	sugar := l.Sugar()
-
-	mayFirst := time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC)
-	maySecond := time.Date(2020, 5, 2, 0, 0, 0, 0, time.UTC)
-	mayThird := time.Date(2020, 5, 3, 0, 0, 0, 0, time.UTC)
-	mayFourth := time.Date(2020, 5, 4, 0, 0, 0, 0, time.UTC)
-	mayFifth := time.Date(2020, 5, 5, 0, 0, 0, 0, time.UTC)
-	maySixth := time.Date(2020, 5, 6, 0, 0, 0, 0, time.UTC)
-	maySeventh := time.Date(2020, 5, 7, 0, 0, 0, 0, time.UTC)
 
 	t.Run("successfully gets a thread by id", func(t *testing.T) {
 		mockThreadRepo := &mocks.ThreadRepoMock{
@@ -166,109 +158,5 @@ func TestNewThreadService(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, expectedThreadArg, actualThreadArg)
-	})
-
-	t.Run("successfully gets a list of threads by page forward", func(t *testing.T) {
-		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsByCursorForwardFunc: func(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error) {
-				return []domain.Thread{
-					{
-						ID:             1,
-						DateLastPosted: &maySecond,
-						Subject:        "Hello, BCO",
-					},
-					{
-						ID:             2,
-						DateLastPosted: &mayFirst,
-						Subject:        "ThreadPost a picture of yourself thread",
-					},
-					{
-						ID:             3,
-						DateLastPosted: &mayFifth,
-						Subject:        "Who peed in the pool",
-					},
-				}, nil
-			},
-			PeekPreviousFunc: func(timestamp *time.Time, memberID int) (bool, error) {
-				return false, nil
-			},
-		}
-
-		mockMemberRepo := &mocks.MemberRepoMock{}
-
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
-
-		site, err := svc.GetThreadsWithCursorForward(2, false, &mayThird, 1)
-		require.NoError(t, err)
-
-		assert.Len(t, site.ThreadPage.Threads, 2)
-		assert.Equal(t, 1, site.ThreadPage.Threads[0].ID)
-		assert.Equal(t, 2, site.ThreadPage.Threads[1].ID)
-		assert.Equal(t, "Hello, BCO", site.ThreadPage.Threads[0].Subject)
-		assert.Equal(t, "ThreadPost a picture of yourself thread", site.ThreadPage.Threads[1].Subject)
-		assert.Equal(t, &maySecond, site.ThreadPage.Threads[0].DateLastPosted)
-		assert.Equal(t, &mayFirst, site.ThreadPage.Threads[1].DateLastPosted)
-		assert.Equal(t, false, site.ThreadPage.HasPrevPage)
-		assert.Equal(t, &mayFirst, site.PageCursor)
-		assert.Equal(t, &maySecond, site.PrevPageCursor)
-	})
-
-	t.Run("successfully gets a list of threads by page reverse", func(t *testing.T) {
-		mockThreadRepo := &mocks.ThreadRepoMock{
-			ListThreadsInReverseFunc: func(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error) {
-				return []domain.Thread{
-					{
-						ID:             1,
-						DateLastPosted: &maySeventh,
-						Subject:        "Hello, BCO",
-					},
-					{
-						ID:             2,
-						DateLastPosted: &maySixth,
-						Subject:        "ThreadPost a picture of yourself thread",
-					},
-					{
-						ID:             3,
-						DateLastPosted: &mayFifth,
-						Subject:        "Who peed in the pool",
-					},
-					{
-						ID:             4,
-						DateLastPosted: &mayFourth,
-						Subject:        "soup's on!",
-					},
-					{
-						ID:             5,
-						DateLastPosted: &mayThird,
-						Subject:        "I'm in outeep space",
-					},
-					{
-						ID:             6,
-						DateLastPosted: &maySecond,
-						Subject:        "new experiences thread",
-					},
-					{
-						ID:             7,
-						DateLastPosted: &mayFirst,
-						Subject:        "thread for eataly",
-					},
-				}, nil
-			},
-			PeekPreviousFunc: func(timestamp *time.Time, memberID int) (bool, error) {
-				return true, nil
-			},
-		}
-
-		mockMemberRepo := &mocks.MemberRepoMock{}
-
-		svc := NewThreadService(mockThreadRepo, mockMemberRepo, sugar, 2)
-
-		site, err := svc.GetThreadsWithCursorReverse(3, &mayFourth, 1, false, false, false)
-		require.NoError(t, err)
-
-		assert.Len(t, site.ThreadPage.Threads, 2)
-		assert.Equal(t, &maySixth, site.PageCursor)
-		assert.True(t, site.ThreadPage.HasPrevPage)
-		assert.Equal(t, &maySeventh, site.PrevPageCursor)
 	})
 }

@@ -4,10 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"goBoard/internal/core/service/authenticationsvc"
+	"goBoard/internal/core/service/membersvc"
 	"goBoard/internal/core/service/threadsvc"
+	"goBoard/internal/repos/authenticationrepo"
 	"goBoard/internal/repos/memberrepo"
 	"goBoard/internal/repos/threadrepo"
+	"goBoard/internal/transport/handlers/authentication"
 	"goBoard/internal/transport/handlers/threads"
+	"goBoard/internal/transport/middlewares/jwtauth"
+	"goBoard/internal/transport/middlewares/session"
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +21,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/sessions"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -52,14 +61,26 @@ func run(
 
 	threadRepo := threadrepo.NewThreadRepo(pool, 50)
 	memberRepo := memberrepo.NewMemberRepo(pool)
+	authRepo := authenticationrepo.NewAuthenticationRepo(pool)
+
+	tokenAuth := jwtauth.New("HS256", []byte("some-secret-key"), nil)
 
 	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, 50)
+	memberService := membersvc.NewMemberService(memberRepo, sugar)
+	authService := authenticationsvc.NewAuthenticationService(authRepo, memberRepo, sugar)
 
-	threadsHandler := threads.NewHandler(threadService, sugar)
+	threadsHandler := threads.NewHandler(threadService, memberService, tokenAuth, sugar)
+	authHandler := authentication.NewHandler(authService)
 
 	r := chi.NewRouter()
 
+	store := sessions.NewCookieStore([]byte("some-secret-key"))
+	r.Use(session.SessionMiddleware(store))
+
+	r.Use(middleware.RealIP)
+
 	threadsHandler.Register(r)
+	authHandler.Register(r)
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
 

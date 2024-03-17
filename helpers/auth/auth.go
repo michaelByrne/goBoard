@@ -1,11 +1,13 @@
 package auth
 
 import (
-	v5claims "github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
 	"goBoard/internal/core/domain"
+	"log"
 	"net/http"
 	"time"
+
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 const (
@@ -13,56 +15,48 @@ const (
 	jwtSecretKey          = "some-secret-key"
 )
 
-func GetJWTSecret() string {
-	return jwtSecretKey
-}
-
-type Claims struct {
-	Name string `json:"name"`
-	v5claims.RegisteredClaims
-}
-
-func GetJWTClaims(c echo.Context) v5claims.Claims {
-	return Claims{}
-}
-
-func GenerateTokensAndSetCookies(member *domain.Member, c echo.Context, timeout time.Duration) error {
+func GenerateTokenAndSetCookies(member *domain.Member, w http.ResponseWriter, timeout time.Duration) error {
 	accessToken, exp, err := generateAccessToken(member, timeout)
 	if err != nil {
 		return err
 	}
 
-	setTokenCookie(accessTokenCookieName, accessToken, exp, c)
-	setUserCookie(member, exp, c)
+	setTokenCookie(accessTokenCookieName, accessToken, exp, w)
+	setUserCookie(member, exp, w)
 
 	return nil
 }
 
 func generateAccessToken(member *domain.Member, timeout time.Duration) (string, time.Time, error) {
-	expirationTime := time.Now().Add(1 * timeout)
+	exp := time.Now().Add(1 * timeout)
 
-	return generateToken(member, expirationTime, []byte(GetJWTSecret()))
+	return generateToken(member, exp, []byte(jwtSecretKey))
 }
 
 func generateToken(member *domain.Member, expirationTime time.Time, secret []byte) (string, time.Time, error) {
-	claims := &Claims{
-		Name: member.Name,
-		RegisteredClaims: v5claims.RegisteredClaims{
-			// In JWT, the expiry time is expressed as unix milliseconds.
-			ExpiresAt: v5claims.NewNumericDate(expirationTime),
-		},
-	}
+	t := jwt.New()
+	t.Set(jwt.SubjectKey, `goBoard`)
+	t.Set(jwt.AudienceKey, `goBoard Users`)
+	t.Set(jwt.IssuedAtKey, time.Now())
+	t.Set(jwt.ExpirationKey, expirationTime)
+	t.Set("member", member.Name)
+	//
+	//key, err := rsa.GenerateKey(bytes.NewReader(secret), 2048)
+	//if err != nil {
+	//	log.Printf("failed to generate private key: %s", err)
+	//	return "", time.Now(), err
+	//}
 
-	token := v5claims.NewWithClaims(v5claims.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(secret)
+	signed, err := jwt.Sign(t, jwt.WithKey(jwa.HS256, secret))
 	if err != nil {
+		log.Printf("failed to sign token: %s", err)
 		return "", time.Now(), err
 	}
-	return tokenString, expirationTime, nil
+
+	return string(signed), expirationTime, nil
 }
 
-func setTokenCookie(name, token string, expiration time.Time, c echo.Context) {
+func setTokenCookie(name, token string, expiration time.Time, w http.ResponseWriter) {
 	cookie := new(http.Cookie)
 	cookie.Name = name
 	cookie.Value = token
@@ -70,18 +64,15 @@ func setTokenCookie(name, token string, expiration time.Time, c echo.Context) {
 	cookie.Path = "/"
 	cookie.HttpOnly = true
 
-	c.SetCookie(cookie)
+	http.SetCookie(w, cookie)
 }
 
-func setUserCookie(member *domain.Member, expiration time.Time, c echo.Context) {
+func setUserCookie(member *domain.Member, expiration time.Time, w http.ResponseWriter) {
 	cookie := new(http.Cookie)
 	cookie.Name = "user"
 	cookie.Value = member.Name
 	cookie.Expires = expiration
 	cookie.Path = "/"
-	c.SetCookie(cookie)
-}
 
-func JWTErrorChecker(c echo.Context, err error) error {
-	return c.Redirect(http.StatusMovedPermanently, c.Echo().Reverse("login"))
+	http.SetCookie(w, cookie)
 }

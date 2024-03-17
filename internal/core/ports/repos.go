@@ -16,14 +16,11 @@ type ThreadRepo interface {
 	ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error)
 	SaveThread(thread domain.Thread) (int, error)
 	ListPostsForThread(limit, offset, id, memberID int) ([]domain.ThreadPost, error)
-	ListPostsForThreadByCursor(limit, id int, cursor *time.Time) ([]domain.ThreadPost, error)
-	ListThreadsByCursorForward(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error)
-	ListThreadsByCursorReverse(limit int, cursor *time.Time, memberID int) ([]domain.Thread, error)
 	PeekPrevious(timestamp *time.Time, memberID int) (bool, error)
 	UndotThread(ctx context.Context, memberID, threadID int) error
 	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
-	ListThreadsInReverse(limit int, cursor *time.Time, memberID int, ignored, favorited, participated bool) ([]domain.Thread, error)
 	ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error)
+	ListPostsCollapsible(ctx context.Context, toShow, threadID, memberID int) (posts []domain.ThreadPost, collapsed int, err error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo

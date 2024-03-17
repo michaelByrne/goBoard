@@ -10,7 +10,9 @@ import "context"
 import "io"
 import "bytes"
 
-func Head() templ.Component {
+import "goBoard/internal/transport/handlers/threads/views"
+
+func Login() templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -23,7 +25,11 @@ func Head() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<head><link rel=\"stylesheet\" href=\"/static/css/core.css\"><script type=\"text/javascript\" src=\"/static/js/htmx.min.js\"></script><script type=\"text/javascript\" src=\"/static/js/hyperscript.min.js\"></script><title>elitism. secrecy. tradition.</title></head>")
+		templ_7745c5c3_Err = views.Head().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><form method=\"post\" name=\"form\" hx-boost=\"true\" class=\"coreform\" id=\"form\" action=\"/login\"><fieldset><legend>Login</legend><ol><li><label id=\"label_subject\" for=\"name\">Name:</label> <input type=\"text\" name=\"name\" id=\"name\" value=\"\" style=\"width:400px;\" maxlength=\"200\" notnull=\"Name, please\" class=\"validate_form\"><div class=\"clear\"></div></li><li><label id=\"label_subject\" for=\"pass\">Password:</label> <input name=\"pass\" id=\"pass\" style=\"width: 400px\" notnull=\"Password, please\" class=\"validate_form\"><div class=\"clear\"></div></li></ol></fieldset><input type=\"submit\" class=\"submit\" value=\"login\"></form></body>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

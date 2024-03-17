@@ -1,4 +1,10 @@
 {{ define "response-form" }}
+<span x-data="{ 
+    bbopen: false,
+    toggleBBCode() {
+        this.bbopen = !this.bbopen;
+    } 
+}">
     <div class="clear"></div>
     <div id="response_form"></div>
     <form method="post" name="form" id="form" class="coreform" action="/thread/reply">
@@ -20,7 +26,7 @@
         <input type="submit" class="submit" value="say that shit" id="submit">
         <input type="button" name="preview" id="preview" value="preview">
         <sup>
-            <a href="javascript:;" onclick="$('#bbcode').slideToggle()">[help]</a>
+            <a href="javascript:;" @click="toggleBBCode">[help]</a>
         </sup>
     </form>
     <script type="text/javascript">
@@ -29,7 +35,7 @@
         })
         document.forms['form'].addEventListener('submit', captureNewThreadPostSubmit);
     </script>
-    <div id="bbcode" class="view" style="font-size: 0.85em; display: none;">
+    <div id="bbcode" class="view" style="font-size: 0.85em; display: none;" x-show="bbopen">
         <pre><h4>TAGS:</h4>
         http://www.google.com/ &lt;-- automatic link
         [url]http://www.google.com/[/url]

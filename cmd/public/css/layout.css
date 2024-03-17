@@ -124,3 +124,8 @@
 /* Start Footer */
 #version { text-align: right; }
 /* End Footer */
+
+.fades_in.htmx-swapping {
+  opacity: 0;
+  transition: opacity 1s ease-in;
+}

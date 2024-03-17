@@ -1,0 +1,165 @@
+package views
+
+import "goBoard/internal/transport/handlers/common"
+import "strconv"
+import "fmt"
+
+templ Posts(posts []common.Post) {
+	<span id="posts">
+		<span id="post_data" _="init set #idx's @value to 1">
+			if posts[0].RowNumber > 1 {
+				@Uncollapse(posts[0].RowNumber - 1)
+			}
+			for _, post := range posts {
+				@Post(post, post.RowNumber)
+			}
+		</span>
+		@LowerPostNav()
+		@ResponseForm(posts[0].MemberID, posts[0].ParentID, "thread")
+	</span>
+}
+
+templ Uncollapse(collapsed int) {
+	<div class="post clear" id="uncollapse">
+		<ul class="postbody odd collapse">
+			<span id="uncollapse_links">
+				<a id="uncollapse_some">show <span id="uncollapse_more_counter">{ fmt.Sprintf("%d", collapsed) }</span> previous posts</a>
+			</span>
+		</ul>
+	</div>
+}
+
+templ Post(post common.Post, idx int) {
+	if !post.Preview {
+		<div class="post" _="init increment #idx's @value">
+			<ul class="view">
+				<li class="info even posthead">
+					<div class="postinfo">
+						<a href="#" class="memberlink">{ post.MemberName }</a> posted this on { post.Date }
+					</div>
+					<div class="controls">
+						&nbsp;»
+						<a href="javascript:" id="{{ .ID }}_quote">quote</a>
+					</div>
+					<div class="count">
+						{ strconv.Itoa(idx) }
+					</div>
+				</li>
+				<li class="postbody odd">
+					{ post.Body }
+				</li>
+			</ul>
+		</div>
+	} else {
+		<div class="post">
+			<ul class="view">
+				<li class="info even posthead">
+					<div class="postinfo">
+						<a href="#" class="memberlink">{ post.MemberName }</a> posted this on { post.Date }
+					</div>
+					<div class="controls">
+						&nbsp;»
+						<a href="javascript:" id="{{ .ID }}_quote">quote</a>
+					</div>
+					<div class="count">
+						{ strconv.Itoa(idx) }
+					</div>
+				</li>
+				<li class="postbody odd">
+					{ post.Body }
+				</li>
+			</ul>
+		</div>
+	}
+}
+
+templ ResponseForm(memberID, threadID int, kind string) {
+	<span class="response_form">
+		<div class="clear"></div>
+		<div id="response_form"></div>
+		<form method="post" name="form" id="form" class="coreform" hx-post={ fmt.Sprintf("/%s/new", kind) }>
+			<input type="hidden" name="threadId" value={ strconv.Itoa(threadID) }/>
+			<input type="hidden" id="idx" name="idx"/>
+			<fieldset>
+				<legend>reply</legend>
+				<ol>
+					<li>
+						<label id="label_body" for="body">Body: </label>
+						<textarea
+							id="body"
+							name="body"
+							style="float: left; height: 100px; width: 500px;"
+						></textarea>
+						<label for="memberName">Member Name:</label>
+						<textarea
+							id="member_name"
+							name="memberName"
+							style="float: left; height: 20px; width: 200px;"
+						></textarea>
+						<div class="clear"></div>
+					</li>
+				</ol>
+			</fieldset>
+			<input
+				type="submit"
+				class="submit"
+				hx-post="/post"
+				hx-target="#post_data"
+				hx-swap="beforeend"
+				value="say that shit"
+				id="submit"
+				_="on click remove #response_form's children then put '' into #body's value"
+			/>
+			<input type="button" name="preview" id="preview" value="preview" hx-post="/preview" hx-target="#response_form" hx-swap="afterbegin"/>
+			<sup>
+				<a href="javascript:;">[help]</a>
+			</sup>
+		</form>
+		<div id="bbcode" class="view" style="font-size: 0.85em; display: none;" hidden>
+			<pre>
+				<h4>TAGS:</h4>
+				http://www.google.com/ &lt;-- automatic link
+				<br/>
+				[url]http://www.google.com/[/url]
+				<br/>
+				[url=http://www.google.com/]with my own link text[/url]
+				<br/>
+				[img]http://www.google.com/intl/en_ALL/images/logo.gif[/img]
+				<br/>
+				[u]underline[/u]
+				<br/>
+				[strong]bold[/strong]
+				<br/>
+				[b]bold[/b]
+				<br/>
+				[i]italic[/i]
+				<br/>
+				[em]italic[/em]
+				<br/>
+				[strike]strikethrough[/strike]
+				<br/>
+				[code]like pre[/code]
+				<br/>
+				[sub]subscript[/sub]
+				<br/>
+				[sup]superscript[/sup]
+				<br/>
+				[soundcloud]http://soundcloud.com/goingslowly/047-railroad-lullabye[/soundcloud]
+				<br/>
+				[youtube]http://youtube.com/watch?v=WAwLYJYsa0A[/youtube] or [youtube]http://youtu.be/L8xXb-P4wZY[/youtube]
+				<br/>
+				[vimeo]http://vimeo.com/2467457[/vimeo]
+				<br/>
+				[tweet]https://twitter.com/dril/status/134787490526658561[/tweet]
+				<br/>
+				[quote]quote[/quote]
+				<br/>
+				[spoiler]spoiler[/spoiler]
+				<br/>
+				[trigger]trigger[/trigger]
+				<br/>
+			</pre>
+			<div class="clear"></div>
+		</div>
+	</span>
+}

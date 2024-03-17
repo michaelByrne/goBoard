@@ -1,72 +1,40 @@
 package session
 
 import (
+	"context"
 	"fmt"
-	"github.com/gorilla/context"
+	"net/http"
+
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
-type (
-	// Config defines the config for Session middleware.
-	Config struct {
-		// Skipper defines a function to skip middleware.
-		Skipper middleware.Skipper
-
-		// Session store.
-		// Required.
-		Store sessions.Store
-	}
-)
+type SessionKey string
 
 const (
-	key = "_session_store"
+	key SessionKey = "_session_store"
 )
 
-var (
-	// DefaultConfig is the default Session middleware config.
-	DefaultConfig = Config{
-		Skipper: middleware.DefaultSkipper,
-	}
-)
-
-// Get returns a named session.
-func Get(name string, c echo.Context) (*sessions.Session, error) {
-	s := c.Get(key)
+func Get(name string, r *http.Request) (*sessions.Session, error) {
+	s := r.Context().Value(key)
 	if s == nil {
 		return nil, fmt.Errorf("%q session store not found", key)
 	}
+
 	store := s.(sessions.Store)
-	return store.Get(c.Request(), name)
-}
-
-// Middleware returns a Session middleware.
-func Middleware(store sessions.Store) echo.MiddlewareFunc {
-	c := DefaultConfig
-	c.Store = store
-	return MiddlewareWithConfig(c)
-}
-
-// MiddlewareWithConfig returns a Sessions middleware with config.
-// See `Middleware()`.
-func MiddlewareWithConfig(config Config) echo.MiddlewareFunc {
-	// Defaults
-	if config.Skipper == nil {
-		config.Skipper = DefaultConfig.Skipper
-	}
-	if config.Store == nil {
-		panic("echo: session middleware requires store")
+	session, err := store.Get(r, name)
+	if err != nil {
+		return nil, err
 	}
 
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if config.Skipper(c) {
-				return next(c)
-			}
-			defer context.Clear(c.Request())
-			c.Set(key, config.Store)
-			return next(c)
-		}
+	return session, nil
+}
+
+func SessionMiddleware(store sessions.Store) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, key, store)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }

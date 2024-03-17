@@ -1,4 +1,4 @@
-.coreform fieldset { margin-top: 10px; }
+.coreform fieldset { margin-top: 10px;  border-top: 1px solid #c3dae4; }
 
 .coreform legend
 {
