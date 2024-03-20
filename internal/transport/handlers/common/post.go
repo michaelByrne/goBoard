@@ -23,7 +23,7 @@ func ThreadToPosts(thread domain.Thread) []Post {
 			Body:       p.Body,
 			ParentID:   thread.ID,
 			MemberID:   p.MemberID,
-			RowNumber:  p.RowNumber,
+			RowNumber:  p.RowNumber + 1,
 		}
 	}
 	return posts

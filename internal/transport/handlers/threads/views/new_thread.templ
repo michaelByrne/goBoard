@@ -1,0 +1,50 @@
+package views
+
+import commonviews "goBoard/internal/transport/handlers/common/views"
+
+templ NewThreadTitleGroup() {
+	<h3>Create New Thread</h3>
+}
+
+templ NewThreadForm(username string) {
+	<div class="hr">
+		<hr/>
+	</div>
+	<div id="response_form"></div>
+	<form method="post" name="form" class="coreform" id="form" hx-boost="true" action="/thread/create">
+		@commonviews.Account(username)
+		<fieldset>
+			<legend>Thread Details</legend>
+            <input type="hidden" name="idx" value="1"/>
+			<ol>
+				<li>
+					<label id="label_subject" for="subject">Subject:</label>
+					<input
+						type="text"
+						name="subject"
+						id="subject"
+						value=""
+						style="width:400px;"
+						maxlength="200"
+						notnull="Please enter a subject."
+						class="validate_form"
+					/>
+					<div class="clear"></div>
+				</li>
+				<li>
+					<label id="label_body" for="body">Body:</label>
+					<textarea
+						name="body"
+						id="body"
+						style="float:left;height:100px;width:600px;"
+						notnull="Please enter a post body."
+						class="validate_form"
+					></textarea>
+					<div class="clear"></div>
+				</li>
+			</ol>
+		</fieldset>
+		<input type="submit" class="submit" value="say that shit"/>
+		<input type="button" name="preview" id="preview" value="preview" hx-post="/preview" hx-target="#response_form" hx-swap="afterbegin"/>
+	</form>
+}

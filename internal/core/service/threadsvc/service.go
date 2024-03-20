@@ -98,8 +98,8 @@ func (s ThreadService) GetThreadByID(limit, offset, id, memberID int) (*domain.T
 	return thread, nil
 }
 
-func (s ThreadService) ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error) {
-	threads, cursors, err := s.threadRepo.ListThreads(ctx, cursors, limit)
+func (s ThreadService) ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error) {
+	threads, cursors, err := s.threadRepo.ListThreads(ctx, cursors, limit, memberID)
 	if err != nil {
 		s.logger.Errorf("error getting threads: %v", err)
 		return nil, domain.Cursors{}, err
@@ -203,6 +203,14 @@ func (s ThreadService) UndotThread(ctx context.Context, memberID, threadID int) 
 	return s.threadRepo.UndotThread(ctx, memberID, threadID)
 }
 
+func (s ThreadService) DotThread(ctx context.Context, memberID, threadID int) error {
+	return s.threadRepo.DotThread(ctx, memberID, threadID)
+}
+
 func (s ThreadService) ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error {
 	return s.threadRepo.ToggleIgnore(ctx, memberID, threadID, ignore)
+}
+
+func (s ThreadService) ToggleDot(ctx context.Context, memberID, threadID int) (bool, error) {
+	return s.threadRepo.ToggleDot(ctx, memberID, threadID)
 }

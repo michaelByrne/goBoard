@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -29,8 +31,8 @@ func main() {
 	//b.Queue("INSERT INTO member (id, name, pass, postalcode, email_signup, secret, ip) VALUES ($1, $2, $3, $4, $5, $6, $7)", 2, "elliott", "test2", "97217", "admin@admin.net", "admin", "172.0.0.1")
 
 	// for i := 1; i < 150; i++ {
-	// 	dateLastPosted := time.Date(2021, 1, i, 0, 0, 0, 0, time.UTC)
-	// 	b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 1, 1, dateLastPosted.Format(time.RFC3339Nano))
+	// 	//dateLastPosted := time.Date(2021, 1, i, 0, 0, 0, 0, time.UTC)
+	// 	b.Queue("INSERT INTO thread (subject, member_id, last_member_id) VALUES ($1, $2, $3)", DATA[i%30], 1, 1)
 	// }
 
 	// for i := 1; i < 50; i++ {
@@ -38,9 +40,11 @@ func main() {
 	// 	b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 2, 1, dateLastPosted.Format(time.RFC3339Nano))
 	// }
 
-	for i := 555; i < 565; i++ {
-		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 1, i, DATA[i%30], "172.0.0.1")
-		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip) VALUES ($1, $2, $3, $4)", 2, i, DATA[i%30], "172.0.0.1")
+	for i := 4; i < 149; i++ {
+		postDate := randDate()
+		b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 1, 1, postDate.Format(time.RFC3339Nano))
+		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip, date_posted) VALUES ($1, $2, $3, $4, $5)", 1, i, DATA[i%30], "172.0.0.1", postDate.Format(time.RFC3339Nano))
+		b.Queue("UPDATE thread SET date_last_posted = $1 WHERE id = $2", postDate.Format(time.RFC3339Nano), i)
 	}
 
 	results := begin.SendBatch(context.Background(), b)
@@ -57,4 +61,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+}
+
+func randDate() time.Time {
+	min := time.Date(2024, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	max := time.Now().Unix()
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	return time.Unix(sec, 0)
 }

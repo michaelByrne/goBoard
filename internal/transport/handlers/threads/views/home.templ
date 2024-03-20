@@ -6,13 +6,15 @@ import "fmt"
 
 import common "goBoard/internal/transport/handlers/common/views"
 
-templ Home(content templ.Component, title, username string) {
+templ Home(content templ.Component, titleGroup templ.Component, username string) {
 	@Head()
 	<body>
 		<div id="content">
 			<div class="pad">
 				<div class="clear" id="wrap_l56761">
-					<h3 class="title">{ title }</h3>
+					<span id="titlegroup">
+						@titleGroup
+					</span>
 					@Auth(username)
 					<div class="clear"></div>
 					@common.UpperNav()
@@ -23,6 +25,10 @@ templ Home(content templ.Component, title, username string) {
 			</div>
 		</div>
 	</body>
+}
+
+templ ThreadsTitleGroup(title string) {
+	<h3>{ title }</h3>
 }
 
 templ Threads(threads []domain.Thread, cursors domain.Cursors) {
@@ -42,7 +48,11 @@ templ ThreadRow(thread domain.Thread) {
 				<a class="memberlink">{ thread.MemberName }</a>
 			</li>
 			<li class="subject">
-				<div class="extra">»&nbsp;</div>
+				if thread.Dotted {
+					<div class="extra">•&nbsp;»&nbsp;</div>
+				} else {
+					<div class="extra">»&nbsp;</div>
+				}
 				<a href={ templ.SafeURL(fmt.Sprintf("/thread/view/%d", thread.ID)) } hx-boost="true">{ thread.Subject }</a>
 			</li>
 			<li class="posts">{ strconv.Itoa(thread.NumPosts) }</li>

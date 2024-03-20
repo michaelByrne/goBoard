@@ -26,7 +26,7 @@ func UpperNav() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<ul class=\"nav top\"><div class=\"setdown\"><li><a href=\"/\" title=\"back to the home page\" hx-boost=\"true\">threads</a></li><li><a href=\"/message/list/1?reverse=false\" title=\"view your messages\">messages</a></li><li><a href=\"/thread/create\" title=\"create a new thread\">new thread</a></li><li><a href=\"/message/create\" title=\"send a message to another member\">new message</a></li></div></ul>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<ul class=\"nav top\"><div class=\"setdown\"><li><a href=\"/\" title=\"back to the home page\" hx-boost=\"true\">threads</a></li><li><a href=\"/message/list/1?reverse=false\" title=\"view your messages\">messages</a></li><li><a href=\"/thread/create\" hx-boost=\"true\" title=\"create a new thread\">new thread</a></li><li><a href=\"/message/create\" title=\"send a message to another member\">new message</a></li></div></ul>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

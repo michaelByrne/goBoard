@@ -49,4 +49,4 @@ FROM
 WHERE
     cp.original_row_num <= $3 -- Filter visible posts
 ORDER BY
-    cp.date_posted ASC, cp.id DESC;
+    cp.date_posted ASC, cp.id ASC; -- Order by date_posted and id to ensure consistent ordering of posts with the same date_posted

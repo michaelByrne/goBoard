@@ -304,6 +304,27 @@ func (r ThreadRepo) UndotThread(ctx context.Context, memberID, threadID int) err
 	return nil
 }
 
+func (r ThreadRepo) DotThread(ctx context.Context, memberID, threadID int) error {
+	query := "UPDATE thread_member SET undot=false WHERE thread_id=$1 AND member_id=$2"
+	_, err := r.connPool.Exec(ctx, query, threadID, memberID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r ThreadRepo) ToggleDot(ctx context.Context, memberID, threadID int) (bool, error) {
+	query := "UPDATE thread_member SET undot=NOT undot WHERE thread_id=$1 AND member_id=$2 RETURNING undot"
+	var dot bool
+	err := r.connPool.QueryRow(ctx, query, threadID, memberID).Scan(&dot)
+	if err != nil {
+		return false, err
+	}
+
+	return dot, nil
+}
+
 func (r ThreadRepo) ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error {
 	query := "UPDATE thread_member SET ignore=$3 WHERE thread_id=$1 AND member_id=$2"
 	_, err := r.connPool.Exec(ctx, query, threadID, memberID, ignore)
@@ -314,43 +335,50 @@ func (r ThreadRepo) ToggleIgnore(ctx context.Context, memberID, threadID int, ig
 	return nil
 }
 
-func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error) {
+func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error) {
 	if cursors.Next != "" && cursors.Prev != "" {
 		return nil, domain.Cursors{}, errors.New("two cursors cannot be provided at the same time")
 	}
 
 	values := make([]interface{}, 0, 4)
 	rowsLeftQuery := "SELECT COUNT(*) FROM thread t"
-	pagination := "INNER JOIN member m ON m.id = t.member_id"
+	pagination := `INNER JOIN member m ON m.id = t.member_id 
+				   INNER JOIN member l ON l.id = t.last_member_id 
+				   INNER JOIN thread_post tp ON tp.id = t.first_post_id 
+				   LEFT OUTER JOIN thread_member tm ON tm.thread_id = t.id AND tm.member_id = $2`
 
 	// Going forward
 	if cursors.Next != "" {
-		rowsLeftQuery += " WHERE t.date_last_posted < $1"
-		pagination += " WHERE t.date_last_posted < $1 ORDER BY date_last_posted DESC LIMIT $2"
-		values = append(values, cursors.Next, limit)
+		rowsLeftQuery += " WHERE t.date_last_posted < $3"
+		pagination += " WHERE t.date_last_posted < $3 ORDER BY date_last_posted DESC LIMIT $1"
+		values = append(values, limit, memberID, cursors.Next)
 	}
 
 	// Going backward
 	if cursors.Prev != "" {
-		rowsLeftQuery += " WHERE t.date_last_posted > $1"
-		pagination += " WHERE t.date_last_posted > $1 ORDER BY date_last_posted ASC LIMIT $2"
-		values = append(values, cursors.Prev, limit)
+		rowsLeftQuery += " WHERE t.date_last_posted > $3"
+		pagination += " WHERE t.date_last_posted > $3 ORDER BY date_last_posted ASC LIMIT $1"
+		values = append(values, limit, memberID, cursors.Prev)
 	}
 
 	// No cursors: Going forward from the beginning
 	if cursors.Next == "" && cursors.Prev == "" {
 		pagination += " ORDER BY t.date_last_posted DESC LIMIT $1"
-		values = append(values, limit)
+		values = append(values, limit, memberID)
 	}
 
 	stmt := fmt.Sprintf(`
 		WITH t AS (
-			SELECT t.id, m.name, t.date_last_posted, t.subject, t.date_posted, t.posts, t.views FROM thread t %s
+			SELECT t.id, m.name, t.date_last_posted, t.subject, t.date_posted, t.posts, t.views, l.name as last_poster_name,   
+			(CASE
+				WHEN tm.date_posted IS NOT null AND tm.undot IS false AND tm.member_id IS NOT null THEN true
+				ELSE false END) as dot FROM thread t %s
 		)
 		SELECT id, name, date_last_posted, subject, 
-	    date_posted, posts, views,
+	    date_posted, posts, views, last_poster_name,
 		(%s) AS rows_left,
-		(SELECT COUNT(*) FROM thread) AS total
+		(SELECT COUNT(*) FROM thread) AS total,
+		dot
 		FROM t
 		ORDER BY date_last_posted DESC
   `, pagination, rowsLeftQuery)
@@ -377,8 +405,10 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 			&thread.DatePosted,
 			&thread.NumPosts,
 			&thread.Views,
+			&thread.LastPosterName,
 			&rowsLeft,
 			&total,
+			&thread.Dotted,
 		)
 		if err != nil {
 			return nil, domain.Cursors{}, err

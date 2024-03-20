@@ -18,8 +18,10 @@ type ThreadRepo interface {
 	ListPostsForThread(limit, offset, id, memberID int) ([]domain.ThreadPost, error)
 	PeekPrevious(timestamp *time.Time, memberID int) (bool, error)
 	UndotThread(ctx context.Context, memberID, threadID int) error
+	DotThread(ctx context.Context, memberID, threadID int) error
+	ToggleDot(ctx context.Context, memberID, threadID int) (bool, error)
 	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
-	ListThreads(ctx context.Context, cursors domain.Cursors, limit int) ([]domain.Thread, domain.Cursors, error)
+	ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error)
 	ListPostsCollapsible(ctx context.Context, toShow, threadID, memberID int) (posts []domain.ThreadPost, collapsed int, err error)
 }
 
