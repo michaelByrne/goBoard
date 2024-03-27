@@ -17,7 +17,7 @@ templ Home(content templ.Component, titleGroup templ.Component, username string)
 					</span>
 					@Auth(username)
 					<div class="clear"></div>
-					@common.UpperNav()
+					@common.UpperNav(username)
 					<div id="data">
 						@content
 					</div>
@@ -28,6 +28,7 @@ templ Home(content templ.Component, titleGroup templ.Component, username string)
 }
 
 templ ThreadsTitleGroup(title string) {
+	<title>{ title }</title>
 	<h3>{ title }</h3>
 }
 
@@ -45,7 +46,7 @@ templ ThreadRow(thread domain.Thread) {
 		<ul class="list read" id="list_l56761">
 			<li class="readbar">&nbsp;</li>
 			<li class="member">
-				<a class="memberlink">{ thread.MemberName }</a>
+				<a class="memberlink" href={ templ.SafeURL(fmt.Sprintf("/profile/%s", thread.MemberName)) } hx-boost="true">{ thread.MemberName }</a>
 			</li>
 			<li class="subject">
 				if thread.Dotted {

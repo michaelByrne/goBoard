@@ -12,17 +12,14 @@ type ThreadRepo interface {
 	SavePost(post domain.ThreadPost) (int, error)
 	GetPostByID(id int) (*domain.ThreadPost, error)
 	GetThreadByID(id, memberID int) (*domain.Thread, error)
-	//ListThreads(limit, offset int) (*domain.SiteContext, error)
-	ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error)
 	SaveThread(thread domain.Thread) (int, error)
 	ListPostsForThread(limit, offset, id, memberID int) ([]domain.ThreadPost, error)
-	PeekPrevious(timestamp *time.Time, memberID int) (bool, error)
-	UndotThread(ctx context.Context, memberID, threadID int) error
-	DotThread(ctx context.Context, memberID, threadID int) error
 	ToggleDot(ctx context.Context, memberID, threadID int) (bool, error)
-	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
-	ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error)
+	ToggleIgnore(ctx context.Context, memberID, threadID int) (bool, error)
+	ToggleFavorite(ctx context.Context, memberID, threadID int) (bool, error)
+	ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int, filter domain.ThreadFilter) ([]domain.Thread, domain.Cursors, error)
 	ListPostsCollapsible(ctx context.Context, toShow, threadID, memberID int) (posts []domain.ThreadPost, collapsed int, err error)
+	ViewThread(ctx context.Context, memberID, threadID int) (int, error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/member_repo_moq.go . MemberRepo

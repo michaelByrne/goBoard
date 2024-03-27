@@ -11,6 +11,7 @@ import (
 	"goBoard/internal/repos/memberrepo"
 	"goBoard/internal/repos/threadrepo"
 	"goBoard/internal/transport/handlers/authentication"
+	"goBoard/internal/transport/handlers/members"
 	"goBoard/internal/transport/handlers/threads"
 	"goBoard/internal/transport/middlewares/jwtauth"
 	"goBoard/internal/transport/middlewares/session"
@@ -71,6 +72,7 @@ func run(
 
 	threadsHandler := threads.NewHandler(threadService, memberService, tokenAuth, sugar)
 	authHandler := authentication.NewHandler(authService)
+	membersHandler := members.NewHandler(threadService, memberService, tokenAuth, sugar)
 
 	r := chi.NewRouter()
 
@@ -81,6 +83,7 @@ func run(
 
 	threadsHandler.Register(r)
 	authHandler.Register(r)
+	membersHandler.Register(r)
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
 

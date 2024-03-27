@@ -98,8 +98,8 @@ func (s ThreadService) GetThreadByID(limit, offset, id, memberID int) (*domain.T
 	return thread, nil
 }
 
-func (s ThreadService) ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error) {
-	threads, cursors, err := s.threadRepo.ListThreads(ctx, cursors, limit, memberID)
+func (s ThreadService) ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int, filter domain.ThreadFilter) ([]domain.Thread, domain.Cursors, error) {
+	threads, cursors, err := s.threadRepo.ListThreads(ctx, cursors, limit, memberID, filter)
 	if err != nil {
 		s.logger.Errorf("error getting threads: %v", err)
 		return nil, domain.Cursors{}, err
@@ -199,18 +199,36 @@ func (s ThreadService) ConvertPostBodyBbcodeToHtml(postBody string) (*template.H
 	return &htmlPostBody, nil
 }
 
-func (s ThreadService) UndotThread(ctx context.Context, memberID, threadID int) error {
-	return s.threadRepo.UndotThread(ctx, memberID, threadID)
-}
+func (s ThreadService) ToggleIgnore(ctx context.Context, memberID, threadID int) (bool, error) {
+	ignored, err := s.threadRepo.ToggleIgnore(ctx, memberID, threadID)
+	if err != nil {
+		s.logger.Errorf("error toggling ignore: %v", err)
+		return false, err
+	}
 
-func (s ThreadService) DotThread(ctx context.Context, memberID, threadID int) error {
-	return s.threadRepo.DotThread(ctx, memberID, threadID)
-}
-
-func (s ThreadService) ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error {
-	return s.threadRepo.ToggleIgnore(ctx, memberID, threadID, ignore)
+	return ignored, nil
 }
 
 func (s ThreadService) ToggleDot(ctx context.Context, memberID, threadID int) (bool, error) {
 	return s.threadRepo.ToggleDot(ctx, memberID, threadID)
+}
+
+func (s ThreadService) ToggleFavorite(ctx context.Context, memberID, threadID int) (bool, error) {
+	favorite, err := s.threadRepo.ToggleFavorite(ctx, memberID, threadID)
+	if err != nil {
+		s.logger.Errorf("error toggling favorite: %v", err)
+		return false, err
+	}
+
+	return favorite, nil
+}
+
+func (s ThreadService) ViewThread(ctx context.Context, memberID, threadID int) (int, error) {
+	count, err := s.threadRepo.ViewThread(ctx, memberID, threadID)
+	if err != nil {
+		s.logger.Errorf("error viewing thread: %v", err)
+		return 0, err
+	}
+
+	return count, nil
 }

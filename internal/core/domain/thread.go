@@ -2,6 +2,16 @@ package domain
 
 import "time"
 
+type ThreadFilter string
+
+const (
+	ThreadFilterAll          ThreadFilter = "all"
+	ThreadFilterFavorites    ThreadFilter = "favorites"
+	ThreadFilterIgnored      ThreadFilter = "ignored"
+	ThreadFilterParticipated ThreadFilter = "participated"
+	ThreadFilterCreated      ThreadFilter = "created"
+)
+
 type Thread struct {
 	ID             int
 	Subject        string
@@ -23,6 +33,8 @@ type Thread struct {
 	Timestamp      *time.Time
 	PageCursor     *time.Time
 	Dotted         bool
+	Undot          bool
 	Ignored        bool
+	Favorite       bool
 	NumCollapsed   int
 }

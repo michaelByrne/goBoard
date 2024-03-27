@@ -71,3 +71,7 @@
   background-color: #c3dae4;
   border-top: 3px solid #acccdb;
 }
+
+.smaller {
+  font-size: 0.8em;
+}

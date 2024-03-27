@@ -13,12 +13,12 @@ type ThreadService interface {
 	GetThreadByID(limit, offset, id, memberID int) (*domain.Thread, error)
 	NewThread(memberName, memberIP, body, subject string) (int, error)
 	ConvertPostBodyBbcodeToHtml(body string) (*template.HTML, error)
-	UndotThread(ctx context.Context, memberID, threadID int) error
-	DotThread(ctx context.Context, memberID, threadID int) error
 	ToggleDot(ctx context.Context, memberID, threadID int) (bool, error)
-	ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error
-	ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error)
+	ToggleIgnore(ctx context.Context, memberID, threadID int) (bool, error)
+	ToggleFavorite(ctx context.Context, memberID, threadID int) (bool, error)
+	ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int, filter domain.ThreadFilter) ([]domain.Thread, domain.Cursors, error)
 	GetCollapsibleThreadByID(ctx context.Context, viewable, threadID, memberID int) (*domain.Thread, error)
+	ViewThread(ctx context.Context, memberID, threadID int) (int, error)
 }
 
 type MemberService interface {

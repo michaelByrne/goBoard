@@ -1,0 +1,60 @@
+package views
+
+import "goBoard/internal/core/domain"
+import 	commonviews "goBoard/internal/transport/handlers/common/views"
+
+templ Profile(member domain.Member) {
+	<div class="hr">
+		<hr/>
+	</div>
+	<div class="box clear" style="background-color: #acccdb; color: black">
+		<div class="nophoto"></div>
+		<ul class="memberinfo">
+			<li>
+				<div class="pref"><span class="small">preferred pronouns</span>:</div>
+				<div class="prefdata">she/her</div>
+			</li>
+			<li>
+				<div class="pref">location:</div>
+				<div class="prefdata">philly and ypsilanti</div>
+			</li>
+			<li>
+				<div class="pref">aim:</div>
+				<div class="prefdata">you so groovy</div>
+			</li>
+			<li style="padding-top:15px">
+				<div class="pref">date joined:</div>
+				<div class="prefdata"></div>
+			</li>
+			<li>
+				<div class="pref">last posted:</div>
+				<div class="prefdata"></div>
+			</li>
+			<li>
+				<div class="pref">last seen:</div>
+				<div class="prefdata"></div>
+			</li>
+			<li>
+				<div class="pref">member:</div>
+				<div class="prefdata"></div>
+			</li>
+			<li style="padding-top:15px">
+				<div class="pref">total threads:</div>
+				<div class="prefdata"><strong></strong>, 0.056% of 393,784</div>
+			</li>
+			<li>
+				<div class="pref">total posts:</div>
+				<div class="prefdata">
+					<strong></strong>, 0.153% of 14,050,684
+				</div>
+			</li>
+		</ul>
+		<div class="clear"></div>
+	</div>
+    @commonviews.LowerMemberNav(member)
+}
+
+templ ProfileTitleGroup(member domain.Member) {
+    <title>{ member.Name }</title>
+    <h3>{ member.Name }</h3>
+}

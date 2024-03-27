@@ -27,26 +27,53 @@ templ Posts(posts []common.Post, increment int, username string) {
 	</span>
 }
 
+templ ViewCounter(count int) {
+	<span class="smaller">{ fmt.Sprintf(" (%d views)", count) }</span>
+}
+
 templ PostsTitleGroup(thread domain.Thread) {
-	<h3>{ thread.Subject }</h3>
+	<title>{ thread.Subject }</title>
+	<h3 hx-get={ fmt.Sprintf("/view/thread/%d", thread.ID) } hx-swap="beforeend" hx-trigger="load">{ thread.Subject }</h3>
 	<div class="clear"></div>
 	<div class="subtitle">
 		<a style="cursor: pointer; color: white">hide images</a>
 		<span id="dotcontrol">
-			@DotControl(!thread.Dotted, thread.ID)
+			@DotControl(thread.Dotted, thread.ID)
+		</span>
+		<span id="favoritecontrol">
+			@FavoriteControl(thread.Favorite, thread.ID)
+		</span>
+		<span id="ignorecontrol">
+			@IgnoreControl(thread.Ignored, thread.ID)
 		</span>
 	</div>
 }
 
-templ DotControl(undot bool, threadID int) {
-	if !undot {
-		» <a id="undot" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/dot/%d", threadID) } hx-target="#dotcontrol">undot</a>
+templ DotControl(dotted bool, threadID int) {
+	if dotted {
+		» <a id="dot" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/dot/%d", threadID) } hx-target="#dotcontrol">undot</a>
 	} else {
 		» <a id="dot" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/dot/%d", threadID) } hx-target="#dotcontrol">dot</a>
 	}
 }
 
-templ PostsPage(posts []common.Post, increment int, username string) {
+templ IgnoreControl(ignored bool, threadID int) {
+	if !ignored {
+		» <a id="ignore" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/ignore/%d", threadID) } hx-target="#ignorecontrol">ignore</a>
+	} else {
+		» <a id="unignore" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/ignore/%d", threadID) } hx-target="#ignorecontrol">unignore</a>
+	}
+}
+
+templ FavoriteControl(favorite bool, threadID int) {
+	if favorite {
+		» <a id="favorite" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/favorite/%d", threadID) } hx-target="#favoritecontrol">remove favorite</a>
+	} else {
+		» <a id="favorite" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/favorite/%d", threadID) } hx-target="#favoritecontrol">add favorite</a>
+	}
+}
+
+templ PostsPage(posts []common.Post, increment int, username string, undot bool) {
 	<span id="posts">
 		<span id="post_data">
 			if posts[0].RowNumber > 1 {
@@ -61,7 +88,7 @@ templ PostsPage(posts []common.Post, increment int, username string) {
 			}
 		</span>
 		@LowerPostNav()
-		@ResponseForm(posts[0].ParentID, posts[len(posts)-1].RowNumber+1, "thread", username)
+		@ResponseForm(posts[0].ParentID, posts[len(posts)-1].RowNumber+1, "thread", username, undot)
 	</span>
 }
 
@@ -69,7 +96,7 @@ templ Uncollapse(collapsed, total, threadID, increment int) {
 	<div class="post clear" id="uncollapse">
 		<ul class="postbody odd collapse">
 			<span id="uncollapse_links">
-				<a id="uncollapse_some" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", collapsed-increment, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show <span id="uncollapse_more_counter">{ fmt.Sprintf("%d", showIncrementOrRemaining(increment, collapsed)) }</span> previous posts</a>&nbsp;»&nbsp;
+				<a id="uncollapse_some" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", collapsed-increment+1, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show <span id="uncollapse_more_counter">{ fmt.Sprintf("%d", showIncrementOrRemaining(increment, collapsed)) }</span> previous posts</a>&nbsp;»&nbsp;
 				<a id="uncollapse_all" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", 0, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show all { fmt.Sprintf("%d", collapsed) } previous posts</a>
 			</span>
 		</ul>
@@ -113,13 +140,20 @@ templ Post(post common.Post, idx int, isMe bool) {
 	</div>
 }
 
-templ ResponseForm(threadID, nextRowNumber int, kind, username string) {
+templ ResponseForm(threadID, nextRowNumber int, kind, username string, undot bool) {
 	<span class="response_form">
 		<div class="clear"></div>
 		<div id="response_form"></div>
-		<form method="post" name="form" id="form" class="coreform" hx-post={ fmt.Sprintf("/%s/new", kind) }>
+		<form
+			method="post"
+			name="form"
+			id="form"
+			class="coreform"
+			hx-post={ fmt.Sprintf("/%s/new", kind) }
+		>
 			<input type="hidden" name="threadId" value={ strconv.Itoa(threadID) }/>
 			<input type="hidden" id="idx" name="idx" value={ fmt.Sprintf("%d", nextRowNumber) }/>
+			<input type="hidden" id="undot" name="undot" value={ fmt.Sprintf("%t", undot) }/>
 			@Account(username)
 			<fieldset>
 				<legend>reply</legend>
@@ -143,7 +177,10 @@ templ ResponseForm(threadID, nextRowNumber int, kind, username string) {
 				hx-swap="beforeend"
 				value="say that shit"
 				id="submit"
-				_="on click remove #response_form's children then put '' into #body's value then increment #idx's value"
+				_="on click remove #response_form's children 
+				then put '' into #body's value 
+				then increment #idx's value 
+				then if #undot's value is 'false' put 'undot' into #dot"
 			/>
 			<input type="button" name="preview" id="preview" value="preview" hx-post="/preview" hx-target="#response_form" hx-swap="afterbegin"/>
 			<sup>

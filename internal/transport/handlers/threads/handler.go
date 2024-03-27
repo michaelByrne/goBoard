@@ -1,6 +1,7 @@
 package threads
 
 import (
+	"fmt"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
 	"goBoard/internal/transport/handlers/common"
@@ -48,14 +49,141 @@ func (h *Handler) Register(r chi.Router) {
 
 		r.Get("/", h.ThreadsHome)
 		r.Get("/threads", h.Threads)
+		r.Get("/ignored/{memberId}", h.IgnoredThreads)
+		r.Get("/created/{memberId}", h.CreatedThreads)
+		r.Get("/participated/{memberId}", h.ParticipatedThreads)
+		r.Get("/favorited/{memberId}", h.FavoritedThreads)
 		r.Get("/thread/view/{id}", h.Thread)
+		r.Get("/view/thread/{threadId}", h.ViewThread)
 		r.Post("/thread/create", h.CreateThread)
 		r.Get("/thread/create", h.NewThreadPage)
 		r.Post("/preview", h.Preview)
 		r.Post("/post", h.Post)
 		r.Get("/posts", h.Posts)
 		r.Get("/dot/{threadId}", h.ToggleDot)
+		r.Get("/ignore/{threadId}", h.ToggleIgnore)
+		r.Get("/favorite/{threadId}", h.ToggleFavorite)
 	})
+}
+
+func (h *Handler) ToggleFavorite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	threadID := chi.URLParam(r, "threadId")
+	if threadID == "" {
+		h.logger.Error("threadID is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	threadIDInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		h.logger.Errorf("threadID is not an int: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	isFavorite, err := h.threadService.ToggleFavorite(ctx, member.ID, threadIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(commonviews.FavoriteControl(isFavorite, threadIDInt)).Component.Render(ctx, w)
+}
+
+func (h *Handler) ViewThread(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	threadID := chi.URLParam(r, "threadId")
+	if threadID == "" {
+		h.logger.Error("threadID is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	threadIDInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		h.logger.Errorf("threadID is not an int: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	count, err := h.threadService.ViewThread(ctx, member.ID, threadIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(commonviews.ViewCounter(count)).Component.Render(ctx, w)
+}
+
+func (h *Handler) ToggleIgnore(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	threadID := chi.URLParam(r, "threadId")
+	if threadID == "" {
+		h.logger.Error("threadID is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	threadIDInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		h.logger.Errorf("threadID is not an int: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ignored, err := h.threadService.ToggleIgnore(ctx, member.ID, threadIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(commonviews.IgnoreControl(ignored, threadIDInt)).Component.Render(ctx, w)
 }
 
 func (h *Handler) NewThreadPage(w http.ResponseWriter, r *http.Request) {
@@ -78,15 +206,9 @@ func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username, ok := sess.Values["name"]
-	if !ok {
-		h.logger.Errorf("username is not in session")
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	usernameStr, ok := username.(string)
-	if !ok {
-		h.logger.Errorf("username is not a string: %v", username)
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -116,7 +238,7 @@ func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		ip = "127.0.0.1"
 	}
 
-	threadID, err := h.threadService.NewThread(usernameStr, ip, body, subject)
+	threadID, err := h.threadService.NewThread(member.Username, ip, body, subject)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -135,16 +257,9 @@ func (h *Handler) ToggleDot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memberID, ok := sess.Values["id"]
-	if !ok {
-		h.logger.Errorf("memberID is not in session")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	memberIDInt, ok := memberID.(int)
-	if !ok {
-		h.logger.Errorf("memberID is not an int: %v", memberID)
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -163,7 +278,7 @@ func (h *Handler) ToggleDot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dotted, err := h.threadService.ToggleDot(ctx, memberIDInt, threadIDInt)
+	dotted, err := h.threadService.ToggleDot(ctx, member.ID, threadIDInt)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -173,39 +288,18 @@ func (h *Handler) ToggleDot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Posts(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("user")
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		h.logger.Errorf("error getting cookie: %v", err)
-	}
-
 	sess, err := session.Get("member", r)
 	if err != nil {
 		h.logger.Errorf("error getting session: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	viewable, ok := sess.Values["collapseopen"]
-	if !ok {
-		viewable = 20
-	}
-
-	viewableInt, ok := viewable.(int)
-	if !ok {
-		h.logger.Errorf("viewable is not an int: %v", viewable)
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	memberID, ok := sess.Values["id"]
-	if !ok {
-		h.logger.Errorf("memberID is not in session")
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	memberIDInt, ok := memberID.(int)
-	if !ok {
-		h.logger.Errorf("memberID is not an int: %v", memberID)
-		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	start, err := strconv.Atoi(r.URL.Query().Get("start"))
@@ -226,13 +320,13 @@ func (h *Handler) Posts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	thread, err := h.threadService.GetCollapsibleThreadByID(r.Context(), end-start, threadID, memberIDInt)
+	thread, err := h.threadService.GetCollapsibleThreadByID(r.Context(), end-start, threadID, member.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	templ.Handler(commonviews.Posts(common.ThreadToPosts(*thread), viewableInt, cookie.Value)).Component.Render(r.Context(), w)
+	templ.Handler(commonviews.Posts(common.ThreadToPosts(*thread), member.Viewable, member.Username)).Component.Render(r.Context(), w)
 }
 
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
@@ -243,16 +337,9 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username, ok := sess.Values["name"]
-	if !ok {
-		h.logger.Errorf("username is not in session")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	usernameStr, ok := username.(string)
-	if !ok {
-		h.logger.Errorf("username is not a string: %v", username)
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -302,7 +389,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		ip = "127.0.0.1"
 	}
 
-	_, err = h.threadService.NewPost(body, ip, usernameStr, threadIDInt)
+	_, err = h.threadService.NewPost(body, ip, member.Username, threadIDInt)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -310,7 +397,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 
 	post := common.Post{
 		Body:       body,
-		MemberName: usernameStr,
+		MemberName: member.Username,
 		Date:       time.Now().Format("Mon Jan 2, 2006 03:04 pm"),
 	}
 
@@ -367,39 +454,18 @@ func (h *Handler) Preview(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Thread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("user")
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
 	sess, err := session.Get("member", r)
 	if err != nil {
 		h.logger.Errorf("error getting session: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	viewable, ok := sess.Values["collapseopen"]
-	if !ok {
-		viewable = 20
-	}
-
-	viewableInt, ok := viewable.(int)
-	if !ok {
-		h.logger.Errorf("viewable is not an int: %v", viewable)
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	memberID, ok := sess.Values["id"]
-	if !ok {
-		h.logger.Errorf("memberID is not in session")
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	memberIDInt, ok := memberID.(int)
-	if !ok {
-		h.logger.Errorf("memberID is not an int: %v", memberID)
-		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	id := chi.URLParam(r, "id")
@@ -414,7 +480,7 @@ func (h *Handler) Thread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	thread, err := h.threadService.GetCollapsibleThreadByID(ctx, viewableInt, idInt, memberIDInt)
+	thread, err := h.threadService.GetCollapsibleThreadByID(ctx, member.Viewable, idInt, member.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -422,69 +488,48 @@ func (h *Handler) Thread(w http.ResponseWriter, r *http.Request) {
 
 	posts := common.ThreadToPosts(*thread)
 
-	templ.Handler(views.Home(views.Thread(commonviews.PostsPage(posts, viewableInt, cookie.Value), thread.ID), commonviews.PostsTitleGroup(*thread), cookie.Value)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Thread(commonviews.PostsPage(posts, member.Viewable, member.Username, thread.Undot), thread.ID), commonviews.PostsTitleGroup(*thread), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) ThreadsHome(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("user")
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	session, err := session.Get("member", r)
+	sess, err := session.Get("member", r)
 	if err != nil {
 		h.logger.Errorf("error getting session: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	memberID, ok := session.Values["id"]
-	if !ok {
-		h.logger.Errorf("memberID is not in session")
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	memberIDInt, ok := memberID.(int)
-	if !ok {
-		h.logger.Errorf("memberID is not an int: %v", memberID)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	threads, cursorsOut, err := h.threadService.ListThreads(ctx, domain.Cursors{}, 50, memberIDInt)
+	threads, cursorsOut, err := h.threadService.ListThreads(ctx, domain.Cursors{}, 50, member.ID, domain.ThreadFilterAll)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	templ.Handler(views.Home(views.Threads(threads, cursorsOut), views.ThreadsTitleGroup(ElitismTitle), cookie.Value)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(threads, cursorsOut), views.ThreadsTitleGroup(ElitismTitle), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) Threads(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("user")
+	sess, err := session.Get("member", r)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	session, err := session.Get("member", r)
-
-	memberID, ok := session.Values["id"]
-	if !ok {
-		h.logger.Errorf("memberID is not in session")
+		h.logger.Errorf("error getting session: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	memberIDInt, ok := memberID.(int)
-	if !ok {
-		h.logger.Errorf("memberID is not an int: %v", memberID)
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -508,7 +553,7 @@ func (h *Handler) Threads(w http.ResponseWriter, r *http.Request) {
 		Prev: prevCursor,
 	}
 
-	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, memberIDInt)
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, member.ID, domain.ThreadFilterAll)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -519,7 +564,271 @@ func (h *Handler) Threads(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(ElitismTitle), cookie.Value))).Component.Render(ctx, w)
+	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(ElitismTitle), member.Username))).Component.Render(ctx, w)
+}
+
+func (h *Handler) IgnoredThreads(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	memberID := chi.URLParam(r, "memberId")
+	if memberID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	memberIDInt, err := strconv.Atoi(memberID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	nextCursor := r.URL.Query().Get("next")
+	prevCursor := r.URL.Query().Get("prev")
+	dir := r.URL.Query().Get("dir")
+
+	if dir == "next" {
+		prevCursor = ""
+	} else {
+		nextCursor = ""
+	}
+
+	cursors := domain.Cursors{
+		Next: nextCursor,
+		Prev: prevCursor,
+	}
+
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, memberIDInt, domain.ThreadFilterIgnored)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if isHx(r) {
+		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		return
+	}
+
+	viewMember, err := h.memberService.GetMemberByID(memberIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	title := fmt.Sprintf("Ignored threads: %s", viewMember.Name)
+
+	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+}
+
+func (h *Handler) CreatedThreads(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	memberID := chi.URLParam(r, "memberId")
+	if memberID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	memberIDInt, err := strconv.Atoi(memberID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	nextCursor := r.URL.Query().Get("next")
+	prevCursor := r.URL.Query().Get("prev")
+	dir := r.URL.Query().Get("dir")
+
+	if dir == "next" {
+		prevCursor = ""
+	} else {
+		nextCursor = ""
+	}
+
+	cursors := domain.Cursors{
+		Next: nextCursor,
+		Prev: prevCursor,
+	}
+
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, memberIDInt, domain.ThreadFilterCreated)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if isHx(r) {
+		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		return
+	}
+
+	viewMember, err := h.memberService.GetMemberByID(memberIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	title := fmt.Sprintf("Created threads: %s", viewMember.Name)
+
+	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+}
+
+func (h *Handler) ParticipatedThreads(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	memberID := chi.URLParam(r, "memberId")
+	if memberID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	memberIDInt, err := strconv.Atoi(memberID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	nextCursor := r.URL.Query().Get("next")
+	prevCursor := r.URL.Query().Get("prev")
+	dir := r.URL.Query().Get("dir")
+
+	if dir == "next" {
+		prevCursor = ""
+	} else {
+		nextCursor = ""
+	}
+
+	cursors := domain.Cursors{
+		Next: nextCursor,
+		Prev: prevCursor,
+	}
+
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, memberIDInt, domain.ThreadFilterParticipated)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if isHx(r) {
+		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		return
+	}
+
+	viewMember, err := h.memberService.GetMemberByID(memberIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	title := fmt.Sprintf("Participated threads: %s", viewMember.Name)
+
+	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+}
+
+func (h *Handler) FavoritedThreads(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	memberID := chi.URLParam(r, "memberId")
+	if memberID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	memberIDInt, err := strconv.Atoi(memberID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	nextCursor := r.URL.Query().Get("next")
+	prevCursor := r.URL.Query().Get("prev")
+	dir := r.URL.Query().Get("dir")
+
+	if dir == "next" {
+		prevCursor = ""
+	} else {
+		nextCursor = ""
+	}
+
+	cursors := domain.Cursors{
+		Next: nextCursor,
+		Prev: prevCursor,
+	}
+
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, memberIDInt, domain.ThreadFilterFavorites)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if isHx(r) {
+		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		return
+	}
+
+	viewMember, err := h.memberService.GetMemberByID(memberIDInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	title := fmt.Sprintf("Favorited threads: %s", viewMember.Name)
+
+	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
 }
 
 func isHx(r *http.Request) bool {

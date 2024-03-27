@@ -3,13 +3,14 @@ package views
 import "fmt"
 import "goBoard/internal/core/domain"
 
-templ UpperNav() {
+templ UpperNav(username string) {
 	<ul class="nav top">
 		<div class="setdown">
 			<li><a href="/" title="back to the home page" hx-boost="true">threads</a></li>
 			<li><a href="/message/list/1?reverse=false" title="view your messages">messages</a></li>
 			<li><a href="/thread/create" hx-boost="true" title="create a new thread">new thread</a></li>
 			<li><a href="/message/create" title="send a message to another member">new message</a></li>
+			<li><a href={ templ.SafeURL(fmt.Sprintf("/profile/%s", username)) } hx-boost="true">profile</a></li>
 		</div>
 	</ul>
 }
@@ -35,6 +36,23 @@ templ LowerPostNav() {
 		<li id="style=cursor: pointer"><a href="/" hx-boost="true">back to the shit</a></li>
 		<li style="cursor: pointer">
 			<a href="#">load more posts</a>
+		</li>
+	</ul>
+}
+
+templ LowerMemberNav(member domain.Member) {
+	<ul class="nav bottom clear shiftup" id="nav-bottom">
+		<li style="cursor: pointer">
+			<a href={ templ.SafeURL(fmt.Sprintf("/ignored/%d", member.ID)) }>ignored threads</a>
+		</li>
+		<li style="cursor:pointer">
+			<a href={ templ.SafeURL(fmt.Sprintf("/created/%d", member.ID)) }>threads created</a>
+		</li>
+		<li style="cursor:pointer">
+			<a href={ templ.SafeURL(fmt.Sprintf("/participated/%d", member.ID)) }>threads participated</a>
+		</li>
+		<li style="cursor:pointer">
+			<a href={ templ.SafeURL(fmt.Sprintf("/favorited/%d", member.ID)) }>favorites</a>
 		</li>
 	</ul>
 }

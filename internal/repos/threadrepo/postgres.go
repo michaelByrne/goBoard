@@ -8,6 +8,7 @@ import (
 	"goBoard/internal/core/domain"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -77,8 +78,26 @@ func (r ThreadRepo) ListPostsCollapsible(ctx context.Context, toShow, threadID, 
 }
 
 func (r ThreadRepo) SavePost(post domain.ThreadPost) (int, error) {
+	tx, err := r.connPool.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(context.TODO())
+		} else {
+			tx.Commit(context.TODO())
+		}
+	}()
+
 	var id int
-	err := r.connPool.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", post.ParentID, post.MemberID, post.MemberIP, post.Body).Scan(&id)
+	err = tx.QueryRow(context.Background(), "INSERT INTO thread_post (thread_id, member_id, member_ip, body) VALUES ($1, $2, $3, $4) RETURNING id", post.ParentID, post.MemberID, post.MemberIP, post.Body).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = tx.Exec(context.Background(), "UPDATE thread_viewer SET dotted = true WHERE thread_id = $1 AND member_id = $2 AND undot IS FALSE", post.ParentID, post.MemberID)
 	if err != nil {
 		return 0, err
 	}
@@ -108,95 +127,20 @@ func (r ThreadRepo) GetPostByID(id int) (*domain.ThreadPost, error) {
 }
 
 func (r ThreadRepo) GetThreadByID(id, memberID int) (*domain.Thread, error) {
+	tvQuery := "INSERT INTO thread_viewer (thread_id, member_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+
+	_, err := r.connPool.Exec(context.Background(), tvQuery, id, memberID)
+	if err != nil {
+		return nil, err
+	}
+
 	var thread domain.Thread
-	err := r.connPool.QueryRow(context.Background(), getThreadByIDQuery, id, memberID).Scan(&thread.ID, &thread.Subject, &thread.Timestamp, &thread.MemberID, &thread.Views, &thread.Dotted, &thread.Ignored)
+	err = r.connPool.QueryRow(context.Background(), getThreadByIDQuery, id, memberID).Scan(&thread.ID, &thread.Subject, &thread.Timestamp, &thread.MemberID, &thread.Views, &thread.Dotted, &thread.Undot, &thread.Ignored, &thread.Favorite)
 	if err != nil {
 		return nil, err
 	}
 
 	return &thread, nil
-}
-
-// func (r ThreadRepo) ListThreads(limit, offset int) (*domain.SiteContext, error) {
-// 	var threads []domain.Thread
-// 	threadPage := &domain.ThreadPage{}
-// 	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	for rows.Next() {
-// 		var thread domain.Thread
-// 		err := rows.Scan(
-// 			&thread.ID,
-// 			&thread.DateLastPosted,
-// 			&thread.MemberID,
-// 			&thread.MemberName,
-// 			&thread.LastPosterID,
-// 			&thread.LastPosterName,
-// 			&thread.Subject,
-// 			&thread.NumPosts,
-// 			&thread.Views,
-// 			&thread.LastPostText,
-// 			&thread.Sticky,
-// 			&thread.Locked,
-// 			&thread.Legendary,
-// 		)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		threads = append(threads, thread)
-// 	}
-// 	threadPage.Threads = threads
-
-// 	var totalThreads int
-// 	threadCountRows, err := r.connPool.Query(context.Background(), countThreadsQuery)
-// 	for threadCountRows.Next() {
-// 		err := threadCountRows.Scan(&totalThreads)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-// 	threadPage.TotalPages = totalThreads / limit
-
-// 	siteContext := &domain.SiteContext{ThreadPage: *threadPage}
-
-// 	return siteContext, nil
-// }
-
-func (r ThreadRepo) ListThreadsByMemberID(memberID int, limit, offset int) ([]domain.Thread, error) {
-	var threads []domain.Thread
-	rows, err := r.connPool.Query(context.Background(), listThreadsQuery, limit, offset, memberID)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var thread domain.Thread
-		err := rows.Scan(
-			&thread.ID,
-			&thread.DateLastPosted,
-			&thread.MemberID,
-			&thread.MemberName,
-			&thread.LastPosterID,
-			&thread.LastPosterName,
-			&thread.Subject,
-			&thread.NumPosts,
-			&thread.Views,
-			&thread.LastPostText,
-			&thread.Sticky,
-			&thread.Locked,
-			&thread.Legendary,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		threads = append(threads, thread)
-	}
-
-	return threads, nil
 }
 
 func (r ThreadRepo) SaveThread(thread domain.Thread) (int, error) {
@@ -215,6 +159,11 @@ func (r ThreadRepo) SaveThread(thread domain.Thread) (int, error) {
 
 	var threadID int
 	err = tx.QueryRow(context.Background(), "INSERT INTO thread (subject, member_id, last_member_id) VALUES ($1, $2, $3) RETURNING id", thread.Subject, thread.MemberID, thread.LastPosterID).Scan(&threadID)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = tx.Exec(context.Background(), "INSERT INTO thread_viewer (thread_id, member_id, dotted) VALUES ($1, $2, true)", threadID, thread.MemberID)
 	if err != nil {
 		return 0, err
 	}
@@ -260,62 +209,19 @@ func (r ThreadRepo) ListPostsForThread(limit, offset, id, memberID int) ([]domai
 	return posts, nil
 }
 
-func (r ThreadRepo) ListPostsForThreadByCursor(limit, id int, cursor *time.Time) ([]domain.ThreadPost, error) {
-	var posts []domain.ThreadPost
-	var cidr pgtype.CIDR
-	rows, err := r.connPool.Query(context.Background(), listPostsQuery, limit, id, cursor)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var post domain.ThreadPost
-		err := rows.Scan(&post.ID, &post.Timestamp, &post.MemberID, &post.MemberName, &post.Body, &cidr, &post.ParentSubject, &post.ParentID, &post.IsAdmin)
-		if err != nil {
-			return nil, err
-		}
-
-		post.MemberIP = cidr.IPNet.String()
-
-		posts = append(posts, post)
-	}
-
-	return posts, nil
-}
-
-func (r ThreadRepo) PeekPrevious(timestamp *time.Time, memberID int) (bool, error) {
-	query := "SELECT EXISTS(SELECT 1 FROM thread LEFT JOIN thread_member tm on thread.id = tm.thread_id WHERE date_last_posted > $1 AND tm.ignore = false AND tm.member_id = $2)"
-	var exists bool
-	err := r.connPool.QueryRow(context.Background(), query, timestamp, memberID).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
-}
-
-func (r ThreadRepo) UndotThread(ctx context.Context, memberID, threadID int) error {
-	query := "UPDATE thread_member SET undot=true WHERE thread_id=$1 AND member_id=$2"
-	_, err := r.connPool.Exec(ctx, query, threadID, memberID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r ThreadRepo) DotThread(ctx context.Context, memberID, threadID int) error {
-	query := "UPDATE thread_member SET undot=false WHERE thread_id=$1 AND member_id=$2"
-	_, err := r.connPool.Exec(ctx, query, threadID, memberID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r ThreadRepo) ToggleDot(ctx context.Context, memberID, threadID int) (bool, error) {
-	query := "UPDATE thread_member SET undot=NOT undot WHERE thread_id=$1 AND member_id=$2 RETURNING undot"
+	query := `
+	UPDATE thread_viewer 
+	SET 
+ 		dotted = NOT dotted,
+  		undot = CASE
+        	WHEN dotted IS TRUE THEN true
+        	ELSE undot
+    	END
+	WHERE thread_id = $1 
+ 	   AND member_id = $2 
+	RETURNING dotted;
+	`
 	var dot bool
 	err := r.connPool.QueryRow(ctx, query, threadID, memberID).Scan(&dot)
 	if err != nil {
@@ -325,65 +231,134 @@ func (r ThreadRepo) ToggleDot(ctx context.Context, memberID, threadID int) (bool
 	return dot, nil
 }
 
-func (r ThreadRepo) ToggleIgnore(ctx context.Context, memberID, threadID int, ignore bool) error {
-	query := "UPDATE thread_member SET ignore=$3 WHERE thread_id=$1 AND member_id=$2"
-	_, err := r.connPool.Exec(ctx, query, threadID, memberID, ignore)
+func (r ThreadRepo) ToggleFavorite(ctx context.Context, memberID, threadID int) (bool, error) {
+	query := "SELECT toggle_favorite($1, $2)"
+
+	var favorite int
+	err := r.connPool.QueryRow(ctx, query, memberID, threadID).Scan(&favorite)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return favorite == 1, nil
 }
 
-func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Thread, domain.Cursors, error) {
+func (r ThreadRepo) ToggleIgnore(ctx context.Context, memberID, threadID int) (bool, error) {
+	query := "UPDATE thread_viewer SET ignored=NOT ignored WHERE thread_id=$1 AND member_id=$2 RETURNING ignored"
+
+	var ignored bool
+	err := r.connPool.QueryRow(ctx, query, threadID, memberID).Scan(&ignored)
+	if err != nil {
+		return false, err
+	}
+
+	return ignored, nil
+}
+
+func (r ThreadRepo) ViewThread(ctx context.Context, memberID, threadID int) (int, error) {
+	tx, err := r.connPool.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(context.TODO())
+		} else {
+			tx.Commit(context.TODO())
+		}
+	}()
+
+	var views int
+	err = tx.QueryRow(ctx, "UPDATE thread SET views = views + 1 WHERE id = $1 RETURNING views", threadID).Scan(&views)
+	if err != nil {
+		return 0, err
+	}
+
+	return views, nil
+}
+
+func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, limit, memberID int, filter domain.ThreadFilter) ([]domain.Thread, domain.Cursors, error) {
+	dot := sq.Select("COALESCE(tv.dotted, false)")
+	undot := sq.Select("COALESCE(tv.undot, false)")
+	favorite := sq.Case().When("f.thread_id IS NOT NULL", "true").Else("false")
+
+	innerQuery := sq.Select("t.id", "m.name as name", "t.date_last_posted", "t.subject", "t.date_posted", "t.posts", "t.views", "l.name as last_poster_name").
+		Column(sq.Alias(dot, "dot")).
+		Column(sq.Alias(undot, "undot")).
+		Column(sq.Alias(favorite, "favorite")).
+		From("thread t")
+
+	ignoredThreadQuery := sq.Select("tv.thread_id").From("thread_viewer tv").Where("tv.ignored = true AND tv.member_id = ?", memberID).OrderBy("tv.last_viewed DESC")
+	ignoredMemberQuery := sq.Select("mi.ignore_member_id").From("member_ignore mi").LeftJoin("member m ON m.id = mi.member_id").Where("mi.member_id = ?", memberID).OrderBy("m.name")
+
+	totalMinusIgnoredQuery := sq.Select("COUNT(*)").From("thread")
+
+	if filter == domain.ThreadFilterIgnored {
+		totalMinusIgnoredQuery = totalMinusIgnoredQuery.Where(SubQueryIN("id", ignoredThreadQuery)).Where(SubQueryNOTIN("member_id", ignoredMemberQuery))
+	} else if filter == domain.ThreadFilterAll {
+		totalMinusIgnoredQuery = totalMinusIgnoredQuery.Where(SubQueryNOTIN("id", ignoredThreadQuery)).Where(SubQueryNOTIN("member_id", ignoredMemberQuery))
+	} else if filter == domain.ThreadFilterCreated {
+		innerQuery = innerQuery.Where("t.member_id = ?", memberID)
+	} else if filter == domain.ThreadFilterParticipated {
+		innerQuery = innerQuery.InnerJoin("thread_member tm ON tm.thread_id = t.id").Where("tm.member_id = ?", memberID)
+	}
+
+	if filter == domain.ThreadFilterFavorites {
+		innerQuery = innerQuery.InnerJoin("favorite f ON f.thread_id = t.id").Where("f.member_id = ?", memberID)
+	} else {
+		innerQuery = innerQuery.JoinClause("LEFT OUTER JOIN favorite f ON f.thread_id = t.id AND f.member_id = ?", memberID)
+	}
+
+	rowsLeftQuery := totalMinusIgnoredQuery
+
+	pagination := innerQuery.InnerJoin("member m ON m.id = t.member_id").
+		InnerJoin("member l ON l.id = t.last_member_id").
+		InnerJoin("thread_post tp ON tp.id = t.first_post_id").
+		JoinClause("LEFT OUTER JOIN thread_viewer tv ON tv.thread_id = t.id AND tv.member_id = ?", memberID).
+		Where(SubQueryNOTIN("t.member_id", ignoredMemberQuery))
+
+	if filter == domain.ThreadFilterIgnored {
+		pagination = pagination.Where(SubQueryIN("t.id", ignoredThreadQuery))
+	} else {
+		pagination = pagination.Where(SubQueryNOTIN("t.id", ignoredThreadQuery))
+	}
+
 	if cursors.Next != "" && cursors.Prev != "" {
 		return nil, domain.Cursors{}, errors.New("two cursors cannot be provided at the same time")
 	}
 
-	values := make([]interface{}, 0, 4)
-	rowsLeftQuery := "SELECT COUNT(*) FROM thread t"
-	pagination := `INNER JOIN member m ON m.id = t.member_id 
-				   INNER JOIN member l ON l.id = t.last_member_id 
-				   INNER JOIN thread_post tp ON tp.id = t.first_post_id 
-				   LEFT OUTER JOIN thread_member tm ON tm.thread_id = t.id AND tm.member_id = $2`
-
 	// Going forward
 	if cursors.Next != "" {
-		rowsLeftQuery += " WHERE t.date_last_posted < $3"
-		pagination += " WHERE t.date_last_posted < $3 ORDER BY date_last_posted DESC LIMIT $1"
-		values = append(values, limit, memberID, cursors.Next)
+		rowsLeftQuery = rowsLeftQuery.Where("thread.date_last_posted < ?", cursors.Next)
+		pagination = pagination.Where("t.date_last_posted < ?", cursors.Next).OrderBy("date_last_posted DESC").Limit(uint64(limit))
 	}
 
 	// Going backward
 	if cursors.Prev != "" {
-		rowsLeftQuery += " WHERE t.date_last_posted > $3"
-		pagination += " WHERE t.date_last_posted > $3 ORDER BY date_last_posted ASC LIMIT $1"
-		values = append(values, limit, memberID, cursors.Prev)
+		rowsLeftQuery = rowsLeftQuery.Where("thread.date_last_posted > ?", cursors.Prev)
+		pagination = pagination.Where("t.date_last_posted > ?", cursors.Prev).OrderBy("date_last_posted ASC").Limit(uint64(limit))
 	}
 
 	// No cursors: Going forward from the beginning
 	if cursors.Next == "" && cursors.Prev == "" {
-		pagination += " ORDER BY t.date_last_posted DESC LIMIT $1"
-		values = append(values, limit, memberID)
+		pagination = pagination.OrderBy("t.date_last_posted DESC").Limit(uint64(limit))
 	}
 
-	stmt := fmt.Sprintf(`
-		WITH t AS (
-			SELECT t.id, m.name, t.date_last_posted, t.subject, t.date_posted, t.posts, t.views, l.name as last_poster_name,   
-			(CASE
-				WHEN tm.date_posted IS NOT null AND tm.undot IS false AND tm.member_id IS NOT null THEN true
-				ELSE false END) as dot FROM thread t %s
-		)
-		SELECT id, name, date_last_posted, subject, 
-	    date_posted, posts, views, last_poster_name,
-		(%s) AS rows_left,
-		(SELECT COUNT(*) FROM thread) AS total,
-		dot
-		FROM t
-		ORDER BY date_last_posted DESC
-  `, pagination, rowsLeftQuery)
+	stmt := sq.Select("id", "name", "date_last_posted", "subject", "date_posted", "posts", "views", "last_poster_name").
+		Column(sq.Alias(rowsLeftQuery, "rows_left")).
+		Column(sq.Alias(totalMinusIgnoredQuery, "total")).
+		Column("dot").
+		Column("undot").
+		Column("favorite").
+		FromSelect(pagination, "t").OrderBy("date_last_posted DESC").PlaceholderFormat(sq.Dollar)
 
-	rows, err := r.connPool.Query(ctx, stmt, values...)
+	sql, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, domain.Cursors{}, err
+	}
+
+	rows, err := r.connPool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, domain.Cursors{}, err
 	}
@@ -409,12 +384,18 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 			&rowsLeft,
 			&total,
 			&thread.Dotted,
+			&thread.Undot,
+			&thread.Favorite,
 		)
 		if err != nil {
 			return nil, domain.Cursors{}, err
 		}
 
 		threads = append(threads, thread)
+	}
+
+	if len(threads) == 0 {
+		return threads, domain.Cursors{}, nil
 	}
 
 	var (
@@ -450,4 +431,16 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 	}
 
 	return threads, domain.Cursors{Next: nextCursor, Prev: prevCursor}, nil
+}
+
+func SubQueryNOTIN(property string, query sq.SelectBuilder) sq.Sqlizer {
+	sql, args, _ := query.ToSql()
+	subQuery := fmt.Sprintf("%s NOT IN (%s)", property, sql)
+	return sq.Expr(subQuery, args...)
+}
+
+func SubQueryIN(property string, query sq.SelectBuilder) sq.Sqlizer {
+	sql, args, _ := query.ToSql()
+	subQuery := fmt.Sprintf("%s IN (%s)", property, sql)
+	return sq.Expr(subQuery, args...)
 }

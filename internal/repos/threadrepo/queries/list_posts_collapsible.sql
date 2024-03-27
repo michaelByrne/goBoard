@@ -43,7 +43,7 @@ SELECT
     cp.thread_id,
     cp.is_admin,
     $3 - (cp.original_row_num - (cp.total_collapsed - $3)) + $3 AS row_num, -- Adjust row numbers based on visible posts
-    $3 AS total_displayed -- Return the total number of displayed posts
+    cp.total_collapsed -- Return the total number of displayed posts
 FROM
     collapsed_posts cp
 WHERE

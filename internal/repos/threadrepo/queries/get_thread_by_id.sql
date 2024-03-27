@@ -1,12 +1,13 @@
-SELECT id,
-       subject,
+SELECT t.id,
+       t.subject,
        t.date_posted,
        t.member_id,
-       views,
-       (CASE
-            WHEN tm.date_posted IS NOT null AND tm.undot IS false AND tm.member_id IS NOT null THEN true
-            ELSE false END) as dot,
-       (CASE WHEN tm.ignore IS NULL THEN false ELSE tm.ignore END) as ignore
+       t.views,
+       COALESCE(tv.dotted, false) as dot,
+       COALESCE(tv.undot, false) as undot,
+       COALESCE(tv.ignored, false) as ignore,
+       CASE WHEN f.thread_id IS NOT NULL THEN true ELSE false END as favorite
 FROM thread t
-         LEFT OUTER JOIN thread_member tm on t.id = tm.thread_id AND tm.member_id = $2
-WHERE id = $1
+LEFT JOIN thread_viewer tv ON t.id = tv.thread_id AND tv.member_id = $2
+LEFT OUTER JOIN favorite f ON t.id = f.thread_id AND f.member_id = $2
+WHERE t.id = $1;
