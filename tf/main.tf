@@ -333,5 +333,20 @@ module "oidc_github" {
   github_repositories = [
     "michaelByrne/goBoard"
   ]
+
+  iam_role_inline_policies = {
+    "actions": data.aws_iam_policy_document.actions.json
+  }
+}
+
+data "aws_iam_policy_document" "actions" {
+  statement {
+    actions   = [
+      "s3:GetObject",
+      "ec2:TerminateInstances",
+    ]
+    effect    = "Allow"
+    resources = ["*"]
+  }
 }
 
