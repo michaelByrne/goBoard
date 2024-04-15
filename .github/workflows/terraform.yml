@@ -1,5 +1,9 @@
 name: 'Terraform'
 
+env:
+  AWS_REGION: 'us-west-2'
+  AWS_ACCOUNT_ID: '533266956918'
+
 on:
   push:
     branches: [ "main" ]
@@ -40,7 +44,7 @@ jobs:
         with:
           audience: sts.amazonaws.com.com
           aws-region: us-west-2
-          role-to-assume: arn:aws-cn:iam::123456789100:role/my-github-actions-role
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/github
 
       # Checkout the repository to the GitHub Actions runner
       - name: Checkout
