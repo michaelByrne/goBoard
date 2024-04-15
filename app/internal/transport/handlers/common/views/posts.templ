@@ -1,0 +1,290 @@
+package views
+
+import "goBoard/internal/transport/handlers/common"
+import "goBoard/internal/core/domain"
+import "strconv"
+import "fmt"
+
+func showIncrementOrRemaining(increment, remaining int) int {
+	if remaining > increment {
+		return increment
+	}
+	return remaining
+}
+
+templ Posts(posts []common.Post, increment int, username string) {
+	<span id="post_data" hx-ext="response-targets">
+		if posts[0].RowNumber > 1 {
+			@Uncollapse(posts[0].RowNumber-1, posts[0].RowNumber+len(posts), posts[0].ParentID, increment)
+		}
+		for _, post := range posts {
+			if post.MemberName == username {
+				@Post(post, post.RowNumber, true)
+			} else {
+				@Post(post, post.RowNumber, false)
+			}
+		}
+	</span>
+}
+
+templ ViewCounter(count int) {
+	<span class="smaller">{ fmt.Sprintf(" (%d views)", count) }</span>
+}
+
+templ PostsTitleGroup(thread domain.Thread) {
+	<title>{ thread.Subject }</title>
+	<h3 hx-get={ fmt.Sprintf("/view/thread/%d", thread.ID) } hx-swap="beforeend" hx-trigger="load">{ thread.Subject }</h3>
+	<div class="clear"></div>
+	<div class="subtitle">
+		<a style="cursor: pointer; color: white">hide images</a>
+		<span id="dotcontrol">
+			@DotControl(thread.Dotted, thread.ID)
+		</span>
+		<span id="favoritecontrol">
+			@FavoriteControl(thread.Favorite, thread.ID)
+		</span>
+		<span id="ignorecontrol">
+			@IgnoreControl(thread.Ignored, thread.ID)
+		</span>
+	</div>
+}
+
+templ DotControl(dotted bool, threadID int) {
+	if dotted {
+		» <a id="dot" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/dot/%d", threadID) } hx-target="#dotcontrol">undot</a>
+	} else {
+		» <a id="dot" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/dot/%d", threadID) } hx-target="#dotcontrol">dot</a>
+	}
+}
+
+templ IgnoreControl(ignored bool, threadID int) {
+	if !ignored {
+		» <a id="ignore" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/ignore/%d", threadID) } hx-target="#ignorecontrol">ignore</a>
+	} else {
+		» <a id="unignore" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/ignore/%d", threadID) } hx-target="#ignorecontrol">unignore</a>
+	}
+}
+
+templ FavoriteControl(favorite bool, threadID int) {
+	if favorite {
+		» <a id="favorite" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/favorite/%d", threadID) } hx-target="#favoritecontrol">remove favorite</a>
+	} else {
+		» <a id="favorite" style="color: white; cursor: pointer" hx-get={ fmt.Sprintf("/favorite/%d", threadID) } hx-target="#favoritecontrol">add favorite</a>
+	}
+}
+
+templ PostsPage(posts []common.Post, increment int, username string, undot bool) {
+	<span id="posts" hx-ext="response-targets" _="on htmx:beforeHistorySave remove .user_image">
+		<span id="post_data">
+			if posts[0].RowNumber > 1 {
+				@Uncollapse(posts[0].RowNumber-1, posts[0].RowNumber+len(posts), posts[0].ParentID, increment)
+			}
+			for _, post := range posts {
+				if post.MemberName == username {
+					@Post(post, post.RowNumber, true)
+				} else {
+					@Post(post, post.RowNumber, false)
+				}
+			}
+		</span>
+		@LowerPostNav()
+		@ResponseForm(posts[0].ParentID, posts[len(posts)-1].RowNumber+1, "thread", username, undot)
+	</span>
+}
+
+templ Uncollapse(collapsed, total, threadID, increment int) {
+	<div class="post clear" id="uncollapse">
+		<ul class="postbody odd collapse">
+			<span id="uncollapse_links">
+				<a id="uncollapse_some" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", collapsed-increment+1, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show <span id="uncollapse_more_counter">{ fmt.Sprintf("%d", showIncrementOrRemaining(increment, collapsed)) }</span> previous posts</a>&nbsp;»&nbsp;
+				<a id="uncollapse_all" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", 0, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show all { fmt.Sprintf("%d", collapsed) } previous posts</a>
+			</span>
+		</ul>
+	</div>
+}
+
+templ Post(post common.Post, idx int, isMe bool) {
+	<div class="post">
+		<ul class="view">
+			if isMe {
+				<li class="info even posthead me">
+					<div class="postinfo">
+						<a href="#" class="memberlink">{ post.MemberName }</a> posted this on { post.Date }
+					</div>
+					<div class="controls">
+						&nbsp;»
+						<a href="javascript:" id="{{ .ID }}_quote">quote</a>
+					</div>
+					<div class="count">
+						{ strconv.Itoa(idx) }
+					</div>
+				</li>
+			} else {
+				<li class="info even posthead not-me">
+					<div class="postinfo">
+						<a href="#" class="memberlink">{ post.MemberName }</a> posted this on { post.Date }
+					</div>
+					<div class="controls">
+						&nbsp;»
+						<a href="javascript:" id="{{ .ID }}_quote">quote</a>
+					</div>
+					<div class="count">
+						{ strconv.Itoa(idx) }
+					</div>
+				</li>
+			}
+			<li class="postbody odd">
+				@templ.Raw(post.Body)
+			</li>
+		</ul>
+	</div>
+}
+
+templ ResponseForm(threadID, nextRowNumber int, kind, username string, undot bool) {
+	<span class="response_form">
+		<div class="clear"></div>
+		<div id="response_form"></div>
+		<form
+			method="post"
+			name="form"
+			id="form"
+			class="coreform"
+			hx-post={ fmt.Sprintf("/%s/new", kind) }
+		>
+			<input type="hidden" name="threadId" value={ strconv.Itoa(threadID) }/>
+			<input type="hidden" id="idx" name="idx" value={ fmt.Sprintf("%d", nextRowNumber) }/>
+			<input type="hidden" id="undot" name="undot" value={ fmt.Sprintf("%t", undot) }/>
+			@Account(username)
+			<fieldset>
+				<legend>reply</legend>
+				<ol>
+					<li>
+						<label id="label_body" for="body">Body: </label>
+						<div contentEditable="true"
+							id="body"
+							name="body"
+							style="float: left; height: 100px; width: 500px;"
+							_="on htmx:afterSwap or input put my innerHTML into #hidden_body's value"
+						></div>
+						<textarea id="hidden_body" hidden name="hidden_body"></textarea>
+						<div class="clear"></div>
+					</li>
+				</ol>
+			</fieldset>
+			<input
+				type="submit"
+				class="submit"
+				hx-post="/post"
+				hx-target="#post_data"
+				hx-swap="beforeend"
+				value="say that shit"
+				id="submit"
+				_="on click remove #response_form's children 
+				then increment #idx's value 
+				then put '' into #body 
+				then put '' into #hidden_body
+				then if #undot's value is 'false' put 'undot' into #dot"
+			/>
+			<input type="button" name="preview" id="preview" value="preview" hx-post="/preview" hx-target="#response_form" hx-swap="afterbegin"/>
+			@Uploader()
+			<sup>
+				<a style="cursor:pointer;color:white" _="on click toggle @hidden on #bbcode">[help]</a>
+			</sup>
+			<span class="error_hanger"></span>
+		</form>
+		<div id="bbcode" class="view" style="font-size: 0.85em" hidden>
+			<pre>
+				<h4>TAGS:</h4>
+				http://www.google.com/ &lt;-- automatic link
+				<br/>
+				[url]http://www.google.com/[/url]
+				<br/>
+				[url=http://www.google.com/]with my own link text[/url]
+				<br/>
+				[img]http://www.google.com/intl/en_ALL/images/logo.gif[/img]
+				<br/>
+				[u]underline[/u]
+				<br/>
+				[strong]bold[/strong]
+				<br/>
+				[b]bold[/b]
+				<br/>
+				[i]italic[/i]
+				<br/>
+				[em]italic[/em]
+				<br/>
+				[strike]strikethrough[/strike]
+				<br/>
+				[code]like pre[/code]
+				<br/>
+				[sub]subscript[/sub]
+				<br/>
+				[sup]superscript[/sup]
+				<br/>
+				[soundcloud]http://soundcloud.com/goingslowly/047-railroad-lullabye[/soundcloud]
+				<br/>
+				[youtube]http://youtube.com/watch?v=WAwLYJYsa0A[/youtube] or [youtube]http://youtu.be/L8xXb-P4wZY[/youtube]
+				<br/>
+				[vimeo]http://vimeo.com/2467457[/vimeo]
+				<br/>
+				[tweet]https://twitter.com/dril/status/134787490526658561[/tweet]
+				<br/>
+				[quote]quote[/quote]
+				<br/>
+				[spoiler]spoiler[/spoiler]
+				<br/>
+				[trigger]trigger[/trigger]
+				<br/>
+			</pre>
+			<div class="clear"></div>
+		</div>
+	</span>
+}
+
+templ Uploader() {
+	<span class="upload_btn_wrapper" style="margin-left: 5px">
+		<input type="button" _="on click call #image_upload.click()" value="image"/>
+		<input 
+			id="image_upload" 
+			type="file" 
+			name="image" 
+			hx-post="/image/upload" 
+			hx-encoding="multipart/form-data" 
+			hx-target="#body"
+			hx-target-400="next .error_hanger"
+			hx-swap="beforeend"
+			_="on htmx:afterRequest if detail.xhr.status == 200 put '' into .error_hanger's innerHTML"
+		/>
+	</span>
+}
+
+templ InitialImage(url, key string) {
+	<img
+		src={ url}
+		data-key={ key }
+		class="user_image"
+	/>
+	// <script>
+	// 	addEventListener("htmx:beforeHistorySave", function(event) {
+	// 		document.querySelectorAll(".user_image").forEach(function(element) {
+	// 			element.remove()
+	// 		})
+	// 	});
+	// </script>
+}
+
+templ PostError(err string) {
+	<span class="error">{ err }</span>
+}
+
+templ Account(username string) {
+	<fieldset>
+		<legend>Account</legend>
+		<ol>
+			<li id="loggedin">
+				<h4 style="display: inline;">{ username }</h4>
+				<div class="clear"></div>
+			</li>
+		</ol>
+	</fieldset>
+}

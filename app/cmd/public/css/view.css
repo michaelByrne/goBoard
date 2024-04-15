@@ -1,0 +1,166 @@
+.view {
+  list-style: none;
+  clear: both;
+}
+
+.view li {
+  list-style: none;
+  padding: .23em .35em;
+}
+
+.view .even a.memberlink {
+  font-weight: bold;
+}
+
+.view .odd {
+  padding-bottom: 1.25em;
+}
+
+.list li span {
+  display: none;
+}
+
+.view li,
+.firstpost {
+  margin-bottom: 1px;
+}
+
+.view pre {
+  font-family: monospace;
+  font-size: 1.2em;
+  float: left;
+  padding: 1em;
+  margin: 1em;
+}
+
+.postinfo,
+.controls {
+  float: left;
+}
+
+.count {
+  text-align: right;
+  float: right;
+}
+
+.collapse {
+  padding: 10px;
+  margin-bottom: 1px;
+}
+
+.posthead {
+  height: 15px;
+}
+
+.not-me {
+  background-color: #c3dae4;
+  color: #000000;
+}
+
+.me {
+  background-color: #82b3c9;
+  color: #000000;
+}
+
+.postbody {
+  background-color: #acccdb;
+  color: black;
+}
+
+.top li {
+  background-color: #c3dae4;
+  border-top: 3px solid #acccdb;
+}
+
+.smaller {
+  font-size: 0.8em;
+}
+
+.lds-dual-ring {
+  /* change color here */
+  color: #1c4c5b
+}
+.lds-dual-ring,
+.lds-dual-ring:after {
+  box-sizing: border-box;
+}
+.lds-dual-ring {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+.lds-dual-ring:after {
+  content: " ";
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 8px;
+  border-radius: 50%;
+  border: 6.4px solid currentColor;
+  border-color: currentColor transparent currentColor transparent;
+  animation: lds-dual-ring 1.2s linear infinite;
+}
+@keyframes lds-dual-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-btn-wrapper {
+  margin-left: 5px;
+}
+
+.upload_btn_wrapper input[type=file] {
+  font-size: 100px;
+  display: none;
+}
+
+#body {
+  background-color: white;
+  color: black;
+  resize: both;
+  overflow: auto;
+}
+
+.lds-dual-ring {
+  /* change color here */
+  color: #1c4c5b
+}
+.lds-dual-ring,
+.lds-dual-ring:after {
+  box-sizing: border-box;
+}
+.lds-dual-ring {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+.lds-dual-ring:after {
+  content: " ";
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 8px;
+  border-radius: 50%;
+  border: 6.4px solid currentColor;
+  border-color: currentColor transparent currentColor transparent;
+  animation: lds-dual-ring 1.2s linear infinite;
+}
+@keyframes lds-dual-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.htmx-settling img {
+  opacity: 0;
+}
+img {
+ transition: opacity 300ms ease-in;
+}
