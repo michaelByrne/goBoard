@@ -335,13 +335,13 @@ module "oidc_github" {
   ]
 
   iam_role_inline_policies = {
-    "actions": data.aws_iam_policy_document.actions.json
+    "actions" : data.aws_iam_policy_document.actions.json
   }
 }
 
 data "aws_iam_policy_document" "actions" {
   statement {
-    actions   = [
+    actions = [
       "s3:GetObject",
       "ec2:TerminateInstances",
     ]
