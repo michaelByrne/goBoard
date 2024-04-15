@@ -5,7 +5,7 @@ terraform {
       version = "~> 5.0"
     }
     postgresql = {
-      source = "cyrilgdn/postgresql"
+      source  = "cyrilgdn/postgresql"
       version = "1.15.0"
     }
 
@@ -19,7 +19,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "us-west-2"
+  region = "us-west-2"
 }
 
 locals {
@@ -118,7 +118,7 @@ data "aws_iam_policy_document" "bco_images_policy" {
     actions = [
       "s3:GetObject"
     ]
-    effect    = "Allow"
+    effect = "Allow"
     resources = [
       "${aws_s3_bucket.bco_images.arn}/*"
     ]
@@ -184,7 +184,7 @@ resource "aws_lambda_function" "bco_images_relay" {
 }
 
 resource "aws_iam_role" "bco_images_relay" {
-  name               = "dev-bco-images-relay-role"
+  name = "dev-bco-images-relay-role"
   assume_role_policy = jsonencode(
     {
       Statement = [
@@ -201,7 +201,7 @@ resource "aws_iam_role" "bco_images_relay" {
   )
 
   inline_policy {
-    name   = "dev-bco-images-relay-policy"
+    name = "dev-bco-images-relay-policy"
     policy = jsonencode(
       {
         Statement = [
@@ -217,7 +217,7 @@ resource "aws_iam_role" "bco_images_relay" {
   }
 }
 
-resource aws_apigatewayv2_api "bco_images_relay" {
+resource "aws_apigatewayv2_api" "bco_images_relay" {
   name                       = "dev-bco-images-relay"
   protocol_type              = "HTTP"
   route_selection_expression = "$request.method $request.path"
@@ -314,11 +314,11 @@ resource "aws_db_instance" "gbd_postgres" {
 
 # deployment
 
-data aws_ecr_authorization_token go_server {
+data "aws_ecr_authorization_token" "go_server" {
   registry_id = aws_ecr_repository.go_server.registry_id
 }
 
-provider docker {
+provider "docker" {
   registry_auth {
     address  = split("/", local.ecr_url)[0]
     username = data.aws_ecr_authorization_token.go_server.user_name

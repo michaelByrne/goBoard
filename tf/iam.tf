@@ -1,4 +1,4 @@
-data aws_iam_policy_document assume_role_ec2_policy_document {
+data "aws_iam_policy_document" "assume_role_ec2_policy_document" {
   statement {
     effect = "Allow"
     principals {
@@ -12,12 +12,12 @@ data aws_iam_policy_document assume_role_ec2_policy_document {
   }
 }
 
-resource aws_iam_role role {
+resource "aws_iam_role" "role" {
   name               = "application-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role_ec2_policy_document.json
 }
 
-data aws_iam_policy_document ecr_access_policy_document {
+data "aws_iam_policy_document" "ecr_access_policy_document" {
   statement {
     effect = "Allow"
     actions = [
@@ -28,18 +28,18 @@ data aws_iam_policy_document ecr_access_policy_document {
   }
 }
 
-resource aws_iam_policy ecr_access_policy {
-  name = "ecr-access-policy"
+resource "aws_iam_policy" "ecr_access_policy" {
+  name   = "ecr-access-policy"
   policy = data.aws_iam_policy_document.ecr_access_policy_document.json
 }
 
-resource aws_iam_policy_attachment ecr_access {
+resource "aws_iam_policy_attachment" "ecr_access" {
   name       = "ecr-access"
   roles      = [aws_iam_role.role.name]
   policy_arn = aws_iam_policy.ecr_access_policy.arn
 }
 
-resource aws_iam_instance_profile profile {
+resource "aws_iam_instance_profile" "profile" {
   name = "application-ec2-profile"
   role = aws_iam_role.role.name
 }

@@ -1,5 +1,5 @@
-resource aws_ecr_repository go_server {
-  name = local.service_name
+resource "aws_ecr_repository" "go_server" {
+  name         = local.service_name
   force_delete = true
 
   image_scanning_configuration {
@@ -7,7 +7,7 @@ resource aws_ecr_repository go_server {
   }
 }
 
-data aws_iam_policy_document ecr_policy {
+data "aws_iam_policy_document" "ecr_policy" {
   statement {
     effect = "Allow"
     principals {
@@ -34,12 +34,12 @@ data aws_iam_policy_document ecr_policy {
   }
 }
 
-resource aws_ecr_repository_policy go_server {
+resource "aws_ecr_repository_policy" "go_server" {
   repository = aws_ecr_repository.go_server.name
-  policy = data.aws_iam_policy_document.ecr_policy.json
+  policy     = data.aws_iam_policy_document.ecr_policy.json
 }
 
-data aws_ami ubuntu {
+data "aws_ami" "ubuntu" {
   most_recent = true
 
   filter {
@@ -55,7 +55,7 @@ data aws_ami ubuntu {
   owners = ["099720109477"] # Canonical
 }
 
-resource aws_instance application {
+resource "aws_instance" "application" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.micro"
   vpc_security_group_ids      = [aws_security_group.public.id]
@@ -83,7 +83,7 @@ EOF
   depends_on = [aws_internet_gateway.gateway]
 }
 
-output application_ip {
+output "application_ip" {
   value       = aws_instance.application.public_ip
   description = "Application public IP"
 }
