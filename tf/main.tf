@@ -344,6 +344,7 @@ data "aws_iam_policy_document" "actions" {
     actions = [
       "s3:GetObject",
       "ec2:TerminateInstances",
+      "iam:PassRole",
     ]
     effect    = "Allow"
     resources = ["*"]
