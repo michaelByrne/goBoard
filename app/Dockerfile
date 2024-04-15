@@ -3,7 +3,7 @@ FROM --platform=linux/amd64 public.ecr.aws/docker/library/golang:1.21.4-alpine3.
 RUN arch
 
 RUN mkdir /app
-COPY . /app
+COPY app /app
 WORKDIR /app
 
 RUN apk update && apk add --no-cache git
