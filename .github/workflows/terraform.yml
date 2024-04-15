@@ -58,17 +58,17 @@ jobs:
 
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
-        run: terraform -chdir=/tf init
+        run: terraform -chdir=tf init
 
       # Checks that all Terraform configuration files adhere to a canonical format
       - name: Terraform Format
-        run: terraform -chdir=/tf fmt -check
+        run: terraform -chdir=tf fmt -check
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan
-        run: terraform -chdir=/tf plan -input=false
+        run: terraform -chdir=tf plan -input=false
 
         # On push to "main", build or change infrastructure according to Terraform configuration files
       - name: Terraform Apply
         if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
-        run: terraform -chdir=/tf apply -auto-approve -input=false
+        run: terraform -chdir=tf apply -auto-approve -input=false
