@@ -62,7 +62,7 @@ resource "aws_instance" "application" {
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.profile.name
-  user_data_replace_on_change = true
+  user_data_replace_on_change = false
 
   user_data = <<EOF
 #!/bin/bash

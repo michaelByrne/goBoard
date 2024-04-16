@@ -1,7 +1,7 @@
 # manage docker image to upload to ecr
 
 resource "docker_registry_image" "go_example" {
-  name = "${local.ecr_url}:v22"
+  name = "${local.ecr_url}:v23"
 
   build {
     context    = "${path.module}/../app/."

@@ -14,7 +14,7 @@ import (
 var DATA = [30]string{"Lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "Mauris", "faucibus", "lectus", "eget", "cursus", "tempus", "ligula", "orci", "mattis", "massa", "nec", "eleifend", "lorem", "ipsum", "congue", "erat", "Pellentesque", "suscipit", "semper", "sapien", "sed", "luctus"}
 
 func main() {
-	dbURI := "postgres://boardking:test@localhost:5432/board?sslmode=disable"
+	dbURI := "postgresql://gbd:SlipperyBeef@gbd.cjumgo2q6z1h.us-west-2.rds.amazonaws.com:5432/postgres"
 	var pool, err = pgxpool.Connect(context.Background(), dbURI)
 	if err != nil {
 		fmt.Println(err)
@@ -40,7 +40,7 @@ func main() {
 	// 	b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 2, 1, dateLastPosted.Format(time.RFC3339Nano))
 	// }
 
-	for i := 4; i < 149; i++ {
+	for i := 1; i < 149; i++ {
 		postDate := randDate()
 		b.Queue("INSERT INTO thread (subject, member_id, last_member_id, date_last_posted) VALUES ($1, $2, $3, $4)", DATA[i%30], 1, 1, postDate.Format(time.RFC3339Nano))
 		b.Queue("INSERT INTO thread_post (member_id, thread_id, body, member_ip, date_posted) VALUES ($1, $2, $3, $4, $5)", 1, i, DATA[i%30], "172.0.0.1", postDate.Format(time.RFC3339Nano))
