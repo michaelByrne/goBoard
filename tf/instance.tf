@@ -83,6 +83,11 @@ EOF
   depends_on = [aws_internet_gateway.gateway]
 }
 
+resource "aws_eip" "application" {
+  instance = aws_instance.application.id
+  domain   = "vpc"
+}
+
 output "application_ip" {
   value       = aws_instance.application.public_ip
   description = "Application public IP"
