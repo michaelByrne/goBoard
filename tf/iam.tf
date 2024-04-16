@@ -22,6 +22,8 @@ data "aws_iam_policy_document" "ecr_access_policy_document" {
     effect = "Allow"
     actions = [
       "ecr:BatchGetImage",
+      "s3:PutObject",
+      "s3:GetObject",
     ]
 
     resources = ["*"]
