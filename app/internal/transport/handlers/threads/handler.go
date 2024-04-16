@@ -270,6 +270,11 @@ func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		ip = "127.0.0.1"
 	}
 
+	splitIP := strings.Split(ip, ":")
+	if len(splitIP) > 1 {
+		ip = splitIP[0]
+	}
+
 	threadID, err := h.threadService.NewThread(member.Username, ip, body, subject)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -443,6 +448,11 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	ip := r.RemoteAddr
 	if strings.Contains(ip, "[::1]") {
 		ip = "127.0.0.1"
+	}
+
+	splitIP := strings.Split(ip, ":")
+	if len(splitIP) > 1 {
+		ip = splitIP[0]
 	}
 
 	_, err = h.threadService.NewPost(body, ip, member.Username, threadIDInt)
