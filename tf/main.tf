@@ -82,16 +82,16 @@ resource "aws_cognito_user" "cognito_user_gofreescout" {
   }
 }
 
-resource "aws_cognito_user" "cognito_user_abbsworth" {
-  user_pool_id       = aws_cognito_user_pool.bco_pool.id
-  username           = "abbsworth"
-  temporary_password = "Password1234!"
-
-  attributes = {
-    email          = "abigailruthe@gmail.com"
-    email_verified = "true"
-  }
-}
+# resource "aws_cognito_user" "cognito_user_abbsworth" {
+#   user_pool_id       = aws_cognito_user_pool.bco_pool.id
+#   username           = "abbsworth"
+#   temporary_password = "Password1234!"
+#
+#   attributes = {
+#     email          = "abigailruthe@gmail.com"
+#     email_verified = "true"
+#   }
+# }
 
 resource "aws_s3_bucket" "bco_images" {
   bucket = "dev-bco-images"
