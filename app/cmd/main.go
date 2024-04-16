@@ -32,7 +32,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/sessions"
 
 	"github.com/go-chi/chi/v5"
@@ -108,7 +107,7 @@ func run(
 	store := sessions.NewCookieStore([]byte("some-secret-key"))
 	r.Use(session.SessionMiddleware(store))
 
-	r.Use(middleware.RealIP)
+	//r.Use(middleware.RealIP)
 
 	threadsHandler.Register(r)
 	authHandler.Register(r)
