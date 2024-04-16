@@ -71,7 +71,7 @@ func run(
 
 	sugar := l.Sugar()
 
-	defaultConfig, err := config.LoadDefaultConfig(ctx)
+	defaultConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-west-2"))
 	if err != nil {
 		return err
 	}
