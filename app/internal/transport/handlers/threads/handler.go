@@ -60,9 +60,9 @@ func (h *Handler) Register(r chi.Router) {
 		r.Get("/view/thread/{threadId}", h.ViewThread)
 		r.Post("/thread/create", h.CreateThread)
 		r.Get("/thread/create", h.NewThreadPage)
-		r.Post("/preview", h.Preview)
-		r.Post("/post", h.Post)
-		r.Get("/posts", h.Posts)
+		r.Post("/thread/preview", h.Preview)
+		r.Post("/thread/post", h.Post)
+		r.Get("/thread/posts", h.Posts)
 		r.Get("/dot/{threadId}", h.ToggleDot)
 		r.Get("/ignore/{threadId}", h.ToggleIgnore)
 		r.Get("/favorite/{threadId}", h.ToggleFavorite)
@@ -161,13 +161,13 @@ func (h *Handler) ViewThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count, err := h.threadService.ViewThread(ctx, member.ID, threadIDInt)
+	_, err = h.threadService.ViewThread(ctx, member.ID, threadIDInt)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	templ.Handler(commonviews.ViewCounter(count)).Component.Render(ctx, w)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) ToggleIgnore(w http.ResponseWriter, r *http.Request) {
@@ -381,7 +381,7 @@ func (h *Handler) Posts(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	templ.Handler(commonviews.Posts(posts, member.Viewable, member.Username)).Component.Render(r.Context(), w)
+	templ.Handler(commonviews.Posts(posts, member.Viewable, member.Username, "thread")).Component.Render(r.Context(), w)
 }
 
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
@@ -584,7 +584,7 @@ func (h *Handler) Thread(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	templ.Handler(views.Home(views.Thread(commonviews.PostsPage(posts, member.Viewable, member.Username, thread.Undot), thread.ID), commonviews.PostsTitleGroup(*thread), member.Username)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Thread(commonviews.PostsPage(posts, member.Viewable, member.Username, "thread", thread.Undot), thread.ID), commonviews.PostsTitleGroup(*thread), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) ThreadsHome(w http.ResponseWriter, r *http.Request) {
@@ -604,13 +604,13 @@ func (h *Handler) ThreadsHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	threads, cursorsOut, err := h.threadService.ListThreads(ctx, domain.Cursors{}, 50, member.ID, domain.ThreadFilterAll)
+	threads, cursorsOut, err := h.threadService.ListThreads(ctx, domain.Cursors{}, 5, member.ID, domain.ThreadFilterAll)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	templ.Handler(views.Home(views.Threads(threads, cursorsOut), views.ThreadsTitleGroup(ElitismTitle), member.Username)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(threads, cursorsOut, member.Username), views.ThreadsTitleGroup(ElitismTitle), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) Threads(w http.ResponseWriter, r *http.Request) {
@@ -649,18 +649,18 @@ func (h *Handler) Threads(w http.ResponseWriter, r *http.Request) {
 		Prev: prevCursor,
 	}
 
-	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 50, member.ID, domain.ThreadFilterAll)
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 5, member.ID, domain.ThreadFilterAll)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if isHx(r) {
-		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		templ.Handler(views.Threads(threads, cursors, member.Username)).Component.Render(ctx, w)
 		return
 	}
 
-	templ.Handler(views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(ElitismTitle), member.Username)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(ElitismTitle), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) IgnoredThreads(w http.ResponseWriter, r *http.Request) {
@@ -714,7 +714,7 @@ func (h *Handler) IgnoredThreads(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isHx(r) {
-		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		templ.Handler(views.Threads(threads, cursors, member.Username)).Component.Render(ctx, w)
 		return
 	}
 
@@ -726,7 +726,7 @@ func (h *Handler) IgnoredThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Ignored threads: %s", viewMember.Name)
 
-	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+	templ.Handler((views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
 }
 
 func (h *Handler) CreatedThreads(w http.ResponseWriter, r *http.Request) {
@@ -780,7 +780,7 @@ func (h *Handler) CreatedThreads(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isHx(r) {
-		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		templ.Handler(views.Threads(threads, cursors, member.Username)).Component.Render(ctx, w)
 		return
 	}
 
@@ -792,7 +792,7 @@ func (h *Handler) CreatedThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Created threads: %s", viewMember.Name)
 
-	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+	templ.Handler((views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
 }
 
 func (h *Handler) ParticipatedThreads(w http.ResponseWriter, r *http.Request) {
@@ -846,7 +846,7 @@ func (h *Handler) ParticipatedThreads(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isHx(r) {
-		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		templ.Handler(views.Threads(threads, cursors, member.Username)).Component.Render(ctx, w)
 		return
 	}
 
@@ -858,7 +858,7 @@ func (h *Handler) ParticipatedThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Participated threads: %s", viewMember.Name)
 
-	templ.Handler((views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+	templ.Handler((views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
 }
 
 func (h *Handler) FavoritedThreads(w http.ResponseWriter, r *http.Request) {
@@ -912,7 +912,7 @@ func (h *Handler) FavoritedThreads(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isHx(r) {
-		templ.Handler(views.Threads(threads, cursors)).Component.Render(ctx, w)
+		templ.Handler(views.Threads(threads, cursors, member.Username)).Component.Render(ctx, w)
 		return
 	}
 
@@ -924,7 +924,7 @@ func (h *Handler) FavoritedThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Favorited threads: %s", viewMember.Name)
 
-	templ.Handler(views.Home(views.Threads(threads, cursors), views.ThreadsTitleGroup(title), member.Username)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) Uploader(w http.ResponseWriter, r *http.Request) {

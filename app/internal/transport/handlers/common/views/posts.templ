@@ -12,10 +12,10 @@ func showIncrementOrRemaining(increment, remaining int) int {
 	return remaining
 }
 
-templ Posts(posts []common.Post, increment int, username string) {
+templ Posts(posts []common.Post, increment int, username, kind string) {
 	<span id="post_data" hx-ext="response-targets">
 		if posts[0].RowNumber > 1 {
-			@Uncollapse(posts[0].RowNumber-1, posts[0].RowNumber+len(posts), posts[0].ParentID, increment)
+			@Uncollapse(posts[0].RowNumber-1, posts[0].RowNumber+len(posts), posts[0].ParentID, increment, kind)
 		}
 		for _, post := range posts {
 			if post.MemberName == username {
@@ -33,7 +33,10 @@ templ ViewCounter(count int) {
 
 templ PostsTitleGroup(thread domain.Thread) {
 	<title>{ thread.Subject }</title>
-	<h3 hx-get={ fmt.Sprintf("/view/thread/%d", thread.ID) } hx-swap="beforeend" hx-trigger="load">{ thread.Subject }</h3>
+	<h3 hx-get={ fmt.Sprintf("/view/thread/%d", thread.ID) } hx-swap="beforeend" hx-trigger="load">
+		{ thread.Subject }&nbsp;
+		<span class="smaller">{ fmt.Sprintf(" (%d views)", thread.Views + 1) }</span>
+	</h3>
 	<div class="clear"></div>
 	<div class="subtitle">
 		<a style="cursor: pointer; color: white">hide images</a>
@@ -73,11 +76,11 @@ templ FavoriteControl(favorite bool, threadID int) {
 	}
 }
 
-templ PostsPage(posts []common.Post, increment int, username string, undot bool) {
+templ PostsPage(posts []common.Post, increment int, username, kind string, undot bool) {
 	<span id="posts" hx-ext="response-targets" _="on htmx:beforeHistorySave remove .user_image">
 		<span id="post_data">
 			if posts[0].RowNumber > 1 {
-				@Uncollapse(posts[0].RowNumber-1, posts[0].RowNumber+len(posts), posts[0].ParentID, increment)
+				@Uncollapse(posts[0].RowNumber-1, posts[0].RowNumber+len(posts), posts[0].ParentID, increment, kind)
 			}
 			for _, post := range posts {
 				if post.MemberName == username {
@@ -88,16 +91,16 @@ templ PostsPage(posts []common.Post, increment int, username string, undot bool)
 			}
 		</span>
 		@LowerPostNav()
-		@ResponseForm(posts[0].ParentID, posts[len(posts)-1].RowNumber+1, "thread", username, undot)
+		@ResponseForm(posts[0].ParentID, posts[len(posts)-1].RowNumber+1, kind, username, undot)
 	</span>
 }
 
-templ Uncollapse(collapsed, total, threadID, increment int) {
+templ Uncollapse(collapsed, total, threadID, increment int, kind string) {
 	<div class="post clear" id="uncollapse">
 		<ul class="postbody odd collapse">
 			<span id="uncollapse_links">
-				<a id="uncollapse_some" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", collapsed-increment+1, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show <span id="uncollapse_more_counter">{ fmt.Sprintf("%d", showIncrementOrRemaining(increment, collapsed)) }</span> previous posts</a>&nbsp;»&nbsp;
-				<a id="uncollapse_all" hx-get={ fmt.Sprintf("/posts?start=%d&end=%d&threadId=%d", 0, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show all { fmt.Sprintf("%d", collapsed) } previous posts</a>
+				<a id="uncollapse_some" hx-get={ fmt.Sprintf("/%s/posts?start=%d&end=%d&threadId=%d", kind, collapsed-increment+1, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show <span id="uncollapse_more_counter">{ fmt.Sprintf("%d", showIncrementOrRemaining(increment, collapsed)) }</span> previous posts</a>&nbsp;»&nbsp;
+				<a id="uncollapse_all" hx-get={ fmt.Sprintf("/%s/posts?start=%d&end=%d&threadId=%d", kind, 0, total, threadID) } hx-target="#post_data" hx-swap="outerHTML">show all { fmt.Sprintf("%d", collapsed) } previous posts</a>
 			</span>
 		</ul>
 	</div>
@@ -160,7 +163,8 @@ templ ResponseForm(threadID, nextRowNumber int, kind, username string, undot boo
 				<ol>
 					<li>
 						<label id="label_body" for="body">Body: </label>
-						<div contentEditable="true"
+						<div
+							contentEditable="true"
 							id="body"
 							name="body"
 							style="float: left; height: 100px; width: 500px;"
@@ -174,7 +178,7 @@ templ ResponseForm(threadID, nextRowNumber int, kind, username string, undot boo
 			<input
 				type="submit"
 				class="submit"
-				hx-post="/post"
+				hx-post={ fmt.Sprintf("/%s/post", kind) }
 				hx-target="#post_data"
 				hx-swap="beforeend"
 				value="say that shit"
@@ -183,9 +187,9 @@ templ ResponseForm(threadID, nextRowNumber int, kind, username string, undot boo
 				then increment #idx's value 
 				then put '' into #body 
 				then put '' into #hidden_body
-				then if #undot's value is 'false' put 'undot' into #dot"
+				then if #dot and #undot's value is 'false' put 'undot' into #dot"
 			/>
-			<input type="button" name="preview" id="preview" value="preview" hx-post="/preview" hx-target="#response_form" hx-swap="afterbegin"/>
+			<input type="button" name="preview" id="preview" value="preview" hx-post={ fmt.Sprintf("/%s/preview", kind) } hx-target="#response_form" hx-swap="afterbegin"/>
 			@Uploader()
 			<sup>
 				<a style="cursor:pointer;color:white" _="on click toggle @hidden on #bbcode">[help]</a>
@@ -244,12 +248,12 @@ templ ResponseForm(threadID, nextRowNumber int, kind, username string, undot boo
 templ Uploader() {
 	<span class="upload_btn_wrapper" style="margin-left: 5px">
 		<input type="button" _="on click call #image_upload.click()" value="image"/>
-		<input 
-			id="image_upload" 
-			type="file" 
-			name="image" 
-			hx-post="/image/upload" 
-			hx-encoding="multipart/form-data" 
+		<input
+			id="image_upload"
+			type="file"
+			name="image"
+			hx-post="/image/upload"
+			hx-encoding="multipart/form-data"
 			hx-target="#body"
 			hx-target-400="next .error_hanger"
 			hx-swap="beforeend"
@@ -260,7 +264,7 @@ templ Uploader() {
 
 templ InitialImage(url, key string) {
 	<img
-		src={ url}
+		src={ url }
 		data-key={ key }
 		class="user_image"
 	/>

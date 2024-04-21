@@ -406,10 +406,14 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 	switch {
 
 	// *If there are no results we don't have to compute the cursors
-	case rowsLeft < 0 || len(threads) < limit:
+	case rowsLeft < 0:
 
 	// *On A, direction A->E (going forward), return only next cursor
 	case cursors.Prev == "" && cursors.Next == "":
+		if rowsLeft == len(threads) {
+			return threads, domain.Cursors{}, nil
+		}
+
 		nextCursor = threads[len(threads)-1].DateLastPosted.UTC().Format(time.RFC3339Nano)
 
 	// *On E, direction A->E (going forward), return only prev cursor

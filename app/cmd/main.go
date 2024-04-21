@@ -9,13 +9,16 @@ import (
 	"goBoard/internal/core/service/authenticationsvc"
 	"goBoard/internal/core/service/imagesvc"
 	"goBoard/internal/core/service/membersvc"
+	"goBoard/internal/core/service/messagesvc"
 	"goBoard/internal/core/service/threadsvc"
 	"goBoard/internal/repos/authenticationrepo"
 	"goBoard/internal/repos/imagerepo"
 	"goBoard/internal/repos/memberrepo"
+	"goBoard/internal/repos/messagerepo"
 	"goBoard/internal/repos/threadrepo"
 	"goBoard/internal/transport/handlers/authentication"
 	"goBoard/internal/transport/handlers/members"
+	"goBoard/internal/transport/handlers/messages"
 	"goBoard/internal/transport/handlers/threads"
 	"goBoard/internal/transport/middlewares/jwtauth"
 	"goBoard/internal/transport/middlewares/session"
@@ -92,15 +95,18 @@ func run(
 	threadRepo := threadrepo.NewThreadRepo(pool, 50)
 	memberRepo := memberrepo.NewMemberRepo(pool)
 	authRepo := authenticationrepo.NewAuthenticationRepo(cognitoClient, ClientID)
+	messageRepo := messagerepo.NewMessageRepo(pool)
 
 	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, 50)
 	memberService := membersvc.NewMemberService(memberRepo, sugar)
 	authService := authenticationsvc.NewAuthenticationService(authRepo, memberRepo, sugar)
 	imageService := imagesvc.NewImageService(imageRepo, *sugar)
+	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar, 20)
 
 	threadsHandler := threads.NewHandler(threadService, memberService, imageService, jwtMiddleware, sugar)
 	authHandler := authentication.NewHandler(authService)
 	membersHandler := members.NewHandler(threadService, memberService, jwtMiddleware, sugar)
+	messagesHandler := messages.NewHandler(messageService, memberService, imageService, jwtMiddleware, sugar)
 
 	r := chi.NewRouter()
 
@@ -112,6 +118,7 @@ func run(
 	threadsHandler.Register(r)
 	authHandler.Register(r)
 	membersHandler.Register(r)
+	messagesHandler.Register(r)
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
 
@@ -144,7 +151,7 @@ func run(
 		serverStopCtx()
 	}()
 
-	log.Println("** starting bco on port 8080 **")
+	log.Println("** starting bco on port 80 **")
 	err = server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err

@@ -3,11 +3,13 @@ package memberrepo
 import (
 	"context"
 	_ "embed"
+	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"goBoard/internal/core/domain"
+	"goBoard/internal/gberrors"
 )
 
 //go:embed queries/insert_or_update_member_prefs.sql
@@ -84,6 +86,12 @@ func (m MemberRepo) GetMemberByUsername(username string) (*domain.Member, error)
 		&member.IsAdmin,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, gberrors.MemberNotFound{
+				Username: username,
+			}
+		}
+
 		return nil, err
 	}
 

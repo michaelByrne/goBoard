@@ -45,6 +45,13 @@ type MessageRepo interface {
 	SavePost(post domain.MessagePost) (int, error)
 	GetMessagePostByID(id int) (*domain.MessagePost, error)
 	PeekPrevious(timestamp *time.Time) (bool, error)
+	GetMessagePostsCollapsible(ctx context.Context, viewable, messageID, memberID int) ([]domain.MessagePost, int, error)
+	GetMessageByID(ctx context.Context, messageID, memberID int) (*domain.Message, error)
+	ListMessages(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Message, domain.Cursors, error)
+	ViewMessage(ctx context.Context, memberID, messageID int) (int, error)
+	DeleteMessage(ctx context.Context, memberID, messageID int) error
+	GetMessageParticipants(ctx context.Context, messageID int) ([]string, error)
+	GetNewMessageCounts(ctx context.Context, memberID int) (*domain.MessageCounts, error)
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/authentication_repo_moq.go . AuthenticationRepo

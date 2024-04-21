@@ -22,4 +22,12 @@ type Message struct {
 	PrevPageCursor *time.Time
 	HasPrevPage    bool
 	HasNextPage    bool
+	RowNumber      int
+	NumCollapsed   int
+	Participants   []string
+}
+
+type MessageCounts struct {
+	Unread    int
+	Unreplied int
 }

@@ -7,7 +7,9 @@ templ UpperNav(username string) {
 	<ul class="nav top">
 		<div class="setdown">
 			<li><a href="/" title="back to the home page" hx-boost="true">threads</a></li>
-			<li><a href="/message/list/1?reverse=false" title="view your messages">messages</a></li>
+			<li hx-get="/message/counts" hx-swap="beforeend" hx-trigger="load" hx-target="#messages">
+				<a id="messages" href="/message/list" title="view your messages">messages</a>
+			</li>
 			<li><a href="/thread/create" hx-boost="true" title="create a new thread">new thread</a></li>
 			<li><a href="/message/create" title="send a message to another member">new message</a></li>
 			<li><a href={ templ.SafeURL(fmt.Sprintf("/profile/%s", username)) } hx-boost="true">profile</a></li>
@@ -26,6 +28,22 @@ templ LowerThreadNav(cursors domain.Cursors) {
 		if cursors.Next != "" {
 			<li id="next" style="cursor: pointer">
 				<a hx-get={ fmt.Sprintf("/threads?prev=%s&next=%s&dir=next", cursors.Prev, cursors.Next) } hx-target="#data" hx-push-url="true">next</a>
+			</li>
+		}
+	</ul>
+}
+
+templ LowerMessageNav(cursors domain.Cursors) {
+	<ul class="nav bottom clear" id="nav-bottom">
+		<li id="home" style="cursor: pointer"><a href="/" hx-boost="true">back to the shit</a></li>
+		if cursors.Prev != "" {
+			<li id="prev" style="cursor: pointer">
+				<a hx-get={ fmt.Sprintf("/message/list?prev=%s&next=%s&dir=prev", cursors.Prev, cursors.Next) } hx-target="#data" hx-push-url="true">prev</a>
+			</li>
+		}
+		if cursors.Next != "" {
+			<li id="next" style="cursor: pointer">
+				<a hx-get={ fmt.Sprintf("/message/list?prev=%s&next=%s&dir=next", cursors.Prev, cursors.Next) } hx-target="#data" hx-push-url="true">next</a>
 			</li>
 		}
 	</ul>

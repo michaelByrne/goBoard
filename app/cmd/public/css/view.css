@@ -53,14 +53,15 @@
 }
 
 .not-me {
-  background-color: #c3dae4;
+  background-color: #c3dae4 !important;
   color: #000000;
 }
 
 .me {
-  background-color: #82b3c9;
+  background-color: #82b3c9 !important;
   color: #000000;
 }
+
 
 .postbody {
   background-color: #acccdb;

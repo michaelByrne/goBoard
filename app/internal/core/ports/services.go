@@ -39,6 +39,11 @@ type MessageService interface {
 	GetMessageByID(messageID, memberID int) (*domain.Message, error)
 	NewPost(body, ip, memberName string, messageID int) (int, error)
 	GetMessagePostByID(id int) (*domain.MessagePost, error)
+	GetCollapsibleMessageByID(ctx context.Context, viewable, messageID, memberID int) (*domain.Message, error)
+	ListMessages(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Message, domain.Cursors, error)
+	ViewMessage(ctx context.Context, memberID, messageID int) (int, error)
+	DeleteMessage(ctx context.Context, memberID, messageID int) error
+	GetNewMessageCounts(ctx context.Context, memberID int) (*domain.MessageCounts, error)
 }
 
 type AuthenticationService interface {

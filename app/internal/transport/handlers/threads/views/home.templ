@@ -32,17 +32,17 @@ templ ThreadsTitleGroup(title string) {
 	<h3>{ title }</h3>
 }
 
-templ Threads(threads []domain.Thread, cursors domain.Cursors) {
+templ Threads(threads []domain.Thread, cursors domain.Cursors, username string) {
 	<div id="threads">
 		for _, thread := range threads {
-			@ThreadRow(thread)
+			@ThreadRow(thread, thread.MemberName == username)
 		}
 		@common.LowerThreadNav(cursors)
 	</div>
 }
 
-templ ThreadRow(thread domain.Thread) {
-	<div class="thread_row">
+templ ThreadRow(thread domain.Thread, isMe bool) {
+	<div class={ "thread_row", templ.KV("me", isMe) }>
 		<ul class="list read" id="list_l56761">
 			<li class="readbar">&nbsp;</li>
 			<li class="member">

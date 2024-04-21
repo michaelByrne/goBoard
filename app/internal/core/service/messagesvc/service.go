@@ -1,6 +1,7 @@
 package messagesvc
 
 import (
+	"context"
 	"go.uber.org/zap"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/core/ports"
@@ -41,6 +42,36 @@ func (s MessageService) SendMessage(subject, body, memberIP string, memberID int
 	}
 
 	return messageID, nil
+}
+
+func (s MessageService) DeleteMessage(ctx context.Context, memberID, messageID int) error {
+	err := s.messageRepo.DeleteMessage(ctx, memberID, messageID)
+	if err != nil {
+		s.logger.Errorf("error deleting message: %s", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s MessageService) ViewMessage(ctx context.Context, memberID, messageID int) (int, error) {
+	viewID, err := s.messageRepo.ViewMessage(ctx, memberID, messageID)
+	if err != nil {
+		s.logger.Errorf("error viewing message: %s", err)
+		return 0, err
+	}
+
+	return viewID, nil
+}
+
+func (s MessageService) ListMessages(ctx context.Context, cursors domain.Cursors, limit, memberID int) ([]domain.Message, domain.Cursors, error) {
+	messages, newCursors, err := s.messageRepo.ListMessages(ctx, cursors, limit, memberID)
+	if err != nil {
+		s.logger.Error("error listing messages for member: ", err)
+		return nil, domain.Cursors{}, err
+	}
+
+	return messages, newCursors, nil
 }
 
 func (s MessageService) GetMessagesWithCursor(memberID int, reverse bool, cursor *time.Time) ([]domain.Message, error) {
@@ -97,6 +128,43 @@ func (s MessageService) GetMessagesWithCursor(memberID int, reverse bool, cursor
 	}
 
 	return messages, nil
+}
+
+func (s MessageService) GetCollapsibleMessageByID(ctx context.Context, viewable, messageID, memberID int) (*domain.Message, error) {
+	posts, count, err := s.messageRepo.GetMessagePostsCollapsible(ctx, viewable, messageID, memberID)
+	if err != nil {
+		s.logger.Errorf("error getting collapsible posts by message id: %v", err)
+		return nil, err
+	}
+
+	message, err := s.messageRepo.GetMessageByID(ctx, messageID, memberID)
+	if err != nil {
+		s.logger.Errorf("error getting message by id: %v", err)
+		return nil, err
+	}
+
+	participants, err := s.messageRepo.GetMessageParticipants(ctx, messageID)
+	if err != nil {
+		s.logger.Errorf("error getting message participants: %v", err)
+		return nil, err
+	}
+
+	message.Posts = posts
+	message.NumCollapsed = count
+	message.Participants = participants
+
+	return message, nil
+
+}
+
+func (s MessageService) GetNewMessageCounts(ctx context.Context, memberID int) (*domain.MessageCounts, error) {
+	counts, err := s.messageRepo.GetNewMessageCounts(ctx, memberID)
+	if err != nil {
+		s.logger.Errorf("error getting new message counts: %v", err)
+		return nil, err
+	}
+
+	return counts, nil
 }
 
 func (s MessageService) GetMessageByID(messageID, memberID int) (*domain.Message, error) {

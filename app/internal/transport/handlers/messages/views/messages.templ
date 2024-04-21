@@ -1,0 +1,251 @@
+package views
+
+import commonviews "goBoard/internal/transport/handlers/common/views"
+import (
+	"fmt"
+	"goBoard/internal/core/domain"
+	"strconv"
+)
+
+templ NewMessageTitleGroup() {
+	<title>Create New Message</title>
+	<h3>Create New Message</h3>
+}
+
+templ MessageCounts(counts domain.MessageCounts) {
+	if counts.Unread == 0 {
+		{ "" }
+	} else {
+		<strong class="blink" style="color:black">{ fmt.Sprintf(" %d", counts.Unread) }</strong>
+	}
+}
+
+templ MessageTitleGroup(message domain.Message) {
+	<title>{ message.Subject }</title>
+	<h3 hx-get={ fmt.Sprintf("/view/message/%d", message.ID) } hx-swap="none" hx-trigger="load">
+		{ message.Subject }
+		<span class="smaller">{ fmt.Sprintf(" (%d views)", message.Views + 1) }</span>
+		<span class="smaller">
+			»
+			<a hx-get={ fmt.Sprintf("/message/delete/%d", message.ID) } hx-trigger="click" style="color:white;cursor:pointer">delete</a>
+		</span>
+	</h3>
+	<div class="subtitle">
+		<strong>Participating:</strong>
+		for _, p := range message.Participants[:len(message.Participants)-1] {
+			<a href={ templ.SafeURL(fmt.Sprintf("/profile/%s", p)) } hx-boost="true" style="color:white">{ p }, { " " }</a>
+		}
+		<a href={ templ.SafeURL(fmt.Sprintf("/profile/%s", message.Participants[len(message.Participants)-1])) } hx-boost="true" style="color:white">{ message.Participants[len(message.Participants)-1] }</a>
+	</div>
+}
+
+templ Recipient(member domain.Member) {
+	<span class="recipient">
+		<sup _="on click remove my parentElement" style="cursor:pointer">
+			x
+		</sup>
+		<span>
+			<a class="recipient_name" href={ templ.SafeURL(fmt.Sprintf("/member/view/%s", member.Name)) } style="color:white">
+				{ member.Name }
+			</a>
+			&nbsp;&nbsp;
+		</span>
+	</span>
+}
+
+templ Recipients(members []domain.Member) {
+	for _, member := range members {
+		@Recipient(member)
+	}
+}
+
+templ NewMessageForm(username string) {
+	<div class="hr">
+		<hr/>
+	</div>
+	<span class="response_form" hx-ext="response-targets">
+		<div class="clear"></div>
+		<div id="response_form"></div>
+		<form
+			name="form"
+			id="form"
+			class="coreform"
+			hx-boost="true"
+			hx-post={ fmt.Sprintf("/message/create") }
+			hx-target-400="find .error_hanger"
+			_="on keydown[keyCode == 13] halt"
+		>
+			<input type="hidden" id="idx" name="idx" value="1"/>
+			@commonviews.Account(username)
+			<fieldset>
+				<legend>Message Details</legend>
+				<ol>
+					<li>
+						<label>Recipients:</label>
+						<div id="m" style="width:500px;float:left;line-height:1.8em;">
+							<span
+								id="notice"
+								class="small"
+								_="on htmx:beforeSwap if #invalid and event.detail.serverResponse
+                                 remove #invalid 
+                                 end 
+                                 then put '' into #recipients's value"
+							><span id="invalid">(invalid names will be discarded)</span></span>
+						</div>
+					</li>
+					<li>
+						<label for="recipients">
+							Add members:
+						</label>
+						<input
+							type="hidden"
+							name="message_members"
+							id="message_members"
+							value=""
+							notnull="Please enter at least one recipient."
+							class="validate_form"
+						/>
+						<input
+							type="text"
+							name="names"
+							id="recipients"
+							value=""
+							style="width:200px;"
+							hx-get="/validate"
+							hx-target="#notice"
+							hx-swap="beforeend"
+							hx-trigger="keyup[keyCode==13], click from:#add"
+						/>
+						<input
+							type="button"
+							name="add"
+							id="add"
+							value="Add"
+							tabindex="10"
+						/>
+						<sup id="names">add multiples with: name, name, name</sup>
+					</li>
+					<li>
+						<label id="label_subject" for="subject">Subject:</label>
+						<input
+							type="text"
+							name="subject"
+							id="subject"
+							value=""
+							style="width:400px;"
+							maxlength="200"
+							notnull="Please enter a subject."
+							class="validate_form"
+						/>
+						<div class="clear"></div>
+					</li>
+					<li>
+						<label id="label_body" for="body">Body: </label>
+						<div
+							contentEditable="true"
+							id="body"
+							name="body"
+							style="float: left; height: 100px; width: 500px;"
+							_="on htmx:afterSwap or input put my innerHTML into #hidden_body's value"
+						></div>
+						<textarea id="hidden_body" hidden name="hidden_body"></textarea>
+						<div class="clear"></div>
+					</li>
+				</ol>
+			</fieldset>
+			<input
+				type="submit"
+				class="submit"
+				_="on click put .recipient_name's innerHTML into #message_members's value"
+			/>
+			<input type="button" name="preview" id="preview" value="preview" hx-post="/message/preview" hx-target="#response_form" hx-swap="afterbegin"/>
+			@commonviews.Uploader()
+			<sup>
+				<a style="cursor:pointer;color:white" _="on click toggle @hidden on #bbcode">[help]</a>
+			</sup>
+			<span class="error_hanger"></span>
+		</form>
+		<div id="bbcode" class="view" style="font-size: 0.85em" hidden>
+			<pre>
+				<h4>TAGS:</h4>
+				http://www.google.com/ &lt;-- automatic link
+				<br/>
+				[url]http://www.google.com/[/url]
+				<br/>
+				[url=http://www.google.com/]with my own link text[/url]
+				<br/>
+				[img]http://www.google.com/intl/en_ALL/images/logo.gif[/img]
+				<br/>
+				[u]underline[/u]
+				<br/>
+				[strong]bold[/strong]
+				<br/>
+				[b]bold[/b]
+				<br/>
+				[i]italic[/i]
+				<br/>
+				[em]italic[/em]
+				<br/>
+				[strike]strikethrough[/strike]
+				<br/>
+				[code]like pre[/code]
+				<br/>
+				[sub]subscript[/sub]
+				<br/>
+				[sup]superscript[/sup]
+				<br/>
+				[soundcloud]http://soundcloud.com/goingslowly/047-railroad-lullabye[/soundcloud]
+				<br/>
+				[youtube]http://youtube.com/watch?v=WAwLYJYsa0A[/youtube] or [youtube]http://youtu.be/L8xXb-P4wZY[/youtube]
+				<br/>
+				[vimeo]http://vimeo.com/2467457[/vimeo]
+				<br/>
+				[tweet]https://twitter.com/dril/status/134787490526658561[/tweet]
+				<br/>
+				[quote]quote[/quote]
+				<br/>
+				[spoiler]spoiler[/spoiler]
+				<br/>
+				[trigger]trigger[/trigger]
+				<br/>
+			</pre>
+			<div class="clear"></div>
+		</div>
+	</span>
+}
+
+templ MessageError(err string) {
+	<span class="error">{ err }</span>
+}
+
+templ MessagesTitleGroup(title string) {
+	<title>{ title }</title>
+	<h3>{ title }</h3>
+}
+
+templ Messages(messages []domain.Message, cursors domain.Cursors, username string) {
+	<div id="messages">
+		for _, message := range messages {
+			@MessageRow(message, message.MemberName == username)
+		}
+		@commonviews.LowerMessageNav(cursors)
+	</div>
+}
+
+templ MessageRow(message domain.Message, isMe bool) {
+	<div class={ "thread_row", templ.KV("me", isMe) }>
+		<ul class="list read" id="list_l56761">
+			<li class="readbar">&nbsp;</li>
+			<li class="member">
+				<a class="memberlink" href={ templ.SafeURL(fmt.Sprintf("/profile/%s", message.MemberName)) } hx-boost="true">{ message.MemberName }</a>
+			</li>
+			<li class="subject">
+				<a href={ templ.SafeURL(fmt.Sprintf("/message/view/%d", message.ID)) } hx-boost="true">{ message.Subject }</a>
+			</li>
+			<li class="posts">{ strconv.Itoa(message.NumPosts) }</li>
+			<li class="lastpost">
+				<a href="/member/view/{{ .LastPosterName }}" class="memberlink">{ message.LastPosterName }</a> on { message.DateLastPosted.Format("Mon Jan 2, 2006 03:04 pm") }
+			</li>
+		</ul>
+	</div>
+}

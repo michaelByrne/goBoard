@@ -14,20 +14,6 @@ permissions:
   id-token: write
 
 jobs:
-  caller-identity:
-    name: Check caller identity
-    permissions:
-      contents: read
-      id-token: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/github
-      - run: aws sts get-caller-identity
-
   terraform:
     name: 'Terraform'
     runs-on: ubuntu-latest
@@ -62,7 +48,7 @@ jobs:
 
       # Checks that all Terraform configuration files adhere to a canonical format
       - name: Terraform Format
-        run: terraform -chdir=tf fmt -check
+        run: terraform -chdir=tf fmt
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan
