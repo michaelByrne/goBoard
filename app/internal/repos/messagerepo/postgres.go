@@ -59,15 +59,19 @@ func (r MessageRepo) GetNewMessageCounts(ctx context.Context, memberID int) (*do
 		return nil, err
 	}
 
-	// unrepliedQuery := "SELECT COUNT(*) FROM message m WHERE (m.id NOT IN (SELECT message_id FROM message_member mm WHERE mm.member_id = $1 AND m.id = mm.message_id AND mm.deleted IS false AND mm.date_posted IS NOT NULL))"
+	//unreadPostsQuery := `SELECT COUNT(*) FROM message_post mp
+	//					 INNER JOIN message m ON m.member_id != $1 AND mp.message_id = m.id
+	//					 INNER JOIN message_member mm on m.id = mm.message_id
+	//					 LEFT JOIN message_viewer mv ON mv.message_id = m.id
+	//					 WHERE mp.date_posted > mv.last_viewed AND mm.member_id = $1 AND mm.deleted IS false`
+	//
+	//var newPosts int
+	//err = r.connPool.QueryRow(ctx, unreadPostsQuery, memberID).Scan(&newPosts)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	// var unreplied int
-	// err = r.connPool.QueryRow(ctx, unrepliedQuery, memberID).Scan(&unreplied)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	return &domain.MessageCounts{Unread: unread}, nil
+	return &domain.MessageCounts{Unread: unread, NewPosts: 0}, nil
 }
 
 func (r MessageRepo) DeleteMessage(ctx context.Context, memberID, messageID int) error {
@@ -178,8 +182,6 @@ func (r MessageRepo) ListMessages(ctx context.Context, cursors domain.Cursors, l
 	// 	return nil, domain.Cursors{}, nil
 	// }
 
-	fmt.Printf("rowsLeft: %d, total: %d, len(messages): %d\n", rowsLeft, total, len(messages))
-
 	var (
 		prevCursor string // cursor we return when there is a previous page
 		nextCursor string // cursor we return when there is a next page
@@ -256,7 +258,7 @@ func (r MessageRepo) SaveMessage(message domain.Message) (int, error) {
 }
 
 func (r MessageRepo) GetMessageByID(ctx context.Context, messageID, memberID int) (*domain.Message, error) {
-	mvQuery := "INSERT INTO message_viewer (message_id, member_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+	mvQuery := "INSERT INTO message_viewer (message_id, member_id) VALUES ($1, $2) ON CONFLICT (message_id, member_id) DO UPDATE SET last_viewed = NOW()"
 
 	_, err := r.connPool.Exec(ctx, mvQuery, messageID, memberID)
 	if err != nil {

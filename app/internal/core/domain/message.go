@@ -28,6 +28,6 @@ type Message struct {
 }
 
 type MessageCounts struct {
-	Unread    int
-	Unreplied int
+	Unread   int
+	NewPosts int
 }

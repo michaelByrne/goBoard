@@ -13,10 +13,10 @@ templ NewMessageTitleGroup() {
 }
 
 templ MessageCounts(counts domain.MessageCounts) {
-	if counts.Unread == 0 {
+	if counts.Unread == 0 && counts.NewPosts == 0 {
 		{ "" }
 	} else {
-		<strong class="blink" style="color:black">{ fmt.Sprintf(" %d", counts.Unread) }</strong>
+		<strong class="blink" style="color:black">{ fmt.Sprintf(" %d", counts.Unread) }/{ fmt.Sprintf("%d", counts.NewPosts) }</strong>
 	}
 }
 
