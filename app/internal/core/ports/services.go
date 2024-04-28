@@ -55,3 +55,7 @@ type ImageService interface {
 	RefreshPresign(ctx context.Context, key string) (string, error)
 	PresignPostImages(ctx context.Context, body string) (string, error)
 }
+
+type ThemeService interface {
+	GetTheme(ctx context.Context, name string) (string, error)
+}

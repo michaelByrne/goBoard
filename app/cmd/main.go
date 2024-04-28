@@ -10,11 +10,13 @@ import (
 	"goBoard/internal/core/service/imagesvc"
 	"goBoard/internal/core/service/membersvc"
 	"goBoard/internal/core/service/messagesvc"
+	"goBoard/internal/core/service/themesvc"
 	"goBoard/internal/core/service/threadsvc"
 	"goBoard/internal/repos/authenticationrepo"
 	"goBoard/internal/repos/imagerepo"
 	"goBoard/internal/repos/memberrepo"
 	"goBoard/internal/repos/messagerepo"
+	"goBoard/internal/repos/themerepo"
 	"goBoard/internal/repos/threadrepo"
 	"goBoard/internal/transport/handlers/authentication"
 	"goBoard/internal/transport/handlers/members"
@@ -96,14 +98,16 @@ func run(
 	memberRepo := memberrepo.NewMemberRepo(pool)
 	authRepo := authenticationrepo.NewAuthenticationRepo(cognitoClient, ClientID)
 	messageRepo := messagerepo.NewMessageRepo(pool)
+	themeRepo := themerepo.NewThemeRepo(pool)
 
 	threadService := threadsvc.NewThreadService(threadRepo, memberRepo, sugar, 50)
 	memberService := membersvc.NewMemberService(memberRepo, sugar)
 	authService := authenticationsvc.NewAuthenticationService(authRepo, memberRepo, sugar)
 	imageService := imagesvc.NewImageService(imageRepo, *sugar)
 	messageService := messagesvc.NewMessageService(messageRepo, memberRepo, sugar, 20)
+	themeService := themesvc.NewThemeService(themeRepo, sugar)
 
-	threadsHandler := threads.NewHandler(threadService, memberService, imageService, jwtMiddleware, sugar)
+	threadsHandler := threads.NewHandler(threadService, memberService, imageService, themeService, jwtMiddleware, sugar)
 	authHandler := authentication.NewHandler(authService)
 	membersHandler := members.NewHandler(threadService, memberService, jwtMiddleware, sugar)
 	messagesHandler := messages.NewHandler(messageService, memberService, imageService, jwtMiddleware, sugar)

@@ -10,7 +10,7 @@ import "context"
 import "io"
 import "bytes"
 
-func Head() templ.Component {
+func Styles(styles string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -23,7 +23,7 @@ func Head() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<head id=\"head\"><link rel=\"stylesheet\" href=\"/static/css/core.css\"><script type=\"text/javascript\" src=\"/static/js/htmx.min.js\"></script><script type=\"text/javascript\" src=\"/static/js/hyperscript.min.js\"></script><script type=\"text/javascript\" src=\"/static/js/response-targets.js\"></script></head>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<style type=\"text/css\">\n        { styles }\n    </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

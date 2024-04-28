@@ -54,7 +54,13 @@ templ ThreadRow(thread domain.Thread, isMe bool) {
 				} else {
 					<div class="extra">»&nbsp;</div>
 				}
-				<a href={ templ.SafeURL(fmt.Sprintf("/thread/view/%d", thread.ID)) } hx-boost="true">{ thread.Subject }</a>
+				if thread.Sticky {
+					<a href={ templ.SafeURL(fmt.Sprintf("/thread/view/%d", thread.ID)) } hx-boost="true">
+						<strong>Sticky:</strong>&nbsp;{ thread.Subject }
+					</a>
+				} else {
+					<a href={ templ.SafeURL(fmt.Sprintf("/thread/view/%d", thread.ID)) } hx-boost="true">{ thread.Subject }</a>
+				}
 			</li>
 			<li class="posts">{ strconv.Itoa(thread.NumPosts) }</li>
 			<li class="lastpost">

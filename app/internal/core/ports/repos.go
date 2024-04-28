@@ -67,3 +67,7 @@ type ImageRepo interface {
 	ResizeImage(imageBytes []byte) ([]byte, error)
 	PresignURL(ctx context.Context, key string) (string, error)
 }
+
+type ThemeRepo interface {
+	GetTheme(ctx context.Context, name string) (string, error)
+}

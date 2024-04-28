@@ -59,19 +59,19 @@ func (r MessageRepo) GetNewMessageCounts(ctx context.Context, memberID int) (*do
 		return nil, err
 	}
 
-	//unreadPostsQuery := `SELECT COUNT(*) FROM message_post mp
-	//					 INNER JOIN message m ON m.member_id != $1 AND mp.message_id = m.id
-	//					 INNER JOIN message_member mm on m.id = mm.message_id
-	//					 LEFT JOIN message_viewer mv ON mv.message_id = m.id
-	//					 WHERE mp.date_posted > mv.last_viewed AND mm.member_id = $1 AND mm.deleted IS false`
-	//
-	//var newPosts int
-	//err = r.connPool.QueryRow(ctx, unreadPostsQuery, memberID).Scan(&newPosts)
-	//if err != nil {
-	//	return nil, err
-	//}
+	unreadPostsQuery := `SELECT COUNT(*) FROM message_post mp
+						 LEFT JOIN message_member mm ON mp.message_id = mm.message_id
+						 LEFT JOIN message_viewer mv ON mv.message_id = mp.message_id
+						 WHERE mm.member_id = $1 AND mv.member_id = $1 AND mp.date_posted > mv.last_viewed
+						 AND mm.deleted IS false AND mp.member_id != $1`
 
-	return &domain.MessageCounts{Unread: unread, NewPosts: 0}, nil
+	var newPosts int
+	err = r.connPool.QueryRow(ctx, unreadPostsQuery, memberID).Scan(&newPosts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.MessageCounts{Unread: unread, NewPosts: newPosts}, nil
 }
 
 func (r MessageRepo) DeleteMessage(ctx context.Context, memberID, messageID int) error {

@@ -283,7 +283,7 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 	undot := sq.Select("COALESCE(tv.undot, false)")
 	favorite := sq.Case().When("f.thread_id IS NOT NULL", "true").Else("false")
 
-	innerQuery := sq.Select("t.id", "m.name as name", "t.date_last_posted", "t.subject", "t.date_posted", "t.posts", "t.views", "l.name as last_poster_name").
+	innerQuery := sq.Select("t.id", "m.name as name", "t.date_last_posted", "t.subject", "t.date_posted", "t.posts", "t.views", "l.name as last_poster_name", "t.sticky").
 		Column(sq.Alias(dot, "dot")).
 		Column(sq.Alias(undot, "undot")).
 		Column(sq.Alias(favorite, "favorite")).
@@ -316,7 +316,54 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 		InnerJoin("member l ON l.id = t.last_member_id").
 		InnerJoin("thread_post tp ON tp.id = t.first_post_id").
 		JoinClause("LEFT OUTER JOIN thread_viewer tv ON tv.thread_id = t.id AND tv.member_id = ?", memberID).
-		Where(SubQueryNOTIN("t.member_id", ignoredMemberQuery))
+		Where(SubQueryNOTIN("t.member_id", ignoredMemberQuery)).
+		Where("t.sticky = false")
+
+	stickyPagination := innerQuery.InnerJoin("member m ON m.id = t.member_id").
+		InnerJoin("member l ON l.id = t.last_member_id").
+		InnerJoin("thread_post tp ON tp.id = t.first_post_id").
+		JoinClause("LEFT OUTER JOIN thread_viewer tv ON tv.thread_id = t.id AND tv.member_id = ?", memberID).
+		Where(SubQueryNOTIN("t.member_id", ignoredMemberQuery)).
+		Where("t.sticky = true").OrderBy("t.date_last_posted DESC").Limit(uint64(limit))
+
+	stickyStmt, stickyArgs, err := stickyPagination.PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		return nil, domain.Cursors{}, err
+	}
+
+	rows, err := r.connPool.Query(ctx, stickyStmt, stickyArgs...)
+	if err != nil {
+		return nil, domain.Cursors{}, err
+	}
+
+	var (
+		stickyThreads []domain.Thread
+	)
+
+	for rows.Next() {
+		var thread domain.Thread
+		err = rows.Scan(
+			&thread.ID,
+			&thread.MemberName,
+			&thread.DateLastPosted,
+			&thread.Subject,
+			&thread.DatePosted,
+			&thread.NumPosts,
+			&thread.Views,
+			&thread.LastPosterName,
+			&thread.Sticky,
+			&thread.Dotted,
+			&thread.Undot,
+			&thread.Favorite,
+		)
+		if err != nil {
+			return nil, domain.Cursors{}, err
+		}
+
+		stickyThreads = append(stickyThreads, thread)
+	}
+
+	limit = limit - len(stickyThreads)
 
 	if filter == domain.ThreadFilterIgnored {
 		pagination = pagination.Where(SubQueryIN("t.id", ignoredThreadQuery))
@@ -345,7 +392,7 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 		pagination = pagination.OrderBy("t.date_last_posted DESC").Limit(uint64(limit))
 	}
 
-	stmt := sq.Select("id", "name", "date_last_posted", "subject", "date_posted", "posts", "views", "last_poster_name").
+	stmt := sq.Select("id", "name", "date_last_posted", "subject", "date_posted", "posts", "views", "last_poster_name", "sticky").
 		Column(sq.Alias(rowsLeftQuery, "rows_left")).
 		Column(sq.Alias(totalMinusIgnoredQuery, "total")).
 		Column("dot").
@@ -358,7 +405,7 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 		return nil, domain.Cursors{}, err
 	}
 
-	rows, err := r.connPool.Query(ctx, sql, args...)
+	rows, err = r.connPool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, domain.Cursors{}, err
 	}
@@ -381,6 +428,7 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 			&thread.NumPosts,
 			&thread.Views,
 			&thread.LastPosterName,
+			&thread.Sticky,
 			&rowsLeft,
 			&total,
 			&thread.Dotted,
@@ -393,6 +441,8 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 
 		threads = append(threads, thread)
 	}
+
+	allThreads := prependThreadSlice(threads, stickyThreads)
 
 	if len(threads) == 0 {
 		return threads, domain.Cursors{}, nil
@@ -410,8 +460,8 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 
 	// *On A, direction A->E (going forward), return only next cursor
 	case cursors.Prev == "" && cursors.Next == "":
-		if rowsLeft == len(threads) {
-			return threads, domain.Cursors{}, nil
+		if rowsLeft == len(allThreads) {
+			return allThreads, domain.Cursors{}, nil
 		}
 
 		nextCursor = threads[len(threads)-1].DateLastPosted.UTC().Format(time.RFC3339Nano)
@@ -434,7 +484,7 @@ func (r ThreadRepo) ListThreads(ctx context.Context, cursors domain.Cursors, lim
 		prevCursor = threads[0].DateLastPosted.UTC().Format(time.RFC3339Nano)
 	}
 
-	return threads, domain.Cursors{Next: nextCursor, Prev: prevCursor}, nil
+	return allThreads, domain.Cursors{Next: nextCursor, Prev: prevCursor}, nil
 }
 
 func SubQueryNOTIN(property string, query sq.SelectBuilder) sq.Sqlizer {
@@ -447,4 +497,13 @@ func SubQueryIN(property string, query sq.SelectBuilder) sq.Sqlizer {
 	sql, args, _ := query.ToSql()
 	subQuery := fmt.Sprintf("%s IN (%s)", property, sql)
 	return sq.Expr(subQuery, args...)
+}
+
+func prependThreadSlice(dest []domain.Thread, src []domain.Thread) []domain.Thread {
+	totalLen := len(dest) + len(src)
+	newSlice := make([]domain.Thread, totalLen)
+	copy(newSlice, src)
+	copy(newSlice[len(src):], dest)
+
+	return newSlice
 }

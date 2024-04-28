@@ -1,0 +1,86 @@
+body
+{
+  font-family: {{ index . "font" }};
+  background-color: {{ index . "body" }};
+  color: {{ index . "bodyfont" }};
+}
+html { font-size: {{ index . "fontsize" }}em; }
+a { color: {{ index . "bodyfont" }}; }
+.even,div.dp-popup,table.jCalendar td.other-month
+{
+  background-color: {{ index . "even" }};
+  color: {{ index . "evenfont" }};
+}
+.even a {  color: {{ index . "evenfont" }}; }
+.odd,table.jCalendar td,.box
+{
+  background-color: {{ index . "odd"}};
+  color: {{ index . "oddfont" }}
+}
+.odd a,.box a { color: {{ index . "oddfont" }}; }
+.me,table.jCalendar th,table.jCalendar td.selected
+{
+  background-color: {{ index . "me"}};
+  color: {{ index . "mefont" }};
+}
+.me a { color: {{ index . "mefont" }}; }
+.list:hover, .listhover
+{
+  background-color: {{ index . "hover" }};
+  color: {{ index . "hoverfont" }};
+}
+.list:hover a, .listhover a { color: {{ index . "hoverfont" }}; }
+.read
+{
+  border-left: 3px solid {{ index . "readbar" }};
+  border-right: 3px solid  {{ index . "readbar" }};
+}
+.list .lastpost
+{
+  font-size: 0.9em;
+}
+.dropmenu:hover a, .dropmenu:hover .control,
+.active a, .active .control
+{
+  background-color: {{ index . "even"}};
+  color: {{ index . "evenfont" }};
+}
+.even .dropmenu:hover a, .even .dropmenu:hover .control,
+.even .active a, .even .active .control
+{
+  background-color: {{ index . "odd"}};
+  color: {{ index . "oddfont" }};
+}
+.top li
+{
+  background-color: {{ index . "even" }};
+  border-top: 3px solid {{ index . "odd"}};
+}
+.bottom li
+{
+  background-color: {{ index . "odd" }};
+  border-bottom: 3px solid {{ index . "even"}};
+}
+.nav li a { color: {{ index . "oddfont" }}; }
+.nav li a:hover, .nav li:hover
+{
+  background-color: {{ index . "me" }};
+  color: {{ index . "mefont" }};
+}
+.searchwrap
+{
+  background-color: {{ index . "even" }};
+  border-top: 3px solid {{ index . "odd" }};
+}
+.hr { background-color: {{ index . "even" }}; }
+.view pre,.nophoto
+{
+  background-color: {{ index . "even" }};
+  border: 1px solid {{ index . "body" }};
+  color: {{ index . "evenfont" }};
+}
+blockquote { font-style: italic; }
+legend { color: {{ index . "bodyfont" }}; }
+.box legend { color: {{ index . "evenfont" }}; }
+fieldset { border-top: 1px solid {{ index . "even" }}; }
+.even fieldset { border-top: 1px solid {{ index . "odd" }}; }

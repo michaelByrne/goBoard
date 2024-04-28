@@ -30,17 +30,19 @@ type Handler struct {
 	threadService ports.ThreadService
 	memberService ports.MemberService
 	imageService  ports.ImageService
+	themeService  ports.ThemeService
 
 	verifyMiddleware func(next http.Handler) http.Handler
 
 	logger *zap.SugaredLogger
 }
 
-func NewHandler(threadService ports.ThreadService, memberService ports.MemberService, imageService ports.ImageService, verifyMiddleware func(next http.Handler) http.Handler, logger *zap.SugaredLogger) *Handler {
+func NewHandler(threadService ports.ThreadService, memberService ports.MemberService, imageService ports.ImageService, themeService ports.ThemeService, verifyMiddleware func(next http.Handler) http.Handler, logger *zap.SugaredLogger) *Handler {
 	return &Handler{
 		threadService:    threadService,
 		memberService:    memberService,
 		imageService:     imageService,
+		themeService:     themeService,
 		verifyMiddleware: verifyMiddleware,
 		logger:           logger,
 	}
@@ -69,7 +71,31 @@ func (h *Handler) Register(r chi.Router) {
 		r.Get("/uploader", h.Uploader)
 		r.Post("/image/upload", h.UploadImage)
 		r.Get("/image/refresh/{key}", h.RefreshImage)
+		r.Get("/styles", h.Styles)
 	})
+}
+
+func (h *Handler) Styles(w http.ResponseWriter, r *http.Request) {
+	//sess, err := session.Get("member", r)
+	//if err != nil {
+	//	h.logger.Errorf("error getting session: %v", err)
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//member, err := common.GetMember(*sess)
+	//if err != nil {
+	//	h.logger.Errorf("error getting member: %v", err)
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//}
+
+	theme, err := h.themeService.GetTheme(r.Context(), "blue")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(views.Styles(theme)).Component.Render(r.Context(), w)
 }
 
 func (h *Handler) RefreshImage(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +284,7 @@ func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body := r.FormValue("body")
+	body := r.FormValue("hidden_body")
 	if body == "" {
 		h.logger.Error("body is empty")
 		w.WriteHeader(http.StatusBadRequest)
@@ -281,7 +307,9 @@ func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/thread/view/"+strconv.Itoa(threadID), http.StatusFound)
+	w.Header().Add("HX-Redirect", fmt.Sprintf("/thread/view/%d", threadID))
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) ToggleDot(w http.ResponseWriter, r *http.Request) {
@@ -604,7 +632,7 @@ func (h *Handler) ThreadsHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	threads, cursorsOut, err := h.threadService.ListThreads(ctx, domain.Cursors{}, 5, member.ID, domain.ThreadFilterAll)
+	threads, cursorsOut, err := h.threadService.ListThreads(ctx, domain.Cursors{}, 30, member.ID, domain.ThreadFilterAll)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -649,7 +677,7 @@ func (h *Handler) Threads(w http.ResponseWriter, r *http.Request) {
 		Prev: prevCursor,
 	}
 
-	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 5, member.ID, domain.ThreadFilterAll)
+	threads, cursors, err := h.threadService.ListThreads(ctx, cursors, 30, member.ID, domain.ThreadFilterAll)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
