@@ -314,7 +314,7 @@ resource "aws_db_instance" "gbd_postgres" {
   storage_type           = "gp2"
   engine                 = "postgres"
   engine_version         = "15.6"
-  instance_class         = "db.t2.small"
+  instance_class         = "db.t4g.micro"
   identifier             = local.postgres_identifier
   username               = local.postgres_user_name
   password               = local.postgres_db_password
