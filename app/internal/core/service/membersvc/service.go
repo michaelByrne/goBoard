@@ -92,6 +92,16 @@ func (s MemberService) UpdateMember(ctx context.Context, member domain.Member) e
 	return s.memberRepo.UpdateMember(ctx, member)
 }
 
+func (s MemberService) UpdatePostalCode(ctx context.Context, memberID int, postalCode string) error {
+	err := s.memberRepo.UpdatePostalCode(ctx, memberID, postalCode)
+	if err != nil {
+		s.logger.Errorf("error updating postal code: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func mergePrefs(memberPrefs domain.MemberPrefs, prefs []domain.Pref) []domain.Pref {
 	var prefsOut []domain.Pref
 

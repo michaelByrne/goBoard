@@ -42,7 +42,137 @@ func (h *Handler) Register(r chi.Router) {
 
 		r.Get("/profile/{username}", h.Profile)
 		r.Get("/validate", h.Validate)
+		r.Get("/prefs", h.Prefs)
+		r.Get("/member/edit", h.EditPage)
+		r.Post("/member/edit", h.Edit)
 	})
+}
+
+func (h *Handler) Edit(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	sessionMember, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = r.ParseForm()
+	if err != nil {
+		h.logger.Errorf("error parsing form: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	newPrefs := make(map[string]domain.MemberPref)
+	var postal string
+	for k, v := range r.Form {
+		if len(v) == 0 || v[0] == "" || k == "username" {
+			continue
+		}
+
+		if len(v) > 1 {
+			h.logger.Errorf("multiple values for key: %s", k)
+			continue
+		}
+
+		if k == "postal" {
+			err = h.memberService.UpdatePostalCode(ctx, sessionMember.ID, v[0])
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			postal = v[0]
+
+			continue
+		}
+
+		newPrefs[k] = domain.MemberPref{
+			Value: v[0],
+		}
+	}
+
+	err = h.memberService.UpdatePrefs(ctx, sessionMember.ID, newPrefs)
+	if err != nil {
+		h.logger.Errorf("error updating prefs: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	prefs, err := h.memberService.GetMergedPrefs(ctx, sessionMember.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(views.PrefsWithSwap(prefs, postal)).Component.Render(ctx, w)
+}
+
+func (h *Handler) EditPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	sessionMember, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := h.memberService.GetMemberByID(sessionMember.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	prefs, err := h.memberService.GetMergedPrefs(ctx, member.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(threadviews.Home(views.EditProfile(*member, prefs), views.AccountManagementTitleGroup(member.Name), member.Name)).Component.Render(ctx, w)
+}
+
+func (h *Handler) Prefs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := session.Get("member", r)
+	if err != nil {
+		h.logger.Errorf("error getting session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	member, err := common.GetMember(*sess)
+	if err != nil {
+		h.logger.Errorf("error getting member: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	prefs, err := h.memberService.GetMergedPrefs(ctx, member.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(views.Prefs(prefs)).Component.Render(ctx, w)
 }
 
 func (h *Handler) Validate(w http.ResponseWriter, r *http.Request) {

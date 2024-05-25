@@ -33,6 +33,7 @@ type MemberRepo interface {
 	GetAllPrefs(ctx context.Context) ([]domain.Pref, error)
 	UpdatePrefs(ctx context.Context, memberID int, updatedPrefs domain.MemberPrefs) error
 	UpdateMember(ctx context.Context, member domain.Member) error
+	UpdatePostalCode(ctx context.Context, memberID int, postalCode string) error
 }
 
 //go:generate moq -pkg mocks -out ../service/mocks/message_repo_moq.go . MessageRepo

@@ -1,7 +1,8 @@
 package views
 
 import "goBoard/internal/core/domain"
-import 	commonviews "goBoard/internal/transport/handlers/common/views"
+import commonviews "goBoard/internal/transport/handlers/common/views"
+import "fmt"
 
 templ Profile(member domain.Member) {
 	<div class="hr">
@@ -51,10 +52,112 @@ templ Profile(member domain.Member) {
 		</ul>
 		<div class="clear"></div>
 	</div>
-    @commonviews.LowerMemberNav(member)
+	@commonviews.LowerMemberNav(member)
 }
 
 templ ProfileTitleGroup(member domain.Member) {
-    <title>{ member.Name }</title>
-    <h3>{ member.Name }</h3>
+	<title>{ member.Name }</title>
+	<h3>{ member.Name }</h3>
+}
+
+templ AccountManagementTitleGroup(username string) {
+	<title>Account Management: { username }</title>
+	<h3>Account Management: { username }</h3>
+}
+
+templ EditProfile(member domain.Member, prefs []domain.Pref) {
+	<div class="hr">
+		<hr/>
+	</div>
+	<div class="box clear" style="background-color: #acccdb; color: black">
+		<div id="response_form"></div>
+		<form class="coreform" name="form" id="form" hx-post="/member/edit" hx-target="#prefs">
+			<fieldset>
+				<legend>Account Management</legend>
+				<ol>
+					<li>
+						<label id="label_username" for="username">Name</label>
+						<input type="text" name="username" id="username" value={ member.Name } style="width: 150px" disabled/>
+						<div class="clear"></div>
+					</li>
+					<li>
+						<label id="label_postal" for="postal">Postal Code</label>
+						<input type="text" name="postal" id="postal" value={ member.PostalCode } style="width: 150px"/>
+						<div class="clear"></div>
+					</li>
+				</ol>
+			</fieldset>
+			<fieldset>
+				<legend>Details</legend>
+				<ol id="prefs">
+					@Prefs(prefs)
+				</ol>
+			</fieldset>
+		</form>
+	</div>
+}
+
+templ Prefs(prefs []domain.Pref) {
+	for _, pref := range prefs {
+		<li>
+			@Input(pref)
+		</li>
+	}
+	<input type="submit" class="submit" value="Save Changes"/>
+}
+
+templ PrefsWithSwap(prefs []domain.Pref, postal string) {
+	for _, pref := range prefs {
+		<li>
+			@Input(pref)
+		</li>
+	}
+	<input type="submit" class="submit" value="Save Changes"/>
+	<input type="text" name="postal" id="postal" value={ postal } style="width: 150px" hx-swap-oob="true"/>
+}
+
+templ Textarea(pref domain.Pref) {
+	<label id={ fmt.Sprintf("label_%s", pref.Name) } for={ pref.Name }>
+		@templ.Raw(pref.Display)
+	</label>
+	<textarea name={ pref.Name } id={ pref.Name } class={ leftWidth(pref.Width) }>{ pref.Value }</textarea>
+	<div class="clear"></div>
+}
+
+templ Checkbox(pref domain.Pref) {
+	<label id={ fmt.Sprintf("label_%s", pref.Name) } for={ pref.Name }>
+		@templ.Raw(pref.Display)
+	</label>
+	if pref.Value == "true" {
+		<input type="checkbox" name={ pref.Name } value="true" id={ pref.Name } checked _="on change put 'false' into closest .check's value"/>
+		<input class="check" type="hidden" name={ pref.Name } value="true"/>
+	} else {
+		<input type="checkbox" name={ pref.Name } value="false" id={ pref.Name } _="on change put 'true' into #check's value"/>
+		<input class="check" type="hidden" name={ pref.Name } value="false"/>
+	}
+	<div class="clear"></div>
+}
+
+templ Text(pref domain.Pref) {
+	<label id={ fmt.Sprintf("label_%s", pref.Name) } for={ pref.Name }>
+		@templ.Raw(pref.Display)
+	</label>
+	<input type="text" name={ pref.Name } id={ pref.Name } value={ pref.Value } class={ leftWidth(pref.Width) }/>
+	<div class="clear"></div>
+}
+
+templ Input(pref domain.Pref) {
+	switch pref.Type {
+		case "input":
+			@Text(pref)
+		case "textarea":
+			@Textarea(pref)
+		case "checkbox":
+			@Checkbox(pref)
+	}
+}
+
+css leftWidth(setWidth int) {
+	width: { fmt.Sprintf("%dpx", setWidth) };
+	float: left;
 }

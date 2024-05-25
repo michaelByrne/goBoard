@@ -183,3 +183,12 @@ func (m MemberRepo) UpdateMember(ctx context.Context, member domain.Member) erro
 
 	return nil
 }
+
+func (m MemberRepo) UpdatePostalCode(ctx context.Context, memberID int, postalCode string) error {
+	_, err := m.connPool.Exec(ctx, "UPDATE member SET postalcode = $1 WHERE id = $2", postalCode, memberID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
