@@ -61,7 +61,11 @@ func run(
 	stdin io.Reader,
 	stdout, stderr io.Writer,
 ) error {
-	dbURI := "postgresql://gbd:SlipperyBeef@gbd.cjumgo2q6z1h.us-west-2.rds.amazonaws.com:5432/postgres"
+	dbURI := getenv("DB_URI")
+	if dbURI == "" {
+		return fmt.Errorf("DB_URI is required")
+	}
+
 	pool, err := pgxpool.Connect(context.Background(), dbURI)
 	if err != nil {
 		return err

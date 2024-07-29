@@ -251,7 +251,11 @@ func (h *Handler) NewThreadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(views.Home(views.NewThreadForm(member.Username), views.NewThreadTitleGroup(), member.Username)).Component.Render(r.Context(), w)
+	templ.Handler(views.Home(
+		views.NewThreadForm(member.Username),
+		views.NewThreadTitleGroup(),
+		member.Username,
+	)).Component.Render(r.Context(), w)
 }
 
 func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
@@ -754,7 +758,11 @@ func (h *Handler) IgnoredThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Ignored threads: %s", viewMember.Name)
 
-	templ.Handler((views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+	templ.Handler(views.Home(
+		views.Threads(threads, cursors, member.Username),
+		views.ThreadsTitleGroup(title),
+		member.Username,
+	)).Component.Render(ctx, w)
 }
 
 func (h *Handler) CreatedThreads(w http.ResponseWriter, r *http.Request) {
@@ -820,7 +828,11 @@ func (h *Handler) CreatedThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Created threads: %s", viewMember.Name)
 
-	templ.Handler((views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(
+		threads,
+		cursors,
+		member.Username,
+	), views.ThreadsTitleGroup(title), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) ParticipatedThreads(w http.ResponseWriter, r *http.Request) {
@@ -886,7 +898,11 @@ func (h *Handler) ParticipatedThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Participated threads: %s", viewMember.Name)
 
-	templ.Handler((views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username))).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(
+		threads,
+		cursors,
+		member.Username,
+	), views.ThreadsTitleGroup(title), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) FavoritedThreads(w http.ResponseWriter, r *http.Request) {
@@ -952,7 +968,11 @@ func (h *Handler) FavoritedThreads(w http.ResponseWriter, r *http.Request) {
 
 	title := fmt.Sprintf("Favorited threads: %s", viewMember.Name)
 
-	templ.Handler(views.Home(views.Threads(threads, cursors, member.Username), views.ThreadsTitleGroup(title), member.Username)).Component.Render(ctx, w)
+	templ.Handler(views.Home(views.Threads(
+		threads,
+		cursors,
+		member.Username,
+	), views.ThreadsTitleGroup(title), member.Username)).Component.Render(ctx, w)
 }
 
 func (h *Handler) Uploader(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS chat_group_member;
+DROP TABLE IF EXISTS chat;
+DROP TABLE IF EXISTS chat_group;
