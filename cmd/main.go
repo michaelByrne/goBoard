@@ -170,7 +170,7 @@ func run(
 	messagesHandler.Register(r)
 
 	r.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
-		http.StripPrefix("/static/", http.FileServer(http.Dir("public"))).ServeHTTP(w, r)
+		http.StripPrefix("/static/", http.FileServer(http.Dir("cmd/public"))).ServeHTTP(w, r)
 	})
 
 	server := &http.Server{
