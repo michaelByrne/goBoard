@@ -169,7 +169,7 @@ func run(
 	membersHandler.Register(r)
 	messagesHandler.Register(r)
 
-	r.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("cmd/public"))))
+	r.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
 
 	server := &http.Server{
 		Addr:    ":80",
