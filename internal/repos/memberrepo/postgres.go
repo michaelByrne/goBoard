@@ -6,8 +6,8 @@ import (
 	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"goBoard/internal/core/domain"
 	"goBoard/internal/gberrors"
 )

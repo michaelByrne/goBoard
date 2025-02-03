@@ -2,7 +2,7 @@ package themerepo
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ThemeRepo struct {

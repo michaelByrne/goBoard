@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5/stdlib"
 	"goBoard/helpers/auth/keyset"
 	"goBoard/helpers/auth/token"
 	"goBoard/internal/core/service/authenticationsvc"
@@ -37,10 +40,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 
+	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+
 	"github.com/gorilla/sessions"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
@@ -79,8 +84,31 @@ func run(
 		return fmt.Errorf("SESSION_KEY is required")
 	}
 
-	pool, err := pgxpool.Connect(context.Background(), dbURI)
+	pool, err := pgxpool.New(context.Background(), dbURI)
 	if err != nil {
+		return err
+	}
+
+	db := stdlib.OpenDBFromPool(pool)
+
+	fs := os.DirFS("db/migrations")
+	d, err := iofs.New(fs, ".")
+	if err != nil {
+		return err
+	}
+
+	driver, err := pgxmigrate.WithInstance(db, &pgxmigrate.Config{})
+	if err != nil {
+		return err
+	}
+
+	migrator, err := migrate.NewWithInstance("iofs", d, "railway", driver)
+	if err != nil {
+		return err
+	}
+
+	err = migrator.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 
