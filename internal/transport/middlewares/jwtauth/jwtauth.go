@@ -17,6 +17,11 @@ var (
 func Verify(verifyFunc func(tokenStr string) (jwt.Token, error), findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/static" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			ctx := r.Context()
 			_, err := VerifyRequest(r, verifyFunc, findTokenFns...)
 			if err != nil {
