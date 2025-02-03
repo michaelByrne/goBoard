@@ -4,15 +4,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    postgresql = {
-      source  = "cyrilgdn/postgresql"
-      version = "1.15.0"
-    }
-
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "2.17.0"
-    }
   }
 
   required_version = ">= 1.2.0"
@@ -20,16 +11,6 @@ terraform {
 
 provider "aws" {
   region = "us-west-2"
-}
-
-locals {
-  postgres_identifier    = "gbd"
-  postgres_name          = "gbd"
-  postgres_user_name     = "gbd"
-  postgres_user_password = "SlipperyBeef"
-  postgres_instance_name = "gbd"
-  postgres_db_password   = "SlipperyBeef"
-  postgres_port          = 5432
 }
 
 resource "aws_cognito_user_pool" "bco_pool" {
@@ -278,65 +259,7 @@ resource "aws_apigatewayv2_authorizer" "bco_images_relay" {
   }
 }
 
-provider "postgresql" {
-  host            = aws_db_instance.gbd_postgres.address
-  port            = local.postgres_port
-  database        = local.postgres_name
-  username        = local.postgres_user_name
-  password        = local.postgres_user_password
-  sslmode         = "require"
-  connect_timeout = 15
-  superuser       = true
-}
-
-resource "aws_security_group" "gbd_security_group" {
-  name = "gbd-security-group"
-
-  ingress {
-    from_port   = local.postgres_port
-    to_port     = local.postgres_port
-    protocol    = "tcp"
-    description = "PostgreSQL"
-    cidr_blocks = ["0.0.0.0/0"] // >
-  }
-
-  ingress {
-    from_port        = local.postgres_port
-    to_port          = local.postgres_port
-    protocol         = "tcp"
-    description      = "PostgreSQL"
-    ipv6_cidr_blocks = ["::/0"] // >
-  }
-}
-
-resource "aws_db_instance" "gbd_postgres" {
-  allocated_storage      = 20
-  storage_type           = "gp2"
-  engine                 = "postgres"
-  engine_version         = "15.6"
-  instance_class         = "db.t4g.micro"
-  identifier             = local.postgres_identifier
-  username               = local.postgres_user_name
-  password               = local.postgres_db_password
-  publicly_accessible    = true
-  vpc_security_group_ids = [aws_security_group.gbd_security_group.id]
-  skip_final_snapshot    = true
-}
-
 # deployment
-
-data "aws_ecr_authorization_token" "go_server" {
-  registry_id = aws_ecr_repository.go_server.registry_id
-}
-
-provider "docker" {
-  registry_auth {
-    address  = split("/", local.ecr_url)[0]
-    username = data.aws_ecr_authorization_token.go_server.user_name
-    password = data.aws_ecr_authorization_token.go_server.password
-  }
-}
-
 module "oidc_github" {
   source              = "unfunco/oidc-github/aws"
   version             = "1.7.1"
