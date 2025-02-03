@@ -45,8 +45,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const ClientID = "5tbt4vvhsrkqnif6js92lu51a2"
-
 func main() {
 	err := run(context.Background(), os.Getenv, os.Stdin, os.Stdout, os.Stderr)
 	if err != nil {
@@ -64,6 +62,21 @@ func run(
 	dbURI := getenv("DB_URI")
 	if dbURI == "" {
 		return fmt.Errorf("DB_URI is required")
+	}
+
+	cognitoClientID := getenv("COGNITO_CLIENT_ID")
+	if cognitoClientID == "" {
+		return fmt.Errorf("COGNITO_CLIENT_ID is required")
+	}
+
+	jwksURI := getenv("JWKS_URI")
+	if jwksURI == "" {
+		return fmt.Errorf("JWKS_URI is required")
+	}
+
+	sessionKey := getenv("SESSION_KEY")
+	if sessionKey == "" {
+		return fmt.Errorf("SESSION_KEY is required")
 	}
 
 	pool, err := pgxpool.Connect(context.Background(), dbURI)
@@ -84,7 +97,7 @@ func run(
 		return err
 	}
 
-	ksetCache := keyset.NewKeySetWithCache("https://cognito-idp.us-west-2.amazonaws.com/us-west-2_3Ju0VjTAr/.well-known/jwks.json", 15)
+	ksetCache := keyset.NewKeySetWithCache(jwksURI, 15)
 	kset, err := ksetCache.NewKeySet()
 	if err != nil {
 		return err
@@ -100,7 +113,7 @@ func run(
 	imageRepo := imagerepo.NewImageRepo(s3Client, presignClient, *sugar, "dev-bco-images-private")
 	threadRepo := threadrepo.NewThreadRepo(pool, 50)
 	memberRepo := memberrepo.NewMemberRepo(pool)
-	authRepo := authenticationrepo.NewAuthenticationRepo(cognitoClient, ClientID)
+	authRepo := authenticationrepo.NewAuthenticationRepo(cognitoClient, cognitoClientID)
 	messageRepo := messagerepo.NewMessageRepo(pool)
 	themeRepo := themerepo.NewThemeRepo(pool)
 
@@ -118,7 +131,7 @@ func run(
 
 	r := chi.NewRouter()
 
-	store := sessions.NewCookieStore([]byte("some-secret-key"))
+	store := sessions.NewCookieStore([]byte(sessionKey))
 	r.Use(session.SessionMiddleware(store))
 
 	//r.Use(middleware.RealIP)
