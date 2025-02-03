@@ -169,7 +169,9 @@ func run(
 	membersHandler.Register(r)
 	messagesHandler.Register(r)
 
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
+	r.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix("/static/", http.FileServer(http.Dir("public"))).ServeHTTP(w, r)
+	})
 
 	server := &http.Server{
 		Addr:    ":80",
